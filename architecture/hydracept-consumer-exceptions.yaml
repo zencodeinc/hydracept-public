@@ -1,0 +1,4 @@
+# Temporary registry of product-side Hydracept bypasses during consumer migration.
+# Each entry expires; hydracept consumer-check fails on expired entries.
+
+exceptions: []

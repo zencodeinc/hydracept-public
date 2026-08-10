@@ -1,0 +1,58 @@
+{
+  "name": "@hydracept/sdk",
+  "version": "0.1.2",
+  "description": "One API for AI workloads in games — TypeScript client for Hydracept (BYOK, durable jobs, receipts).",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "hydracept",
+    "game",
+    "gamedev",
+    "unity",
+    "unreal",
+    "ai",
+    "llm",
+    "image-generation",
+    "audio",
+    "byok",
+    "api",
+    "sdk"
+  ],
+  "license": "MIT",
+  "homepage": "https://hydracept.com",
+  "bugs": {
+    "url": "https://github.com/hydracept/hydracept-public/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hydracept/hydracept-public.git",
+    "directory": "clients/typescript"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": false
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

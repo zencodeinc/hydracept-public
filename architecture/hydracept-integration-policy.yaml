@@ -1,0 +1,25 @@
+version: "1"
+consumer_rule:
+  - External products are customers of the public Hydracept surface, not privileged bypasses.
+  - If an external customer cannot do it through the supported Hydracept surface, no product should bypass the public surface that way either.
+  - Temporary exceptions require an entry in architecture/hydracept-consumer-exceptions.yaml with expiry.
+  - Run hydracept consumer-check --strict in product CI before merge.
+security:
+  - Never embed Hydracept API tokens or provider keys in shipped game clients.
+  - Never commit credentials; use environment variables or CI secret stores.
+  - Prefer a server-side proxy for player-facing applications.
+async_jobs:
+  - Submit via POST /v1/capabilities/{key}/jobs with idempotencyKey.
+  - Poll GET /v1/jobs/{jobId} until status is succeeded, failed, or canceled.
+  - Fetch receipt via GET /v1/jobs/{jobId}/receipt.
+verification:
+  - Run hydracept doctor after integration changes.
+  - Use GET /v1/diagnostics/session to verify auth and bundle version.
+discovery:
+  - List capabilities: GET /v1/capabilities
+  - Describe capability: GET /v1/capabilities/{key}
+  - Agent context bundle: GET /v1/agent-context
+byok:
+  - Store org credentials: POST /v1/organizations/{orgId}/provider-credentials
+  - Bind to project/env: POST /v1/organizations/{orgId}/provider-credentials/{credentialId}/bindings
+  - Project-level legacy vault: POST /v1/projects/{projectId}/provider-credentials

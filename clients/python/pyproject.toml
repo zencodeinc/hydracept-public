@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hydracept"
+version = "0.1.3"
+description = "One API for AI workloads in games — Python client and CLI for Hydracept (BYOK, durable jobs, receipts)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Zencode" }]
+keywords = [
+  "hydracept",
+  "game",
+  "gamedev",
+  "unity",
+  "unreal",
+  "ai",
+  "llm",
+  "image-generation",
+  "audio",
+  "byok",
+  "api",
+  "cli",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Games/Entertainment",
+  "Topic :: Software Development :: Libraries",
+  "Typing :: Typed",
+]
+dependencies = [
+  "httpx>=0.27.0",
+  "typer>=0.15.0",
+  "rich>=13.9.0",
+  "PyYAML>=6.0",
+]
+
+[project.urls]
+Homepage = "https://hydracept.com"
+Documentation = "https://docs.hydracept.com"
+Repository = "https://github.com/hydracept/hydracept-public"
+Issues = "https://github.com/hydracept/hydracept-public/issues"
+Changelog = "https://docs.hydracept.com"
+
+[project.scripts]
+hydracept = "hydracept.cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["hydracept*"]
+
+[tool.setuptools.package-data]
+hydracept = ["data/*.yaml"]

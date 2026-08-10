@@ -1,0 +1,25 @@
+{
+  "agentContext": "https://api.hydracept.com/v1/agent-context",
+  "api": "https://api.hydracept.com",
+  "byok": true,
+  "capabilities": [
+    "text.general.fast.v1",
+    "text.reasoning.high.v1",
+    "text.structured.extraction.v1",
+    "text.creative.longform.v1",
+    "image.generate.v1",
+    "audio.sfx.generate.v1",
+    "audio.voice.generate.v1",
+    "audio.music.generate.v1"
+  ],
+  "description": "One API for AI workloads in games.",
+  "inferenceMarkupPercent": 0,
+  "name": "Hydracept",
+  "pricing": {
+    "free": true,
+    "indie_usd_monthly": 29,
+    "studio_usd_monthly": 99
+  },
+  "selfServeBootstrapLive": true,
+  "url": "https://hydracept.com"
+}

@@ -1,0 +1,3846 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Hydracept Public API",
+    "version": "0.1.0",
+    "description": "One API for AI workloads in games. Public integration surface for Hydracept capabilities and jobs. Authenticate with a Hydracept API key (Bearer). Implementation internals are not part of this contract."
+  },
+  "paths": {
+    "/v1/capabilities": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "capabilities"
+        ],
+        "summary": "List Capabilities",
+        "description": "Anonymous launch-scoped public capability descriptors.",
+        "operationId": "list_capabilities_v1_capabilities_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCapabilityListResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "anonymous",
+        "x-hydracept-client-codegen": true,
+        "security": []
+      }
+    },
+    "/v1/capabilities/{capability_key}": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "capabilities"
+        ],
+        "summary": "Describe Capability",
+        "description": "Anonymous public descriptor for launch keys only.",
+        "operationId": "describe_capability_v1_capabilities__capability_key__get",
+        "parameters": [
+          {
+            "name": "capability_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Capability Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCapabilityDescriptor"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "anonymous",
+        "x-hydracept-client-codegen": true,
+        "security": []
+      }
+    },
+    "/v1/capabilities/{capability_key}/invoke": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "capabilities"
+        ],
+        "summary": "Invoke Capability",
+        "operationId": "capability_invoke_v1_capabilities__capability_key__invoke_post",
+        "parameters": [
+          {
+            "name": "capability_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Capability Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CapabilityInvokeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HydraceptInvocationResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/capabilities/{capability_key}/jobs": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "capabilities"
+        ],
+        "summary": "Submit Capability Job",
+        "operationId": "capability_submit_job_v1_capabilities__capability_key__jobs_post",
+        "parameters": [
+          {
+            "name": "capability_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Capability Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CapabilityJobRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HydraceptJob"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "capabilities"
+        ],
+        "summary": "Get Job",
+        "operationId": "get_unified_job_v1_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HydraceptJob"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/variants/select": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "capabilities"
+        ],
+        "summary": "Select Job Variant",
+        "operationId": "select_job_variant_v1_jobs__job_id__variants_select_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VariantSelectBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HydraceptJob"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/cancel": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "capabilities"
+        ],
+        "summary": "Cancel Job",
+        "operationId": "cancel_unified_job_v1_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HydraceptJob"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/approve": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "capabilities"
+        ],
+        "summary": "Approve Job",
+        "operationId": "approve_job_v1_jobs__job_id__approve_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/JobApproveBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HydraceptJob"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/reject": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "capabilities"
+        ],
+        "summary": "Reject Job",
+        "operationId": "reject_job_v1_jobs__job_id__reject_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HydraceptJob"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/receipt": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "capabilities"
+        ],
+        "summary": "Get Job Receipt",
+        "operationId": "unified_job_receipt_v1_jobs__job_id__receipt_get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HydraceptReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/artifacts/{artifact_id}": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "capabilities"
+        ],
+        "summary": "Download Job Artifact",
+        "operationId": "download_job_artifact_v1_jobs__job_id__artifacts__artifact_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "artifact_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Artifact Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artifact bytes",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "audio/mpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/diagnostics/session": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "diagnostics"
+        ],
+        "summary": "Diagnostics Session",
+        "operationId": "diagnostics_session_v1_diagnostics_session_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Diagnostics Session V1 Diagnostics Session Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/diagnostics/providers": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "diagnostics"
+        ],
+        "summary": "Diagnostics Providers",
+        "description": "Authenticated provider topology (moved off public /healthz).",
+        "operationId": "diagnostics_providers_v1_diagnostics_providers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Diagnostics Providers V1 Diagnostics Providers Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/agent-context": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "agent-context"
+        ],
+        "summary": "Agent Context",
+        "description": "Anonymous public projection \u2014 no credentials required.",
+        "operationId": "agent_context_v1_agent_context_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Agent Context V1 Agent Context Get"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "anonymous",
+        "x-hydracept-client-codegen": true,
+        "security": []
+      }
+    },
+    "/v1/organizations": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "commercial"
+        ],
+        "summary": "List Organizations",
+        "operationId": "list_organizations_v1_organizations_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Organizations V1 Organizations Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/organizations/{org_id}/projects": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "commercial"
+        ],
+        "summary": "List Org Projects",
+        "operationId": "list_org_projects_v1_organizations__org_id__projects_get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Org Projects V1 Organizations  Org Id  Projects Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/projects/{project_id}/environments": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "commercial"
+        ],
+        "summary": "List Project Environments",
+        "operationId": "list_project_environments_v1_projects__project_id__environments_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Project Environments V1 Projects  Project Id  Environments Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/api-keys": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "api-keys"
+        ],
+        "summary": "Create Api Key",
+        "operationId": "create_api_key_v1_api_keys_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeyCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Api Key V1 Api Keys Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/api-keys/{key_id}/revoke": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "api-keys"
+        ],
+        "summary": "Revoke Api Key",
+        "operationId": "revoke_api_key_v1_api_keys__key_id__revoke_post",
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Revoke Api Key V1 Api Keys  Key Id  Revoke Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/api-keys/{key_id}/rotate": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "api-keys"
+        ],
+        "summary": "Rotate Api Key",
+        "operationId": "rotate_api_key_v1_api_keys__key_id__rotate_post",
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Rotate Api Key V1 Api Keys  Key Id  Rotate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/organizations/{organization_id}/provider-credentials": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "byok"
+        ],
+        "summary": "Store Organization Credential",
+        "operationId": "store_organization_credential_v1_organizations__organization_id__provider_credentials_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderCredentialCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Store Organization Credential V1 Organizations  Organization Id  Provider Credentials Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "byok"
+        ],
+        "summary": "List Organization Credentials",
+        "operationId": "list_organization_credentials_v1_organizations__organization_id__provider_credentials_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Organization Credentials V1 Organizations  Organization Id  Provider Credentials Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/organizations/{organization_id}/provider-credentials/{credential_id}": {
+      "delete": {
+        "tags": [
+          "public_api",
+          "external",
+          "byok"
+        ],
+        "summary": "Revoke Organization Credential",
+        "operationId": "revoke_organization_credential_v1_organizations__organization_id__provider_credentials__credential_id__delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "credential_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Credential Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Revoke Organization Credential V1 Organizations  Organization Id  Provider Credentials  Credential Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/organizations/{organization_id}/provider-credentials/{credential_id}/rotate": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "byok"
+        ],
+        "summary": "Rotate Organization Credential",
+        "operationId": "rotate_organization_credential_v1_organizations__organization_id__provider_credentials__credential_id__rotate_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "credential_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Credential Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderCredentialCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Rotate Organization Credential V1 Organizations  Organization Id  Provider Credentials  Credential Id  Rotate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/organizations/{organization_id}/provider-credentials/{credential_id}/bindings": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "byok"
+        ],
+        "summary": "Bind Organization Credential",
+        "operationId": "bind_organization_credential_v1_organizations__organization_id__provider_credentials__credential_id__bindings_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "credential_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Credential Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderCredentialBindingCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Bind Organization Credential V1 Organizations  Organization Id  Provider Credentials  Credential Id  Bindings Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/organizations/{organization_id}/provider-credentials/{credential_id}/bindings/{binding_id}": {
+      "delete": {
+        "tags": [
+          "public_api",
+          "external",
+          "byok"
+        ],
+        "summary": "Unbind Organization Credential",
+        "operationId": "unbind_organization_credential_v1_organizations__organization_id__provider_credentials__credential_id__bindings__binding_id__delete",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "credential_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Credential Id"
+            }
+          },
+          {
+            "name": "binding_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Binding Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Unbind Organization Credential V1 Organizations  Organization Id  Provider Credentials  Credential Id  Bindings  Binding Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/connections": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections"
+        ],
+        "summary": "List Connections",
+        "operationId": "list_connections_v1_connections_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Connections V1 Connections Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections"
+        ],
+        "summary": "Create Connection",
+        "operationId": "create_connection_v1_connections_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Connection V1 Connections Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/connections/{connection_id}": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections"
+        ],
+        "summary": "Get Connection",
+        "operationId": "get_connection_v1_connections__connection_id__get",
+        "parameters": [
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Connection Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Connection V1 Connections  Connection Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections"
+        ],
+        "summary": "Revoke Connection",
+        "operationId": "revoke_connection_v1_connections__connection_id__delete",
+        "parameters": [
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Connection Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Revoke Connection V1 Connections  Connection Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/connections/{connection_id}/bindings": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections"
+        ],
+        "summary": "List Bindings",
+        "operationId": "list_bindings_v1_connections__connection_id__bindings_get",
+        "parameters": [
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Connection Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Bindings V1 Connections  Connection Id  Bindings Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections"
+        ],
+        "summary": "Create Binding",
+        "operationId": "create_binding_v1_connections__connection_id__bindings_post",
+        "parameters": [
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Connection Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectionBindingCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Binding V1 Connections  Connection Id  Bindings Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/connections/{connection_id}/test": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections"
+        ],
+        "summary": "Test Connection",
+        "operationId": "test_connection_v1_connections__connection_id__test_post",
+        "parameters": [
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Connection Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Test Connection V1 Connections  Connection Id  Test Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/connections/{connection_id}/repair": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections"
+        ],
+        "summary": "Repair Connection",
+        "description": "Start repair by re-testing; if degraded, return guided repair instructions.",
+        "operationId": "repair_connection_v1_connections__connection_id__repair_post",
+        "parameters": [
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Connection Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Repair Connection V1 Connections  Connection Id  Repair Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/connections/{connection_id}/rotate": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections"
+        ],
+        "summary": "Rotate Connection",
+        "description": "Replace credential via new secret (manual) or provisioned secret from CLI complete.",
+        "operationId": "rotate_connection_v1_connections__connection_id__rotate_post",
+        "parameters": [
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Connection Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Rotate Connection V1 Connections  Connection Id  Rotate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/connections/{connection_id}/bindings/{binding_id}": {
+      "delete": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections"
+        ],
+        "summary": "Delete Binding",
+        "operationId": "delete_binding_v1_connections__connection_id__bindings__binding_id__delete",
+        "parameters": [
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Connection Id"
+            }
+          },
+          {
+            "name": "binding_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Binding Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Binding V1 Connections  Connection Id  Bindings  Binding Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/connections/onboarding/plan": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections-onboarding"
+        ],
+        "summary": "Create Plan",
+        "operationId": "create_plan_v1_connections_onboarding_plan_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingPlanBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Plan V1 Connections Onboarding Plan Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/connections/onboarding/sessions": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections-onboarding"
+        ],
+        "summary": "Create Session",
+        "operationId": "create_session_v1_connections_onboarding_sessions_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingSessionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Session V1 Connections Onboarding Sessions Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/connections/onboarding/sessions/{session_id}": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections-onboarding"
+        ],
+        "summary": "Get Session",
+        "operationId": "get_session_v1_connections_onboarding_sessions__session_id__get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Session V1 Connections Onboarding Sessions  Session Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/connections/onboarding/sessions/{session_id}/complete": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections-onboarding"
+        ],
+        "summary": "Complete Session",
+        "description": "Receive provisioned inference credential (local bootstrap / manual).",
+        "operationId": "complete_session_v1_connections_onboarding_sessions__session_id__complete_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingCompleteBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Complete Session V1 Connections Onboarding Sessions  Session Id  Complete Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/connections/onboarding/sessions/{session_id}/result": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "connections-onboarding"
+        ],
+        "summary": "Session Result",
+        "operationId": "session_result_v1_connections_onboarding_sessions__session_id__result_get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Session Result V1 Connections Onboarding Sessions  Session Id  Result Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiKeyCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope",
+            "default": "product"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projectid"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ApiKeyCreate"
+      },
+      "CapabilityContext": {
+        "properties": {
+          "productId": {
+            "type": "string",
+            "title": "Productid"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projectid"
+          },
+          "dataClassification": {
+            "$ref": "#/components/schemas/DataClassification",
+            "default": "Internal"
+          },
+          "retentionRequirement": {
+            "$ref": "#/components/schemas/RetentionPolicy",
+            "default": "Transient"
+          }
+        },
+        "type": "object",
+        "required": [
+          "productId",
+          "environment"
+        ],
+        "title": "CapabilityContext"
+      },
+      "CapabilityExecutionMode": {
+        "type": "string",
+        "enum": [
+          "invoke_sync",
+          "invoke_stream",
+          "job_async"
+        ],
+        "title": "CapabilityExecutionMode"
+      },
+      "CapabilityExecutionOptions": {
+        "properties": {
+          "executionPreference": {
+            "type": "string",
+            "title": "Executionpreference",
+            "default": "automatic"
+          },
+          "executionConstraints": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionConstraints"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "CapabilityExecutionOptions"
+      },
+      "CapabilityInvokeRequest": {
+        "properties": {
+          "context": {
+            "$ref": "#/components/schemas/CapabilityContext"
+          },
+          "input": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input"
+          },
+          "execution": {
+            "$ref": "#/components/schemas/CapabilityExecutionOptions"
+          },
+          "idempotencyKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotencykey"
+          },
+          "correlationId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlationid"
+          },
+          "taskKind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taskkind"
+          },
+          "executionMode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionMode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "context"
+        ],
+        "title": "CapabilityInvokeRequest"
+      },
+      "CapabilityJobRequest": {
+        "properties": {
+          "context": {
+            "$ref": "#/components/schemas/CapabilityContext"
+          },
+          "input": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input"
+          },
+          "execution": {
+            "$ref": "#/components/schemas/CapabilityExecutionOptions"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "title": "Idempotencykey"
+          },
+          "correlationId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlationid"
+          },
+          "taskKind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taskkind"
+          }
+        },
+        "type": "object",
+        "required": [
+          "context",
+          "idempotencyKey"
+        ],
+        "title": "CapabilityJobRequest"
+      },
+      "CapabilityModality": {
+        "type": "string",
+        "enum": [
+          "text",
+          "image",
+          "audio",
+          "embedding",
+          "moderation",
+          "infrastructure"
+        ],
+        "title": "CapabilityModality"
+      },
+      "ConnectionBindingCreate": {
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          }
+        },
+        "type": "object",
+        "required": [
+          "projectId",
+          "environment"
+        ],
+        "title": "ConnectionBindingCreate"
+      },
+      "ConnectionCreate": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": "default"
+          },
+          "credentials": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credentials"
+          },
+          "secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret"
+          },
+          "bootstrapMode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bootstrapmode",
+            "default": "manual_api_key"
+          },
+          "endpointUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpointurl"
+          },
+          "autoBind": {
+            "type": "boolean",
+            "title": "Autobind",
+            "default": true
+          },
+          "replaceExisting": {
+            "type": "boolean",
+            "title": "Replaceexisting",
+            "default": false
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projectid"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment",
+            "default": "development"
+          },
+          "userGuardrails": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Userguardrails"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider"
+        ],
+        "title": "ConnectionCreate"
+      },
+      "DataClassification": {
+        "type": "string",
+        "enum": [
+          "Public",
+          "Internal",
+          "Confidential",
+          "PrivateUserContent",
+          "Manuscript"
+        ],
+        "title": "DataClassification"
+      },
+      "ExecutionConstraints": {
+        "properties": {
+          "maxCostUsd": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxcostusd"
+          },
+          "providerPin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providerpin"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ExecutionConstraints"
+      },
+      "ExecutionMode": {
+        "type": "string",
+        "enum": [
+          "RequestResponse",
+          "Stream",
+          "DurableJob",
+          "ProductionWorkflow"
+        ],
+        "title": "ExecutionMode"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HydraceptInvocationResult": {
+        "properties": {
+          "executionId": {
+            "type": "string",
+            "title": "Executionid"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "resolvedProvider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedprovider"
+          },
+          "resolvedModel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedmodel"
+          },
+          "typedOutput": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Typedoutput"
+          },
+          "outputPayloadRef": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputpayloadref"
+          },
+          "generatedArtifacts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Generatedartifacts"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HydraceptUsageSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "actualCost": {
+            "type": "number",
+            "title": "Actualcost",
+            "default": 0.0
+          },
+          "terminationReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terminationreason"
+          },
+          "receiptId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receiptid"
+          },
+          "errorCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errorcode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "executionId",
+          "status"
+        ],
+        "title": "HydraceptInvocationResult"
+      },
+      "HydraceptJob": {
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "title": "Jobid"
+          },
+          "capabilityKey": {
+            "type": "string",
+            "title": "Capabilitykey"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HydraceptJobStatus"
+          },
+          "createdAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdat"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completedat"
+          },
+          "estimatedCost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedcost"
+          },
+          "actualCost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actualcost"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "USD"
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/HydraceptJobArtifactRef"
+            },
+            "type": "array",
+            "title": "Artifacts"
+          },
+          "variantSet": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HydraceptVariantSet"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "receiptId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receiptid"
+          },
+          "typedOutput": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Typedoutput"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "diagnostics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HydraceptJobDiagnostics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "jobId",
+          "capabilityKey",
+          "status"
+        ],
+        "title": "HydraceptJob"
+      },
+      "HydraceptJobArtifactRef": {
+        "properties": {
+          "artifactId": {
+            "type": "string",
+            "title": "Artifactid"
+          },
+          "mediaType": {
+            "type": "string",
+            "title": "Mediatype"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "downloadPath": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Downloadpath"
+          },
+          "variantIndex": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variantindex"
+          },
+          "slotStatus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slotstatus"
+          },
+          "selected": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "artifactId",
+          "mediaType",
+          "kind"
+        ],
+        "title": "HydraceptJobArtifactRef"
+      },
+      "HydraceptJobDiagnostics": {
+        "properties": {
+          "backendKind": {
+            "type": "string",
+            "title": "Backendkind"
+          },
+          "backendState": {
+            "type": "string",
+            "title": "Backendstate"
+          },
+          "backendId": {
+            "type": "string",
+            "title": "Backendid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "backendKind",
+          "backendState",
+          "backendId"
+        ],
+        "title": "HydraceptJobDiagnostics"
+      },
+      "HydraceptJobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "awaiting_approval",
+          "succeeded",
+          "failed",
+          "canceling",
+          "canceled",
+          "needs_attention"
+        ],
+        "title": "HydraceptJobStatus"
+      },
+      "HydraceptReceipt": {
+        "properties": {
+          "receiptId": {
+            "type": "string",
+            "title": "Receiptid"
+          },
+          "jobId": {
+            "type": "string",
+            "title": "Jobid"
+          },
+          "capabilityKey": {
+            "type": "string",
+            "title": "Capabilitykey"
+          },
+          "principalId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Principalid"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projectid"
+          },
+          "environment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Environment"
+          },
+          "admission": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HydraceptReceiptAdmission"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "route": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HydraceptReceiptRoute"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "estimatedCost": {
+            "type": "number",
+            "title": "Estimatedcost",
+            "default": 0.0
+          },
+          "actualCost": {
+            "type": "number",
+            "title": "Actualcost",
+            "default": 0.0
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "USD"
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/HydraceptJobArtifactRef"
+            },
+            "type": "array",
+            "title": "Artifacts"
+          },
+          "timestamps": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HydraceptReceiptTimestamps"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HydraceptJobStatus"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Status"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HydraceptReceiptProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "media": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media"
+          }
+        },
+        "type": "object",
+        "required": [
+          "receiptId",
+          "jobId",
+          "capabilityKey",
+          "status"
+        ],
+        "title": "HydraceptReceipt"
+      },
+      "HydraceptReceiptAdmission": {
+        "properties": {
+          "admitted": {
+            "type": "boolean",
+            "title": "Admitted"
+          },
+          "rejectionCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejectioncode"
+          },
+          "rejectionMessage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejectionmessage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "admitted"
+        ],
+        "title": "HydraceptReceiptAdmission"
+      },
+      "HydraceptReceiptProvenance": {
+        "properties": {
+          "bundleVersion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bundleversion"
+          },
+          "bundleHash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bundlehash"
+          },
+          "policyHash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policyhash"
+          },
+          "receiptHash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receipthash"
+          }
+        },
+        "type": "object",
+        "title": "HydraceptReceiptProvenance"
+      },
+      "HydraceptReceiptRoute": {
+        "properties": {
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "routeBundleVersion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routebundleversion"
+          },
+          "routeBundleHash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routebundlehash"
+          }
+        },
+        "type": "object",
+        "title": "HydraceptReceiptRoute"
+      },
+      "HydraceptReceiptTimestamps": {
+        "properties": {
+          "createdAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdat"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startedat"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completedat"
+          }
+        },
+        "type": "object",
+        "title": "HydraceptReceiptTimestamps"
+      },
+      "HydraceptUsageSummary": {
+        "properties": {
+          "inputTokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inputtokens"
+          },
+          "outputTokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputtokens"
+          },
+          "estimatedCost": {
+            "type": "number",
+            "title": "Estimatedcost",
+            "default": 0.0
+          },
+          "actualCost": {
+            "type": "number",
+            "title": "Actualcost",
+            "default": 0.0
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "USD"
+          }
+        },
+        "type": "object",
+        "title": "HydraceptUsageSummary"
+      },
+      "HydraceptVariantSet": {
+        "properties": {
+          "schemaVersion": {
+            "type": "string",
+            "title": "Schemaversion",
+            "default": "hydracept.variant-set.v1"
+          },
+          "requestedCount": {
+            "type": "integer",
+            "title": "Requestedcount"
+          },
+          "completedCount": {
+            "type": "integer",
+            "title": "Completedcount"
+          },
+          "failedCount": {
+            "type": "integer",
+            "title": "Failedcount"
+          },
+          "selectedArtifactId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selectedartifactid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "requestedCount",
+          "completedCount",
+          "failedCount"
+        ],
+        "title": "HydraceptVariantSet"
+      },
+      "JobApproveBody": {
+        "properties": {
+          "authorizedMaxAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authorizedmaxamount"
+          }
+        },
+        "type": "object",
+        "title": "JobApproveBody"
+      },
+      "OnboardingCompleteBody": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret"
+          },
+          "bootstrapMode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bootstrapmode",
+            "default": "manual_api_key"
+          },
+          "endpointUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpointurl"
+          },
+          "federationMetadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Federationmetadata"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": "default"
+          },
+          "autoBind": {
+            "type": "boolean",
+            "title": "Autobind",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider"
+        ],
+        "title": "OnboardingCompleteBody"
+      },
+      "OnboardingPlanBody": {
+        "properties": {
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Capabilities"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projectid"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment",
+            "default": "development"
+          },
+          "accountClass": {
+            "type": "string",
+            "title": "Accountclass",
+            "default": "individual"
+          }
+        },
+        "type": "object",
+        "required": [
+          "capabilities"
+        ],
+        "title": "OnboardingPlanBody"
+      },
+      "OnboardingSessionCreate": {
+        "properties": {
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Capabilities"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projectid"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment",
+            "default": "development"
+          },
+          "accountClass": {
+            "type": "string",
+            "title": "Accountclass",
+            "default": "individual"
+          }
+        },
+        "type": "object",
+        "required": [
+          "capabilities"
+        ],
+        "title": "OnboardingSessionCreate"
+      },
+      "ProviderCredentialBindingCreate": {
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "title": "Projectid"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          }
+        },
+        "type": "object",
+        "required": [
+          "projectId",
+          "environment",
+          "provider"
+        ],
+        "title": "ProviderCredentialBindingCreate"
+      },
+      "ProviderCredentialCreate": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "secret": {
+            "type": "string",
+            "title": "Secret"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": "default"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "secret"
+        ],
+        "title": "ProviderCredentialCreate"
+      },
+      "PublicCapabilityDescriptor": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "modality": {
+            "$ref": "#/components/schemas/CapabilityModality"
+          },
+          "inputSchema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Inputschema"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Outputschema"
+          },
+          "executionModes": {
+            "items": {
+              "$ref": "#/components/schemas/CapabilityExecutionMode"
+            },
+            "type": "array",
+            "title": "Executionmodes"
+          },
+          "idempotencyRequired": {
+            "type": "boolean",
+            "title": "Idempotencyrequired",
+            "default": false
+          },
+          "estimateAvailable": {
+            "type": "boolean",
+            "title": "Estimateavailable",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "title",
+          "modality"
+        ],
+        "title": "PublicCapabilityDescriptor",
+        "description": "Anonymous discovery shape \u2014 no provider/routing/operator internals."
+      },
+      "PublicCapabilityListResponse": {
+        "properties": {
+          "bundleVersion": {
+            "type": "string",
+            "title": "Bundleversion"
+          },
+          "bundleHash": {
+            "type": "string",
+            "title": "Bundlehash"
+          },
+          "capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/PublicCapabilityDescriptor"
+            },
+            "type": "array",
+            "title": "Capabilities"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bundleVersion",
+          "bundleHash"
+        ],
+        "title": "PublicCapabilityListResponse",
+        "description": "Public GET /v1/capabilities envelope."
+      },
+      "RetentionPolicy": {
+        "type": "string",
+        "enum": [
+          "HashesOnly",
+          "Transient",
+          "EncryptedShortTerm",
+          "ProductManaged",
+          "ProductionAsset"
+        ],
+        "title": "RetentionPolicy"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VariantSelectBody": {
+        "properties": {
+          "artifactId": {
+            "type": "string",
+            "title": "Artifactid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "artifactId"
+        ],
+        "title": "VariantSelectBody"
+      }
+    },
+    "securitySchemes": {
+      "HydraceptApiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Hydracept API key",
+        "description": "Machine credential issued by Hydracept. Send as Authorization: Bearer <HYDRACEPT_API_KEY>."
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.hydracept.com",
+      "description": "Hydracept production API"
+    }
+  ],
+  "security": [
+    {
+      "HydraceptApiKey": []
+    }
+  ]
+}

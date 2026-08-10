@@ -1,0 +1,708 @@
+{
+  "capabilities": [
+    {
+      "description": "Low-latency general-purpose text generation.",
+      "estimateAvailable": true,
+      "executionModes": [
+        "invoke_sync",
+        "invoke_stream",
+        "job_async"
+      ],
+      "idempotencyRequired": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "maxOutputTokens": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "messages": {
+            "items": {
+              "properties": {
+                "content": {
+                  "type": "string"
+                },
+                "role": {
+                  "enum": [
+                    "system",
+                    "user",
+                    "assistant"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ],
+              "type": "object"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "type": "object"
+      },
+      "key": "text.general.fast.v1",
+      "modality": "text",
+      "outputSchema": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "title": "General fast text"
+    },
+    {
+      "description": "Deeper reasoning for complex tasks.",
+      "estimateAvailable": true,
+      "executionModes": [
+        "invoke_sync",
+        "invoke_stream",
+        "job_async"
+      ],
+      "idempotencyRequired": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "maxOutputTokens": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "messages": {
+            "items": {
+              "properties": {
+                "content": {
+                  "type": "string"
+                },
+                "role": {
+                  "enum": [
+                    "system",
+                    "user",
+                    "assistant"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ],
+              "type": "object"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "type": "object"
+      },
+      "key": "text.reasoning.high.v1",
+      "modality": "text",
+      "outputSchema": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "title": "High reasoning text"
+    },
+    {
+      "description": "Extract structured data from documents.",
+      "estimateAvailable": true,
+      "executionModes": [
+        "invoke_sync",
+        "job_async"
+      ],
+      "idempotencyRequired": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "type": "string"
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "schema": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "document",
+          "schema"
+        ],
+        "type": "object"
+      },
+      "key": "text.structured.extraction.v1",
+      "modality": "text",
+      "outputSchema": {
+        "type": "object"
+      },
+      "title": "Structured extraction"
+    },
+    {
+      "description": "Long-form creative writing.",
+      "estimateAvailable": true,
+      "executionModes": [
+        "invoke_sync",
+        "invoke_stream",
+        "job_async"
+      ],
+      "idempotencyRequired": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "maxOutputTokens": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "messages": {
+            "items": {
+              "properties": {
+                "content": {
+                  "type": "string"
+                },
+                "role": {
+                  "enum": [
+                    "system",
+                    "user",
+                    "assistant"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ],
+              "type": "object"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "type": "object"
+      },
+      "key": "text.creative.longform.v1",
+      "modality": "text",
+      "outputSchema": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "title": "Creative longform text"
+    },
+    {
+      "description": "Generate images from text prompts.",
+      "estimateAvailable": true,
+      "executionModes": [
+        "job_async"
+      ],
+      "idempotencyRequired": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "default": 1024,
+            "maximum": 2048,
+            "minimum": 256,
+            "type": "integer"
+          },
+          "prompt": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "quality": {
+            "default": "medium",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "auto",
+              "standard"
+            ],
+            "type": "string"
+          },
+          "referenceImages": {
+            "items": {
+              "properties": {
+                "dataBase64": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "mimeType": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "maxItems": 4,
+            "type": "array"
+          },
+          "requestTransparentOutput": {
+            "default": false,
+            "type": "boolean"
+          },
+          "variantCount": {
+            "default": 1,
+            "maximum": 4,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "width": {
+            "default": 1024,
+            "maximum": 2048,
+            "minimum": 256,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "type": "object"
+      },
+      "key": "image.generate.v1",
+      "modality": "image",
+      "outputSchema": {
+        "properties": {
+          "artifacts": {
+            "items": {
+              "properties": {
+                "artifactId": {
+                  "type": "string"
+                },
+                "downloadPath": {
+                  "type": "string"
+                },
+                "mediaType": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "title": "Image generation"
+    },
+    {
+      "description": "Generate sound effects via ElevenLabs.",
+      "estimateAvailable": true,
+      "executionModes": [
+        "job_async"
+      ],
+      "idempotencyRequired": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "diversityMode": {
+            "enum": [
+              "none",
+              "auto"
+            ],
+            "type": "string"
+          },
+          "durationMs": {
+            "default": 2000,
+            "maximum": 22000,
+            "minimum": 100,
+            "type": "integer"
+          },
+          "modelId": {
+            "type": "string"
+          },
+          "prompt": {
+            "maxLength": 450,
+            "minLength": 1,
+            "type": "string"
+          },
+          "promptInfluence": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "providerOptions": {
+            "additionalProperties": false,
+            "properties": {
+              "elevenlabs": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "variantCount": {
+            "default": 1,
+            "maximum": 4,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "type": "object"
+      },
+      "key": "audio.sfx.generate.v1",
+      "modality": "audio",
+      "outputSchema": {
+        "properties": {
+          "artifacts": {
+            "items": {
+              "properties": {
+                "artifactId": {
+                  "type": "string"
+                },
+                "durationMs": {
+                  "type": "integer"
+                },
+                "mediaType": {
+                  "type": "string"
+                },
+                "variantIndex": {
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "title": "Sound effect generation"
+    },
+    {
+      "description": "Text-to-speech via ElevenLabs.",
+      "estimateAvailable": true,
+      "executionModes": [
+        "job_async"
+      ],
+      "idempotencyRequired": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "diversityMode": {
+            "enum": [
+              "none",
+              "auto"
+            ],
+            "type": "string"
+          },
+          "modelId": {
+            "default": "eleven_multilingual_v2",
+            "type": "string"
+          },
+          "outputFormatPreference": {
+            "type": "string"
+          },
+          "providerOptions": {
+            "additionalProperties": false,
+            "properties": {
+              "elevenlabs": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "seed": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "text": {
+            "maxLength": 5000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "variantCount": {
+            "default": 1,
+            "maximum": 4,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "voiceId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "voiceSettings": {
+            "additionalProperties": false,
+            "properties": {
+              "similarityBoost": {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              "speed": {
+                "maximum": 4,
+                "minimum": 0.25,
+                "type": "number"
+              },
+              "stability": {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              "style": {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              "useSpeakerBoost": {
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "text",
+          "voiceId"
+        ],
+        "type": "object"
+      },
+      "key": "audio.voice.generate.v1",
+      "modality": "audio",
+      "outputSchema": {
+        "properties": {
+          "artifacts": {
+            "items": {
+              "properties": {
+                "artifactId": {
+                  "type": "string"
+                },
+                "durationMs": {
+                  "type": "integer"
+                },
+                "mediaType": {
+                  "type": "string"
+                },
+                "variantIndex": {
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "title": "Voice / TTS generation"
+    },
+    {
+      "description": "Generate music via ElevenLabs.",
+      "estimateAvailable": true,
+      "executionModes": [
+        "job_async"
+      ],
+      "idempotencyRequired": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "durationMs": {
+            "default": 30000,
+            "maximum": 300000,
+            "minimum": 3000,
+            "type": "integer"
+          },
+          "forceInstrumental": {
+            "default": true,
+            "type": "boolean"
+          },
+          "modelId": {
+            "type": "string"
+          },
+          "prompt": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "providerOptions": {
+            "additionalProperties": false,
+            "properties": {
+              "elevenlabs": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "variantCount": {
+            "default": 1,
+            "maximum": 4,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "type": "object"
+      },
+      "key": "audio.music.generate.v1",
+      "modality": "audio",
+      "outputSchema": {
+        "properties": {
+          "artifacts": {
+            "items": {
+              "properties": {
+                "artifactId": {
+                  "type": "string"
+                },
+                "durationMs": {
+                  "type": "integer"
+                },
+                "mediaType": {
+                  "type": "string"
+                },
+                "variantIndex": {
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "title": "Music generation"
+    }
+  ],
+  "configuration": {
+    "configDir": ".hydracept",
+    "env": {
+      "apiKey": "HYDRACEPT_API_KEY",
+      "apiUrl": "HYDRACEPT_API_URL",
+      "environment": "HYDRACEPT_ENVIRONMENT",
+      "project": "HYDRACEPT_PROJECT"
+    }
+  },
+  "contentHash": "f9e63fa552d098f1464bb4f54dfcc0ae15d742da156f6d8d97dee13d2c0d1a5a",
+  "externalPaths": {},
+  "integrationPolicy": {
+    "async_jobs": [
+      "Submit via POST /v1/capabilities/{key}/jobs with idempotencyKey.",
+      "Poll GET /v1/jobs/{jobId} until status is succeeded, failed, or canceled.",
+      "Fetch receipt via GET /v1/jobs/{jobId}/receipt."
+    ],
+    "byok": [
+      {
+        "Store org credentials": "POST /v1/organizations/{orgId}/provider-credentials"
+      },
+      {
+        "Bind to project/env": "POST /v1/organizations/{orgId}/provider-credentials/{credentialId}/bindings"
+      },
+      {
+        "Project-level legacy vault": "POST /v1/projects/{projectId}/provider-credentials"
+      }
+    ],
+    "consumer_rule": [
+      "External products are customers of the public Hydracept surface, not privileged bypasses.",
+      "If an external customer cannot do it through the supported Hydracept surface, no product should bypass the public surface that way either.",
+      "Temporary exceptions require an entry in architecture/hydracept-consumer-exceptions.yaml with expiry.",
+      "Run hydracept consumer-check --strict in product CI before merge."
+    ],
+    "discovery": [
+      {
+        "List capabilities": "GET /v1/capabilities"
+      },
+      {
+        "Describe capability": "GET /v1/capabilities/{key}"
+      },
+      {
+        "Agent context bundle": "GET /v1/agent-context"
+      }
+    ],
+    "security": [
+      "Never embed Hydracept API tokens or provider keys in shipped game clients.",
+      "Never commit credentials; use environment variables or CI secret stores.",
+      "Prefer a server-side proxy for player-facing applications."
+    ],
+    "verification": [
+      "Run hydracept doctor after integration changes.",
+      "Use GET /v1/diagnostics/session to verify auth and bundle version."
+    ],
+    "version": "1"
+  },
+  "launchScope": {
+    "capabilities": [
+      "text.general.fast.v1",
+      "text.reasoning.high.v1",
+      "text.structured.extraction.v1",
+      "text.creative.longform.v1",
+      "image.generate.v1",
+      "audio.sfx.generate.v1",
+      "audio.voice.generate.v1",
+      "audio.music.generate.v1"
+    ],
+    "operator": "Zencode Consulting Inc."
+  },
+  "product": {
+    "company": "Zencode Consulting Inc.",
+    "doNotUseWhen": "Skip Hydracept if you only need a one-off direct call to a single provider and do not need portability, budgets, or execution records.",
+    "name": "Hydracept",
+    "summary": "Hydracept runs text, image, and audio generation through one public API. Bring your own provider keys. Jobs are durable, budgeted, and receipted.",
+    "tagline": "One API for AI workloads in games.",
+    "urls": {
+      "agentContextStatic": "https://hydracept.com/.well-known/agent-context.json",
+      "api": "https://api.hydracept.com",
+      "app": "https://app.hydracept.com",
+      "docs": "https://docs.hydracept.com",
+      "home": "https://hydracept.com",
+      "manifest": "https://hydracept.com/.well-known/hydracept.json",
+      "openapi": "https://hydracept.com/openapi/hydracept-v1.json"
+    }
+  },
+  "publicSmoke": {
+    "capability": "image.generate.v1",
+    "mode": "job"
+  },
+  "sdk": {
+    "cli": "hydracept",
+    "csharp": "Hydracept.Client",
+    "python": "hydracept",
+    "typescript": "@hydracept/sdk"
+  },
+  "security": [
+    "Never embed Hydracept API keys or provider keys in shipped game clients.",
+    "Use server-side proxy for player-facing applications."
+  ],
+  "verification": {
+    "doctor": "hydracept doctor",
+    "sessionDiagnostics": "GET /v1/diagnostics/session"
+  },
+  "version": "hydracept-public-1"
+}
