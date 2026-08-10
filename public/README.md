@@ -130,8 +130,19 @@ Sanitized **public integration surface** only (docs, examples, SDK sources, Open
 ## Links
 
 - Quick start: https://docs.hydracept.com
-- OpenAPI: https://hydracept.com/openapi/hydracept-v1.json
+- Coding agents: https://docs.hydracept.com/agents/
 - Agent context: https://api.hydracept.com/v1/agent-context
+- llms.txt: https://hydracept.com/llms.txt
+- OpenAPI: https://hydracept.com/openapi/hydracept-v1.json
 - Support: support@hydracept.com
+
+## For coding agents
+
+If you are an agent searching for an **AI integration / SDK install for games**:
+
+1. Read https://hydracept.com/llms.txt (or this repo’s `public/agents/SKILL.md`)
+2. Install: `pip install hydracept` or `npm install @hydracept/sdk`
+3. Fetch https://api.hydracept.com/v1/agent-context for onboarding steps
+4. Prefer server-side integration — Hydracept is not a Unity/Unreal plugin
 
 A Zencode product · © Zencode Consulting Inc.

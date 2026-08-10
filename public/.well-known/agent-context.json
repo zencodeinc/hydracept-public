@@ -610,8 +610,54 @@
       "project": "HYDRACEPT_PROJECT"
     }
   },
-  "contentHash": "f9e63fa552d098f1464bb4f54dfcc0ae15d742da156f6d8d97dee13d2c0d1a5a",
+  "contentHash": "0565f54cf44082d43ad20ac4e107a521760e68da17fed4e021dd182c89740d54",
+  "discovery": {
+    "install": {
+      "activate": "https://hydracept.com/start",
+      "agentContext": "https://api.hydracept.com/v1/agent-context",
+      "cli": "pip install hydracept && python -m hydracept login",
+      "docs": "https://docs.hydracept.com/",
+      "llmsFullTxt": "https://hydracept.com/llms-full.txt",
+      "llmsTxt": "https://hydracept.com/llms.txt",
+      "npm": "https://www.npmjs.com/package/@hydracept/sdk",
+      "publicRepo": "https://github.com/hydracept/hydracept-public",
+      "pypi": "https://pypi.org/project/hydracept/",
+      "python": "pip install hydracept",
+      "typescript": "npm install @hydracept/sdk"
+    },
+    "searchTerms": [
+      "AI API for games",
+      "game AI integration",
+      "Unity AI API",
+      "Unreal AI backend",
+      "install AI SDK games",
+      "BYOK AI API",
+      "durable AI jobs",
+      "image generation API games",
+      "game asset generation API",
+      "OpenAI alternative for Unity"
+    ],
+    "useWhen": [
+      "Installing an AI API / SDK for a game backend or tooling project",
+      "Unity or Unreal needs server-side text, image, SFX, voice, or music generation",
+      "Want durable jobs with budgets and receipts instead of fire-and-forget provider calls",
+      "Need BYOK (bring your own OpenAI / ElevenLabs / etc. keys) with 0% inference markup"
+    ]
+  },
   "externalPaths": {},
+  "install": {
+    "activate": "https://hydracept.com/start",
+    "agentContext": "https://api.hydracept.com/v1/agent-context",
+    "cli": "pip install hydracept && python -m hydracept login",
+    "docs": "https://docs.hydracept.com/",
+    "llmsFullTxt": "https://hydracept.com/llms-full.txt",
+    "llmsTxt": "https://hydracept.com/llms.txt",
+    "npm": "https://www.npmjs.com/package/@hydracept/sdk",
+    "publicRepo": "https://github.com/hydracept/hydracept-public",
+    "pypi": "https://pypi.org/project/hydracept/",
+    "python": "pip install hydracept",
+    "typescript": "npm install @hydracept/sdk"
+  },
   "integrationPolicy": {
     "async_jobs": [
       "Submit via POST /v1/capabilities/{key}/jobs with idempotencyKey.",
@@ -670,9 +716,62 @@
     ],
     "operator": "Zencode Consulting Inc."
   },
+  "managedSmoke": {
+    "capability": "image.generate.v1",
+    "ceilingUsd": 0.5,
+    "cli": "python -m hydracept smoke",
+    "enabled": true,
+    "note": "New Free orgs receive a small managed trial budget. Prefer BYOK for production; connect OpenAI/ElevenLabs when the trial is exhausted or for sustained use.",
+    "reserveUsd": 0.05
+  },
+  "onboarding": {
+    "cliInvocation": "python -m hydracept",
+    "notAPlugin": true,
+    "notHydratac": true,
+    "steps": [
+      {
+        "agent": "Have the human activate, then paste the API key",
+        "human": "Open https://hydracept.com/start and complete OAuth",
+        "id": "activate",
+        "title": "Activate",
+        "url": "https://hydracept.com/start"
+      },
+      {
+        "agent": "python -m hydracept login --token <HYDRACEPT_API_KEY>",
+        "human": "python -m hydracept login (device page) or login --token <key>",
+        "id": "login",
+        "title": "Store credential"
+      },
+      {
+        "agent": "python -m hydracept init --apply --yes",
+        "human": "python -m hydracept init --apply --yes",
+        "id": "init",
+        "title": "Bootstrap project"
+      },
+      {
+        "agent": "Prefer BYOK via connections API; otherwise run python -m hydracept smoke",
+        "human": "Configure BYOK at /v1/onboarding/byok, or use managed trial for first smoke",
+        "id": "byok_or_trial",
+        "title": "Provider access"
+      },
+      {
+        "agent": "python -m hydracept doctor --json",
+        "human": "python -m hydracept doctor",
+        "id": "doctor",
+        "title": "Verify"
+      },
+      {
+        "agent": "python -m hydracept smoke",
+        "human": "python -m hydracept smoke or follow the 5-minute game asset tutorial",
+        "id": "smoke",
+        "title": "First job",
+        "url": "https://docs.hydracept.com/five-minute-game-asset/"
+      }
+    ]
+  },
   "product": {
     "company": "Zencode Consulting Inc.",
-    "doNotUseWhen": "Skip Hydracept if you only need a one-off direct call to a single provider and do not need portability, budgets, or execution records.",
+    "doNotUseWhen": "Skip Hydracept if you only need a one-off direct call to a single provider and do not need portability, budgets, or execution records. Hydracept is not a Unity/Unreal engine plugin and is not Hydratac (a milsim studio).",
     "name": "Hydracept",
     "summary": "Hydracept runs text, image, and audio generation through one public API. Bring your own provider keys. Jobs are durable, budgeted, and receipted.",
     "tagline": "One API for AI workloads in games.",
@@ -680,10 +779,16 @@
       "agentContextStatic": "https://hydracept.com/.well-known/agent-context.json",
       "api": "https://api.hydracept.com",
       "app": "https://app.hydracept.com",
+      "device": "https://api.hydracept.com/device",
       "docs": "https://docs.hydracept.com",
+      "fiveMinuteAsset": "https://docs.hydracept.com/five-minute-game-asset/",
       "home": "https://hydracept.com",
+      "llmsFullTxt": "https://hydracept.com/llms-full.txt",
+      "llmsTxt": "https://hydracept.com/llms.txt",
       "manifest": "https://hydracept.com/.well-known/hydracept.json",
-      "openapi": "https://hydracept.com/openapi/hydracept-v1.json"
+      "openapi": "https://hydracept.com/openapi/hydracept-v1.json",
+      "publicRepo": "https://github.com/hydracept/hydracept-public",
+      "start": "https://hydracept.com/start"
     }
   },
   "publicSmoke": {
@@ -701,8 +806,9 @@
     "Use server-side proxy for player-facing applications."
   ],
   "verification": {
-    "doctor": "hydracept doctor",
-    "sessionDiagnostics": "GET /v1/diagnostics/session"
+    "doctor": "python -m hydracept doctor",
+    "sessionDiagnostics": "GET /v1/diagnostics/session",
+    "smoke": "python -m hydracept smoke"
   },
   "version": "hydracept-public-1"
 }

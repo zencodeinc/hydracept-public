@@ -8,12 +8,15 @@ Free for individual developers. BYOK. No inference markup.
 pip install hydracept
 ```
 
-## Activate (CLI)
+Prefer the module entry point (works when `hydracept` is not on PATH, common on Windows):
 
 ```bash
-python -m hydracept login
+python -m hydracept --help
+python -m hydracept login --token <HYDRACEPT_API_KEY>   # agents / headless
+python -m hydracept login                               # browser device flow
 python -m hydracept init --apply --yes
 python -m hydracept doctor
+python -m hydracept smoke
 ```
 
 ## Copy-paste job
@@ -38,6 +41,6 @@ job = client.submit_capability_job(
 print(job["jobId"])
 ```
 
-Activate at https://hydracept.com/start · Docs: https://docs.hydracept.com
+Activate at https://hydracept.com/start · Docs: https://docs.hydracept.com · 5-minute path: https://docs.hydracept.com/five-minute-game-asset/
 
 A Zencode product · © Zencode Consulting Inc.

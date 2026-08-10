@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hydracept"
-version = "0.1.4"
-description = "One API for AI workloads in games — Python client and CLI for Hydracept (BYOK, durable jobs, receipts)."
+version = "0.1.5"
+description = "One API for AI workloads in games â€” Python client and CLI for Hydracept (BYOK, durable jobs, receipts)."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -23,6 +23,9 @@ keywords = [
   "byok",
   "api",
   "cli",
+  "game-ai",
+  "unity-ai",
+  "ai-sdk",
 ]
 classifiers = [
   "Development Status :: 4 - Beta",

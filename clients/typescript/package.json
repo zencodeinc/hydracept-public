@@ -1,7 +1,7 @@
 {
   "name": "@hydracept/sdk",
-  "version": "0.1.2",
-  "description": "One API for AI workloads in games — TypeScript client for Hydracept (BYOK, durable jobs, receipts).",
+  "version": "0.1.3",
+  "description": "One API for AI workloads in games â€” TypeScript client for Hydracept (BYOK, durable jobs, receipts).",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -36,7 +36,10 @@
     "audio",
     "byok",
     "api",
-    "sdk"
+    "sdk",
+    "game-ai",
+    "unity-ai",
+    "ai-integration"
   ],
   "license": "MIT",
   "homepage": "https://hydracept.com",
