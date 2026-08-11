@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+  <ui:VisualElement class="hydracept-root">
+    <ui:Label text="Hydracept" class="hydracept-title" />
+    <ui:Toolbar class="hydracept-tabs">
+      <ui:ToolbarToggle name="tab-generate" text="Generate" />
+      <ui:ToolbarToggle name="tab-sheet" text="Sheet &amp; Slice" />
+      <ui:ToolbarToggle name="tab-jobs" text="Jobs" />
+      <ui:ToolbarToggle name="tab-status" text="Status" />
+    </ui:Toolbar>
+    <ui:ScrollView name="panel-container" class="hydracept-panel-container" />
+  </ui:VisualElement>
+</ui:UXML>

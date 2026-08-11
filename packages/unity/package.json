@@ -1,0 +1,21 @@
+{
+  "name": "com.hydracept.unity",
+  "displayName": "Hydracept",
+  "version": "0.1.0",
+  "unity": "6000.0",
+  "description": "Editor-only Hydracept integration for image generation, Sheet & Slice, and artifact import.",
+  "documentationUrl": "https://docs.hydracept.com/unity-integration",
+  "author": {
+    "name": "Hydracept",
+    "url": "https://hydracept.com"
+  },
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  },
+  "keywords": [
+    "hydracept",
+    "ai",
+    "sprites",
+    "image-generation"
+  ]
+}

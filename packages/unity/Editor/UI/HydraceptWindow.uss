@@ -1,0 +1,40 @@
+.hydracept-root {
+    flex-grow: 1;
+    padding: 8px;
+}
+
+.hydracept-title {
+    unity-font-style: bold;
+    font-size: 16px;
+    margin-bottom: 6px;
+}
+
+.hydracept-tabs {
+    margin-bottom: 8px;
+}
+
+.hydracept-panel-container {
+    flex-grow: 1;
+}
+
+.hydracept-section {
+    margin-bottom: 8px;
+}
+
+.hydracept-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.hydracept-muted {
+    color: #888;
+}
+
+.hydracept-error {
+    color: #c44;
+}
+
+.hydracept-success {
+    color: #2a7;
+}

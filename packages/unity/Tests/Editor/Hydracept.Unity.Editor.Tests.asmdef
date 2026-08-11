@@ -1,0 +1,13 @@
+{
+  "name": "Hydracept.Unity.Editor.Tests",
+  "rootNamespace": "Hydracept.Unity.Editor.Tests",
+  "references": [
+    "Hydracept.Unity.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}
