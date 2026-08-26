@@ -1,6 +1,6 @@
 # Durable Jobs & Receipts
 
-Use durable jobs when generation should survive beyond a single HTTP request. This is the main path for image, audio, and similar work.
+Use jobs for generation that may take longer than one HTTP request. Submit once, check progress when you need to, and download the result when it is ready.
 
 ## Submit
 
@@ -14,10 +14,10 @@ Include:
 
 - `context` — product, project, environment
 - `input` — capability-specific payload
-- `execution` — preferences such as `executionPreference`
-- `idempotencyKey` — stable key for safe retries
+- `execution` — `executionPreference`, `billingMode` (`byok` | `managed`). **Omit `quoteId`** unless the job input is byte-for-byte the sealed quote
+- `idempotencyKey` — optional; the API mints one if missing
 
-Example for `image.generate.v1`:
+Example for `image.generate.v1` (BYOK):
 
 ```bash
 curl -sS -X POST \
@@ -30,11 +30,34 @@ curl -sS -X POST \
       "environment": "development"
     },
     "input": { "prompt": "cute slime icon" },
-    "execution": { "executionPreference": "automatic" },
+    "execution": {
+      "executionPreference": "automatic",
+      "billingMode": "byok"
+    },
     "idempotencyKey": "demo-1"
   }' \
   https://api.hydracept.com/v1/capabilities/image.generate.v1/jobs
 ```
+
+Managed inference (wallet-funded) can omit `quoteId` — the API seals a retail quote at admission:
+
+```json
+"execution": {
+  "executionPreference": "automatic",
+  "billingMode": "managed"
+}
+```
+
+See [Billing](../billing/) for wallet top-up and [Capabilities](../capabilities/) for `billingModes` discovery.
+
+## List (principal project)
+
+```http
+GET /v1/jobs
+Authorization: Bearer <HYDRACEPT_API_KEY>
+```
+
+Lists jobs for the bearer token's project. CLI: `python -m hydracept jobs list`. Use `GET /v1/projects/{id}/jobs` for the administrative/cross-project primitive.
 
 ## Poll
 
@@ -43,7 +66,9 @@ GET /v1/jobs/{jobId}
 Authorization: Bearer <HYDRACEPT_API_KEY>
 ```
 
-Keep polling until status is `succeeded`, `failed`, or `canceled`.
+Jobs move through `queued` and `running` before reaching a terminal status: `succeeded`, `failed`, or `canceled`. A job can also be `awaiting_approval`, `canceling`, or `needs_attention`; handle those states according to your workflow.
+
+Job payloads include `nextAction` (`poll`, `download`, `present_approval`, or `stop`) and `pollAfterSeconds`. If `nextAction` is `poll`, wait that many seconds and `GET` again. Do not busy-loop.
 
 Jobs may include a `variantSet` when the capability accepts `variantCount` in input (image and audio generation). Each variant is a separate artifact with `variantIndex` on the job payload. `variantSet` reports `requestedCount`, `completedCount`, `failedCount`, and `selectedArtifactId`.
 
@@ -101,6 +126,8 @@ GET /v1/jobs/{jobId}/artifacts/{artifactId}
 Authorization: Bearer <HYDRACEPT_API_KEY>
 ```
 
+Public receipts emit SHA-256 as hex. Older jobs may still advertise `sha256:<hex>` — compare the hex digest only. `HydraceptWorkspace.jobs.run(..., download_dir=...)` (CLI 0.3.1+) strips the prefix. Audio SFX artifacts are Ogg files (`filename` ends in `.ogg`), not WAV.
+
 ## Receipt
 
 ```http
@@ -108,8 +135,19 @@ GET /v1/jobs/{jobId}/receipt
 Authorization: Bearer <HYDRACEPT_API_KEY>
 ```
 
-Receipts include provenance and execution evidence for audits, debugging, and pipeline bookkeeping.
+Receipts include the request, provider, model, cost, retries, and resulting artifacts. Use them to review a result, debug a failed run, or keep a record for your team. Related receipts can be grouped into a [run manifest](../provenance/); a stable pin can be emitted as an [AI lockfile](../provenance/).
+
+## Sheet & Slice (image.generate.v1)
+
+For cohesive asset packs (sprite cycles, icon families, pose sheets), submit a job with the `sheet` input. See [Image production](../image-production/) for the full contract and a 4×4 sword-swing example.
 
 ## Full contract
 
 [https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)
+
+## Related
+
+- [Execution provenance](../provenance/)
+- [Pinned Execution](../pinned-execution/)
+- [Capabilities](../capabilities/)
+- [Billing & plans](../billing/)

@@ -1,0 +1,107 @@
+server:
+  name: hydracept
+  instructions: >-
+    Hydracept public capability jobs. In a git checkout, use stdio MCP after
+    `python -m hydracept init` (workspace secrets). Hosted MCP with an API key
+    is for clients with no checkout. Credentials never enter model context.
+tools:
+  - name: hydracept_status
+    summary: Local workspace readiness (stdio) or session diagnostics (hosted).
+    readOnlyHint: true
+    destructiveHint: false
+  - name: hydracept_capabilities
+    summary: List capabilities or describe one when key is provided.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: resolve_capability
+    summary: Determine whether Hydracept already provides a suitable capability. Does not spend money.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: hydracept_quote_capability
+    summary: Firm retail quote in account currency. Does not reserve or charge funds.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: estimate_capability
+    summary: HTTP alias of hydracept_quote_capability. Same 0.3 retail quote.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: request_capability_quote
+    summary: Create a non-binding capability REQUEST. Humans pay commission quotes; never use as execution.quoteId.
+    readOnlyHint: false
+    destructiveHint: false
+  - name: hydracept_invoke
+    summary: Invoke a synchronous capability such as domain search, DNS list, or TLS retrieve.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: hydracept_submit_job
+    summary: Submit a capability job. Body follows the public OpenAPI contract.
+    readOnlyHint: false
+    destructiveHint: false
+  - name: hydracept_job_status
+    summary: GET /v1/jobs/{jobId} once. If nextAction is poll, wait pollAfterSeconds and call again.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: hydracept_get_receipt
+    summary: Fetch sealed receipt summary for a job.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: hydracept_download_artifact
+    summary: Download a job artifact (stdio writes locally; hosted returns signed metadata).
+    readOnlyHint: false
+    destructiveHint: false
+  - name: hydracept_smoke
+    summary: Explicit managed-trial smoke. Never run automatically on session start.
+    readOnlyHint: false
+    destructiveHint: false
+  - name: hydracept_pinned_run
+    summary: Submit pinned execution (RIP). Same quoteId rules as jobs.
+    readOnlyHint: false
+    destructiveHint: false
+  - name: hydracept_pinned_get
+    summary: GET a pinned execution receipt by id.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: hydracept_manifest_create
+    summary: Create a provenance manifest.
+    readOnlyHint: false
+    destructiveHint: false
+  - name: hydracept_manifest_verify
+    summary: Verify a provenance manifest by id.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: hydracept_lockfile_emit
+    summary: Emit an AI lockfile from a receipt id.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: hydracept_verify_lockfile
+    summary: Verify an AI lockfile document.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: hydracept_project_status
+    summary: Stdio only. Bound project surface status in the game checkout.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: hydracept_project_up_install
+    summary: Stdio only. Apply surfaces and install the local watcher.
+    readOnlyHint: false
+    destructiveHint: false
+  - name: hydracept_surface_apply
+    summary: Stdio only. Apply a surface definition JSON onto the bound project.
+    readOnlyHint: false
+    destructiveHint: false
+  - name: hydracept_project_sync
+    summary: Stdio only. Sync the project allowlist from the local manifest.
+    readOnlyHint: false
+    destructiveHint: false
+  - name: hydracept_project_watch_once
+    summary: Stdio only. Run one watcher pass.
+    readOnlyHint: false
+    destructiveHint: false
+  - name: hydracept_project_request_operation
+    summary: Request a named project operation (stdio local; hosted HTTP).
+    readOnlyHint: false
+    destructiveHint: false
+  - name: hydracept_project_get_operation
+    summary: GET a project operation by id.
+    readOnlyHint: true
+    destructiveHint: false

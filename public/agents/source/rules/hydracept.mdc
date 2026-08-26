@@ -1,0 +1,13 @@
+---
+description: Keep Hydracept API keys out of chat. In a repo, use stdio MCP after init.
+alwaysApply: true
+---
+
+# Hydracept
+
+- Never ask the user to paste `HYDRACEPT_API_KEY` (or any bearer token) into chat.
+- In a project checkout, run `python -m hydracept init --apply --yes --json`. Init writes workspace secrets and binds project MCP to stdio (`python -m hydracept mcp serve`). Reload MCP once.
+- Do not copy the workspace key into **Plugins → Configure**. That store cannot see `.hydracept/secrets.json`.
+- Hosted MCP (`https://api.hydracept.com/mcp`) is for clients with no checkout (ChatGPT, MCP Registry).
+- Prefer Hydracept MCP tools when they are present in **this** session (`hydracept_capabilities`, `hydracept_invoke`, `hydracept_submit_job`, `hydracept_job_status`, `hydracept_get_receipt`). If they are missing, use the CLI — do not retry hosted discovery.
+- Do not run paid smoke jobs unless the user explicitly asks (`/hydracept-smoke`).

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hydracept.cli.quickstart.v1",
+  "type": "object",
+  "required": ["schemaVersion", "status", "workspace", "apiUrl", "projectId", "environment", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "hydracept.cli.quickstart.v1" },
+    "status": { "type": "string" },
+    "workspace": {
+      "type": "object",
+      "required": ["state", "ready"],
+      "properties": {
+        "state": { "type": "string" },
+        "ready": { "type": "boolean" }
+      }
+    },
+    "apiUrl": { "type": "string" },
+    "projectId": { "type": "string" },
+    "environment": { "type": "string" },
+    "steps": {
+      "type": "object",
+      "properties": {
+        "login": { "$ref": "#/$defs/stepStatus" },
+        "configure": { "$ref": "#/$defs/stepStatus" },
+        "doctor": { "$ref": "#/$defs/doctorStep" },
+        "smoke": { "$ref": "#/$defs/smokeStep" }
+      }
+    },
+    "error": { "type": "string" }
+  },
+  "$defs": {
+    "stepStatus": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "type": "string", "enum": ["succeeded", "failed", "skipped"] },
+        "detail": { "type": "string" }
+      }
+    },
+    "doctorStep": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "type": "string" },
+        "exitCode": { "type": "integer" },
+        "report": { "type": "object" }
+      }
+    },
+    "smokeStep": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "type": "string" },
+        "jobId": { "type": "string" },
+        "receiptId": { "type": "string" },
+        "artifactIds": { "type": "array", "items": { "type": "string" } },
+        "detail": { "type": "string" }
+      }
+    }
+  }
+}

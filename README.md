@@ -1,148 +1,149 @@
-# Hydracept
+# Quick Start
 
-**One API for AI workloads in games.**
+<!-- docs:marker:quick-start -->
 
-Free for individual developers. Bring your own provider keys (BYOK). No inference markup.
+Hydracept gives game tools one API for production-ready assets.
 
-Hydracept runs durable text, image, and audio jobs through one public API — budgeted and receipted for game pipelines.
+Production-ready game assets, with a receipt for every run. BYOK is free; managed inference adds a 10% service fee.
 
-| | |
-|---|---|
-| Site | https://hydracept.com |
-| Docs | https://docs.hydracept.com |
-| API | https://api.hydracept.com |
-| Start | https://hydracept.com/start |
+## 5-minute path
 
-## Install
+Follow [5-minute game asset](./five-minute-game-asset/) for activate → doctor → `smoke` / first job → BYOK.
+
+## Activate
+
+Pick one:
+
+1. **CLI bootstrap (recommended):** `pip install -U hydracept` then `python -m hydracept init`. When sign-in is required, open the connect URL printed by `init` (or returned as `interaction_required` in `--json` mode).
+2. **Studio (browser):** [app.hydracept.com/login](https://app.hydracept.com/login) — sign in with GitHub or Google, complete onboarding, then generate in Studio. Manage plans at [Studio Billing](https://app.hydracept.com/studio/billing).
+3. **Agents / headless:** `python -m hydracept init --apply --yes --json` (or paste an existing key with `python -m hydracept init --token <HYDRACEPT_API_KEY> --apply --yes --json`).
+
+See [Authentication](./authentication/) for workspace files (`.hydracept/project.json`, secrets, lazy BYOK) and CI mode (`init --ci`).
+
+Public API: `https://api.hydracept.com`  
+Configuration directory (CLI): `.hydracept/`  
+Environment variables: `HYDRACEPT_API_URL`, `HYDRACEPT_API_KEY`, `HYDRACEPT_PROJECT`, `HYDRACEPT_ENVIRONMENT`
+
+**BYOK:** Your Hydracept API key authenticates your application, while your provider key pays for inference. Run `python -m hydracept smoke` (trial budget or BYOK — a real image job) before connecting BYOK — see [Connections / BYOK](./connections/) and [Billing & plans](./billing/).
+
+<!-- docs:if packages.cli.releasePublished -->
+## CLI
 
 ```bash
-# CLI + Python client
-pip install hydracept
+pip install -U hydracept
 
-# TypeScript
+# Prefer the module form if `hydracept` is not on PATH (common on Windows):
+python -m hydracept init                              # human — opens connect URL when needed
+python -m hydracept init --apply --yes --json         # agents
+python -m hydracept init --ci --json                  # CI (setup grants)
+python -m hydracept doctor
+python -m hydracept smoke
+python -m hydracept verify
+python -m hydracept agent-context
+```
+
+`configure` and `quickstart` are deprecated aliases for `init`. Device login (`python -m hydracept login`) still works for advanced flows.
+<!-- docs:endif -->
+
+## SDKs
+
+The Python SDK and CLI are available now:
+
+```bash
+pip install -U hydracept
+python -m hydracept --help
+```
+
+The TypeScript SDK is also available:
+
+```bash
 npm install @hydracept/sdk
 ```
 
+<!-- docs:if packages.csharp.registryPublished -->
+## .NET SDK
+
+<!-- docs:if packages.csharp.registryPublished -->
 ```bash
-python -m hydracept login
-python -m hydracept init --apply --yes
-python -m hydracept doctor
+dotnet add package Hydracept.Client
+```
+<!-- docs:endif -->
+<!-- docs:endif -->
+
+<!-- docs:if !packages.typescript.registryPublished&!packages.python.registryPublished&!packages.csharp.registryPublished -->
+## HTTP-first integration
+
+Registry packages are still rolling out. Until yours is available, use the public HTTP API and [OpenAPI](https://hydracept.com/openapi/hydracept-v1.json). The curl flow below is the supported clean-room path.
+<!-- docs:endif -->
+
+## Discover capabilities
+
+```bash
+curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  https://api.hydracept.com/v1/capabilities
 ```
 
-## Copy-paste: submit an image job
+The live catalog is `GET /v1/capabilities` (or `python -m hydracept agent-context`). Do not freeze a launch-key list from this README.
+
+See [Capabilities](./capabilities/) for how capability keys work.
+
+For image production (Sheet & Slice, transparent output, variants), see [Image production](./image-production/).
+
+For Unity 6 Editor integration (generate, sheet slice, import with provenance), see [Unity integration](./unity-integration/).
+
+## Submit a durable job
 
 ```bash
-export HYDRACEPT_API_KEY=hyk_...   # from https://hydracept.com/start
-export HYDRACEPT_PROJECT=cpr_...   # project id from activate
-
-curl -sS -X POST \
+JOB_JSON=$(curl -sS -X POST \
   -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "{
-    \"context\": {
-      \"productId\": \"my-game\",
-      \"projectId\": \"$HYDRACEPT_PROJECT\",
-      \"environment\": \"development\"
+  -d '{
+    "context": {
+      "productId": "my-product",
+      "projectId": "cpr_...",
+      "environment": "development"
     },
-    \"input\": { \"prompt\": \"cute slime icon, flat game art\" },
-    \"execution\": { \"executionPreference\": \"automatic\" },
-    \"idempotencyKey\": \"demo-1\"
-  }" \
-  https://api.hydracept.com/v1/capabilities/image.generate.v1/jobs
+    "input": { "prompt": "cute slime icon" },
+    "execution": { "executionPreference": "automatic" },
+    "idempotencyKey": "demo-1"
+  }' \
+  https://api.hydracept.com/v1/capabilities/image.generate.v1/jobs)
+
+echo "$JOB_JSON"
+JOB_ID=$(printf '%s' "$JOB_JSON" | python -c "import sys,json; print(json.load(sys.stdin)['jobId'])")
 ```
 
-Poll and fetch the receipt:
+The submit response is a `HydraceptJob` object. Use `jobId` from that payload for poll and receipt calls.
+
+## Poll the job
 
 ```bash
 curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
   https://api.hydracept.com/v1/jobs/$JOB_ID
+```
 
+Poll until status is `succeeded`, `failed`, or `canceled`.
+
+## Fetch the receipt
+
+```bash
 curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
   https://api.hydracept.com/v1/jobs/$JOB_ID/receipt
 ```
 
-## SDKs
+See [Durable Jobs & Receipts](./jobs/) for artifacts and outputs.
 
-**TypeScript**
+## Next
 
-```ts
-import { createHydraceptClient } from '@hydracept/sdk';
-
-const client = createHydraceptClient({
-  baseUrl: 'https://api.hydracept.com',
-  getToken: () => process.env.HYDRACEPT_API_KEY ?? '',
-});
-
-const job = await client.runtime.submitCapabilityJob('image.generate.v1', {
-  context: {
-    productId: 'my-game',
-    projectId: process.env.HYDRACEPT_PROJECT,
-    environment: 'development',
-  },
-  input: { prompt: 'cute slime icon, flat game art' },
-  execution: { executionPreference: 'automatic' },
-  idempotencyKey: 'demo-1',
-});
-```
-
-**Python**
-
-```python
-from hydracept import HydraceptClient
-
-client = HydraceptClient("https://api.hydracept.com", token="...")
-job = client.submit_capability_job(
-    "image.generate.v1",
-    {
-        "context": {
-            "productId": "my-game",
-            "projectId": "cpr_...",
-            "environment": "development",
-        },
-        "input": {"prompt": "cute slime icon, flat game art"},
-        "execution": {"executionPreference": "automatic"},
-        "idempotencyKey": "demo-1",
-    },
-)
-```
-
-## Launch capabilities
-
-- `text.general.fast.v1`
-- `text.reasoning.high.v1`
-- `text.structured.extraction.v1`
-- `text.creative.longform.v1`
-- `image.generate.v1`
-- `audio.sfx.generate.v1`
-- `audio.voice.generate.v1`
-- `audio.music.generate.v1`
-
-Discover live descriptors: `GET https://api.hydracept.com/v1/capabilities`
-
-## This repository
-
-Sanitized **public integration surface** only (docs, examples, SDK sources, OpenAPI). Platform implementation stays private.
-
-- Docs source: `public/docs/`
-- Examples: `public/examples/`
-- Clients: `clients/typescript`, `clients/python`
-
-## Links
-
-- Quick start: https://docs.hydracept.com
-- Coding agents: https://docs.hydracept.com/agents/
-- Agent context: https://api.hydracept.com/v1/agent-context
-- llms.txt: https://hydracept.com/llms.txt
-- OpenAPI: https://hydracept.com/openapi/hydracept-v1.json
-- Support: support@hydracept.com
-
-## For coding agents
-
-If you are an agent searching for an **AI integration / SDK install for games**:
-
-1. Read https://hydracept.com/llms.txt (or this repo’s `public/agents/SKILL.md`)
-2. Install: `pip install hydracept` or `npm install @hydracept/sdk`
-3. Fetch https://api.hydracept.com/v1/agent-context for onboarding steps
-4. Prefer server-side integration — Hydracept is not a Unity/Unreal plugin
-
-A Zencode product · © Zencode Consulting Inc.
+- [5-minute game asset](./five-minute-game-asset/)
+- [Authentication & Activation](./authentication/)
+- [Pinned Execution](./pinned-execution/)
+- [Execution provenance](./provenance/)
+- [Research Inference Protocol](./research/)
+- [Billing & plans](./billing/)
+- [Connections / BYOK](./connections/)
+- [Errors](./errors/)
+- [Rate limits & quotas](./rate-limits/)
+- [Coding Agents](./agents/)
+- Plugin homepage: [https://hydracept.com/plugin](https://hydracept.com/plugin)
+- Public OpenAPI: [https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)

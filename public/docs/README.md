@@ -2,72 +2,70 @@
 
 <!-- docs:marker:quick-start -->
 
-Hydracept runs AI workloads for games—text, images, audio, and cloud models—through one API.
+Hydracept gives game tools one API for production-ready assets.
 
-Free for individual developers. Bring your own provider keys. No inference markup.
-
-A Zencode product · © Zencode Consulting Inc.
+Production-ready game assets, with a receipt for every run. BYOK is free; managed inference adds a 10% service fee.
 
 ## 5-minute path
 
-Follow [5-minute game asset](./five-minute-game-asset/) for activate → BYOK → `image.generate.v1` → receipt.
+Follow [5-minute game asset](./five-minute-game-asset/) for activate → doctor → `smoke` / first job → BYOK.
 
 ## Activate
 
 Pick one:
 
-1. **Browser:** open [https://hydracept.com/start](https://hydracept.com/start), complete OAuth, and save your API key and project ids.
-2. **CLI:** install the package, run device login, then init (see below).
+1. **CLI bootstrap (recommended):** `pip install -U hydracept` then `python -m hydracept init`. When sign-in is required, open the connect URL printed by `init` (or returned as `interaction_required` in `--json` mode).
+2. **Studio (browser):** [app.hydracept.com/login](https://app.hydracept.com/login) — sign in with GitHub or Google, complete onboarding, then generate in Studio. Manage plans at [Studio Billing](https://app.hydracept.com/studio/billing).
+3. **Agents / headless:** `python -m hydracept init --apply --yes --json` (or paste an existing key with `python -m hydracept init --token <HYDRACEPT_API_KEY> --apply --yes --json`).
+
+See [Authentication](./authentication/) for workspace files (`.hydracept/project.json`, secrets, lazy BYOK) and CI mode (`init --ci`).
 
 Public API: `https://api.hydracept.com`  
 Configuration directory (CLI): `.hydracept/`  
 Environment variables: `HYDRACEPT_API_URL`, `HYDRACEPT_API_KEY`, `HYDRACEPT_PROJECT`, `HYDRACEPT_ENVIRONMENT`
 
-**BYOK:** Hydracept API keys authenticate callers. Provider keys (OpenAI, ElevenLabs, …) pay for inference and must be connected separately — see [Connections / BYOK](./connections/).
+**BYOK:** Your Hydracept API key authenticates your application, while your provider key pays for inference. Run `python -m hydracept smoke` (trial budget or BYOK — a real image job) before connecting BYOK — see [Connections / BYOK](./connections/) and [Billing & plans](./billing/).
 
 <!-- docs:if packages.cli.releasePublished -->
 ## CLI
 
 ```bash
-pip install hydracept
+pip install -U hydracept
 
 # Prefer the module form if `hydracept` is not on PATH (common on Windows):
-python -m hydracept login
-python -m hydracept init --apply --yes
+python -m hydracept init                              # human — opens connect URL when needed
+python -m hydracept init --apply --yes --json         # agents
+python -m hydracept init --ci --json                  # CI (setup grants)
 python -m hydracept doctor
+python -m hydracept smoke
+python -m hydracept verify
 python -m hydracept agent-context
 ```
 
-`login` opens `https://api.hydracept.com/device`. Sign in, enter the terminal code, approve, then return to the terminal.
-
-Equivalent console script (when Scripts/bin is on PATH):
-
-```bash
-hydracept login
-hydracept init --apply --yes
-hydracept doctor
-```
+`configure` and `quickstart` are deprecated aliases for `init`. Device login (`python -m hydracept login`) still works for advanced flows.
 <!-- docs:endif -->
 
-<!-- docs:if packages.typescript.registryPublished|packages.python.registryPublished|packages.csharp.registryPublished -->
-## Install SDKs
+## SDKs
 
-<!-- docs:if packages.typescript.registryPublished -->
+The Python SDK and CLI are available now:
+
+```bash
+pip install -U hydracept
+python -m hydracept --help
+```
+
+The TypeScript SDK is also available:
+
 ```bash
 npm install @hydracept/sdk
 ```
-<!-- docs:endif -->
+
+<!-- docs:if packages.csharp.registryPublished -->
+## .NET SDK
 
 <!-- docs:if packages.csharp.registryPublished -->
 ```bash
 dotnet add package Hydracept.Client
-```
-<!-- docs:endif -->
-
-<!-- docs:if packages.python.registryPublished -->
-```bash
-pip install hydracept
-python -m hydracept --help
 ```
 <!-- docs:endif -->
 <!-- docs:endif -->
@@ -85,11 +83,13 @@ curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
   https://api.hydracept.com/v1/capabilities
 ```
 
-Launch capabilities:
-
-<!-- docs:launch-capabilities -->
+The live catalog is `GET /v1/capabilities` (or `python -m hydracept agent-context`). Do not freeze a launch-key list from this README.
 
 See [Capabilities](./capabilities/) for how capability keys work.
+
+For image production (Sheet & Slice, transparent output, variants), see [Image production](./image-production/).
+
+For Unity 6 Editor integration (generate, sheet slice, import with provenance), see [Unity integration](./unity-integration/).
 
 ## Submit a durable job
 
@@ -137,9 +137,13 @@ See [Durable Jobs & Receipts](./jobs/) for artifacts and outputs.
 
 - [5-minute game asset](./five-minute-game-asset/)
 - [Authentication & Activation](./authentication/)
+- [Pinned Execution](./pinned-execution/)
+- [Execution provenance](./provenance/)
+- [Research Inference Protocol](./research/)
+- [Billing & plans](./billing/)
 - [Connections / BYOK](./connections/)
 - [Errors](./errors/)
 - [Rate limits & quotas](./rate-limits/)
 - [Coding Agents](./agents/)
-- [Consumer Boundary](./consumer-boundary/)
+- Plugin homepage: [https://hydracept.com/plugin](https://hydracept.com/plugin)
 - Public OpenAPI: [https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)

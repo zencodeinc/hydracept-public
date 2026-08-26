@@ -1,35 +1,36 @@
 # Rate limits & quotas
 
-Every capability call is checked against your plan entitlements and runtime admission rules.
+Every request is checked against your plan limits and the budget you configure.
 
 ## What is limited
 
-Depending on your plan (Free / Indie / Studio / Custom):
+Plans are **Free / Team / Enterprise**. Limits cover:
 
-- concurrent jobs
-- executions per hour
-- active durable jobs
-- retained payload bytes
-- history retention days
-- project / environment / service-principal counts
+- short requests (in progress, per hour, and per month) — includes pinned execution
+- active generation jobs
+- local / accelerated transforms
+- streaming connections
+- retained payload bytes and history retention days
+- project, environment, seat, and API-key limits
 
-See pricing on [hydracept.com](https://hydracept.com/#pricing) for plan limits.
+Enterprise customers can discuss additional capacity with support. See [Hydracept pricing](https://hydracept.com/pricing).
 
 ## Signals
 
 When you hit a limit, the API returns:
 
 - `429` for rate limiting
-- `402` for budget exceeded
-- `403` for other admission / entitlement denials
+- `402` for budget exceeded (including BYOK provider-spend guardrails)
+- `403` when your plan or project configuration does not allow the request
 
-Retry with backoff on `429`. For `402`, raise budgets or upgrade your plan.
+Retry with backoff on `429`. For `402`, review project budgets, wallet, or your own guardrail at [Studio Billing](https://app.hydracept.com/studio/billing) — see [Billing & plans](../billing/). For `403`, review plan entitlements or contact support for Enterprise.
 
 ## Budgets
 
-Execution options can carry budget constraints. BYOK still bills your provider account; Hydracept budgets gate admission and help prevent runaway spend in the control plane.
+Execution options can carry budget constraints. BYOK still bills your provider account; Hydracept guardrails help prevent runaway spend before work starts. These guardrails are not an additional Hydracept charge.
 
 ## Related
 
+- [Billing & plans](../billing/)
 - [Errors](../errors/)
 - [Authentication & Activation](../authentication/)

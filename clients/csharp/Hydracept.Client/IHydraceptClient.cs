@@ -43,6 +43,22 @@ public interface IHydraceptClient
 
     Task<JsonElement> DescribeCapabilityAsync(string capabilityKey, CancellationToken cancellationToken = default);
 
+    Task<JsonElement> ResolveCapabilityAsync(object body, CancellationToken cancellationToken = default);
+
+    Task<JsonElement> QuoteCapabilityAsync(string capabilityKey, object body, CancellationToken cancellationToken = default);
+
+    Task<JsonElement> EstimateCapabilityAsync(string capabilityKey, object body, CancellationToken cancellationToken = default);
+
+    Task<JsonElement> CreateCapabilityRequestAsync(object body, CancellationToken cancellationToken = default);
+
+    Task<JsonElement> ReviseCapabilityRequestAsync(string requestId, object body, CancellationToken cancellationToken = default);
+
+    Task<JsonElement> SubmitCapabilityRequestAsync(string requestId, CancellationToken cancellationToken = default);
+
+    Task<JsonElement> GetCapabilityRequestAsync(string requestId, CancellationToken cancellationToken = default);
+
+    Task<JsonElement> GetCapabilityRequestQuoteAsync(string requestId, CancellationToken cancellationToken = default);
+
     Task<JsonElement> InvokeCapabilityAsync(
         string capabilityKey,
         object body,
@@ -52,6 +68,22 @@ public interface IHydraceptClient
         string capabilityKey,
         object body,
         CancellationToken cancellationToken = default);
+
+    Task<JsonElement> CreatePinnedInferenceAsync(object body, CancellationToken cancellationToken = default);
+
+    Task<JsonElement> GetPinnedReceiptAsync(string receiptId, CancellationToken cancellationToken = default);
+
+    Task<JsonElement> ListPinnedReceiptsAsync(CancellationToken cancellationToken = default);
+
+    Task<JsonElement> CreateRunManifestAsync(object body, CancellationToken cancellationToken = default);
+
+    Task<JsonElement> GetRunManifestAsync(string manifestId, CancellationToken cancellationToken = default);
+
+    Task<JsonElement> VerifyRunManifestAsync(string manifestId, CancellationToken cancellationToken = default);
+
+    Task<JsonElement> GetLockfileAsync(string receiptId, CancellationToken cancellationToken = default);
+
+    Task<JsonElement> VerifyLockfileAsync(object body, CancellationToken cancellationToken = default);
 
     Task<JsonElement> GetJsonAsync(string relativePath, CancellationToken cancellationToken = default);
 
@@ -74,4 +106,7 @@ public interface IHydraceptClient
     Task PostEmptyAsync(string relativePath, CancellationToken cancellationToken = default);
 
     Task<byte[]> GetBytesAsync(string relativePath, CancellationToken cancellationToken = default);
+
+    Task<byte[]> DownloadJobArtifactAsync(string jobId, string artifactId, CancellationToken cancellationToken = default);
 }
+

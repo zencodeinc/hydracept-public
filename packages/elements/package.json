@@ -1,0 +1,63 @@
+{
+  "name": "@hydracept/elements",
+  "version": "0.1.0",
+  "description": "Embed Hydracept generation panels in web apps — iframe host SDK with hydracept.panel.v1 postMessage protocol.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./register": {
+      "types": "./dist/register.d.ts",
+      "import": "./dist/register.js",
+      "default": "./dist/register.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "hydracept",
+    "embed",
+    "iframe",
+    "panel",
+    "game",
+    "gamedev",
+    "ai",
+    "image-generation"
+  ],
+  "homepage": "https://hydracept.com",
+  "bugs": {
+    "url": "https://github.com/hydracept/hydracept-public/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hydracept/hydracept-public.git",
+    "directory": "packages/elements"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": false
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.8"
+  }
+}

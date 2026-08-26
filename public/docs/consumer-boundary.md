@@ -1,16 +1,16 @@
-# Consumer Boundary
+# Integrating safely
 
-External products integrate as **customers of the public Hydracept surface**. They should not bypass Hydracept to reach providers directly.
+Use the public Hydracept API as the single path from your product to the AI providers it uses.
 
 ## Rule
 
-If an external customer cannot do it through the supported Hydracept surface, your product should not either.
+This keeps credentials, provider configuration, job status, and execution records in one place.
 
 When Hydracept is meant to own generation execution:
 
-- call Hydracept capabilities and jobs
-- do **not** call provider SDKs directly for that same generation path
-- do **not** embed provider keys in game clients for Hydracept-owned work
+- call Hydracept capabilities and jobs from trusted tooling or your server
+- keep provider SDKs out of the generation path handled by Hydracept
+- never embed provider keys in game clients or other shipped public code
 
 ## CI gate
 
@@ -19,16 +19,12 @@ When Hydracept is meant to own generation execution:
 hydracept consumer-check --strict
 ```
 
-Fail the build when product code imports direct provider clients on paths Hydracept should own.
+Add a CI check if you want to prevent direct provider clients from entering paths handled by Hydracept.
 <!-- docs:endif -->
 
 <!-- docs:if !packages.cli.releasePublished -->
 When the CLI release is published, add the consumer-check gate to product CI. Until then, review integrations manually against this boundary and the public OpenAPI contract.
 <!-- docs:endif -->
-
-## Exceptions
-
-Temporary exceptions need a named, expiring entry in `architecture/hydracept-consumer-exceptions.yaml` (platform policy). Do not add silent bypasses in product code.
 
 ## Related
 

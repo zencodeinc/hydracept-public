@@ -143,6 +143,61 @@ public sealed class HydraceptClient : IHydraceptClient
         CancellationToken cancellationToken = default) =>
         GetJsonAsync($"v1/capabilities/{Uri.EscapeDataString(capabilityKey)}", cancellationToken);
 
+    public Task<JsonElement> ResolveCapabilityAsync(
+        object body,
+        CancellationToken cancellationToken = default) =>
+        PostJsonAsync("v1/capabilities/resolve", body, headers: null, cancellationToken);
+
+    public Task<JsonElement> QuoteCapabilityAsync(
+        string capabilityKey,
+        object body,
+        CancellationToken cancellationToken = default) =>
+        PostJsonAsync(
+            $"v1/capabilities/{Uri.EscapeDataString(capabilityKey)}/quote",
+            body,
+            headers: null,
+            cancellationToken);
+
+    public Task<JsonElement> EstimateCapabilityAsync(
+        string capabilityKey,
+        object body,
+        CancellationToken cancellationToken = default) =>
+        QuoteCapabilityAsync(capabilityKey, body, cancellationToken);
+
+    public Task<JsonElement> CreateCapabilityRequestAsync(
+        object body,
+        CancellationToken cancellationToken = default) =>
+        PostJsonAsync("v1/capability-requests", body, headers: null, cancellationToken);
+
+    public Task<JsonElement> ReviseCapabilityRequestAsync(
+        string requestId,
+        object body,
+        CancellationToken cancellationToken = default) =>
+        PostJsonAsync(
+            $"v1/capability-requests/{Uri.EscapeDataString(requestId)}/revisions",
+            body,
+            headers: null,
+            cancellationToken);
+
+    public Task<JsonElement> SubmitCapabilityRequestAsync(
+        string requestId,
+        CancellationToken cancellationToken = default) =>
+        PostJsonAsync(
+            $"v1/capability-requests/{Uri.EscapeDataString(requestId)}/submit",
+            new { },
+            headers: null,
+            cancellationToken);
+
+    public Task<JsonElement> GetCapabilityRequestAsync(
+        string requestId,
+        CancellationToken cancellationToken = default) =>
+        GetJsonAsync($"v1/capability-requests/{Uri.EscapeDataString(requestId)}", cancellationToken);
+
+    public Task<JsonElement> GetCapabilityRequestQuoteAsync(
+        string requestId,
+        CancellationToken cancellationToken = default) =>
+        GetJsonAsync($"v1/capability-requests/{Uri.EscapeDataString(requestId)}/quote", cancellationToken);
+
     public Task<JsonElement> InvokeCapabilityAsync(
         string capabilityKey,
         object body,
@@ -162,6 +217,48 @@ public sealed class HydraceptClient : IHydraceptClient
             body,
             headers: null,
             cancellationToken);
+
+    public Task<JsonElement> CreatePinnedInferenceAsync(
+        object body,
+        CancellationToken cancellationToken = default) =>
+        PostJsonAsync("v1/inference/pinned", body, headers: null, cancellationToken);
+
+    public Task<JsonElement> GetPinnedReceiptAsync(
+        string receiptId,
+        CancellationToken cancellationToken = default) =>
+        GetJsonAsync($"v1/inference/pinned/{Uri.EscapeDataString(receiptId)}", cancellationToken);
+
+    public Task<JsonElement> ListPinnedReceiptsAsync(CancellationToken cancellationToken = default) =>
+        GetJsonAsync("v1/inference/pinned", cancellationToken);
+
+    public Task<JsonElement> CreateRunManifestAsync(
+        object body,
+        CancellationToken cancellationToken = default) =>
+        PostJsonAsync("v1/provenance/manifests", body, headers: null, cancellationToken);
+
+    public Task<JsonElement> GetRunManifestAsync(
+        string manifestId,
+        CancellationToken cancellationToken = default) =>
+        GetJsonAsync($"v1/provenance/manifests/{Uri.EscapeDataString(manifestId)}", cancellationToken);
+
+    public Task<JsonElement> VerifyRunManifestAsync(
+        string manifestId,
+        CancellationToken cancellationToken = default) =>
+        PostJsonAsync(
+            $"v1/provenance/manifests/{Uri.EscapeDataString(manifestId)}/verify",
+            body: null,
+            headers: null,
+            cancellationToken);
+
+    public Task<JsonElement> GetLockfileAsync(
+        string receiptId,
+        CancellationToken cancellationToken = default) =>
+        GetJsonAsync($"v1/provenance/lockfile?receipt_id={Uri.EscapeDataString(receiptId)}", cancellationToken);
+
+    public Task<JsonElement> VerifyLockfileAsync(
+        object body,
+        CancellationToken cancellationToken = default) =>
+        PostJsonAsync("v1/provenance/lockfile/verify", body, headers: null, cancellationToken);
 
     public async Task<JsonElement> GetJsonAsync(string relativePath, CancellationToken cancellationToken = default)
     {
@@ -243,6 +340,14 @@ public sealed class HydraceptClient : IHydraceptClient
 
         return await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    public Task<byte[]> DownloadJobArtifactAsync(
+        string jobId,
+        string artifactId,
+        CancellationToken cancellationToken = default) =>
+        GetBytesAsync(
+            $"v1/jobs/{Uri.EscapeDataString(jobId)}/artifacts/{Uri.EscapeDataString(artifactId)}",
+            cancellationToken);
 
     private static string Normalize(string relativePath) =>
         relativePath.TrimStart('/');

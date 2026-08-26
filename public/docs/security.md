@@ -2,7 +2,7 @@
 
 ## Credentials
 
-- Hydracept API keys authenticate callers to the control plane.
+- Hydracept API keys authenticate callers to the API.
 - Provider credentials (BYOK) pay for inference and are encrypted at rest.
 - Do not embed Hydracept API keys or provider secrets in shipped game clients.
 - For player-facing apps, call Hydracept from your server.
@@ -17,7 +17,7 @@ Bind provider credentials to the project/environment that needs them. Use separa
 
 ## Consumer boundary
 
-When Hydracept owns generation execution, route work through Hydracept instead of calling provider SDKs directly. See [Consumer Boundary](../consumer-boundary/).
+For generation handled by Hydracept, route work through the Hydracept API instead of calling provider SDKs directly. See [Integrating safely](../consumer-boundary/).
 
 ## Reporting
 

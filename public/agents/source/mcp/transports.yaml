@@ -1,0 +1,17 @@
+transports:
+  stdio:
+    type: stdio
+    command: python
+    args:
+      - -m
+      - hydracept
+      - mcp
+      - serve
+    description: Local coding-agent MCP via Hydracept CLI workspace credentials.
+    primary: true
+  hosted:
+    type: streamable-http
+    url: https://api.hydracept.com/mcp
+    description: Production Streamable HTTP MCP. Authenticate with Hydracept API key bearer token.
+    auth: bearer
+    primary: false

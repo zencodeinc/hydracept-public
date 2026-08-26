@@ -1,0 +1,21 @@
+reviewerSmoke:
+  - id: list-capabilities
+    description: List public capabilities without submitting a paid job.
+    steps:
+      - Call hydracept_capabilities with no key
+      - Expect image.generate.v1 in the response
+  - id: describe-image
+    description: Describe image.generate.v1 schema.
+    steps:
+      - Call hydracept_capabilities with key image.generate.v1
+      - Expect input schema fields for prompt and requestTransparentOutput
+  - id: optional-smoke-job
+    description: Submit a small managed-trial smoke when reviewer credentials allow billing.
+    steps:
+      - Call hydracept_smoke with default capability
+      - Poll hydracept_job_status until terminal
+      - Call hydracept_get_receipt
+credentials:
+  obtain: https://hydracept.com/start
+  envVar: HYDRACEPT_API_KEY
+  header: "Authorization: Bearer <HYDRACEPT_API_KEY>"

@@ -1,46 +1,54 @@
 # hydracept
 
-Python client and CLI for the Hydracept public API — **one API for AI workloads in games**.
-
-Free for individual developers. BYOK. No inference markup.
+Python client for the Hydracept public API — production-ready game assets, with a receipt for every run.
 
 ```bash
 pip install hydracept
 ```
 
-Prefer the module entry point (works when `hydracept` is not on PATH, common on Windows):
+```bash
+python -m hydracept init
+python -m hydracept doctor
+python -m hydracept verify
+python -m hydracept pinned --help
+```
+
+Pinned Execution (RIP) and provenance:
 
 ```bash
-python -m hydracept --help
-python -m hydracept login --token <HYDRACEPT_API_KEY>   # agents / headless
-python -m hydracept login                               # browser device flow
-python -m hydracept init --apply --yes
+python -m hydracept pinned run body.json
+python -m hydracept pinned get <receipt_id>
+python -m hydracept lockfile emit <receipt_id>
+python -m hydracept verify
+```
+
+## Developer onboarding
+
+```bash
+python -m hydracept init --apply --yes --json
 python -m hydracept doctor
+python -m hydracept agents install --auto
 python -m hydracept smoke
 ```
 
-## Copy-paste job
+Native integrations for **Cursor**, **Claude Code**, and **Google Antigravity** ship via the Agent Pack (`agents install`). Session hooks inject local readiness only — smoke is explicit.
 
-```python
-from hydracept import HydraceptClient
+## Agent / CI path (secret via env, not prompt)
 
-client = HydraceptClient("https://api.hydracept.com", token="...")
-job = client.submit_capability_job(
-    "image.generate.v1",
-    {
-        "context": {
-            "productId": "my-game",
-            "projectId": "cpr_...",
-            "environment": "development",
-        },
-        "input": {"prompt": "cute slime icon, flat game art"},
-        "execution": {"executionPreference": "automatic"},
-        "idempotencyKey": "demo-1",
-    },
-)
-print(job["jobId"])
+```bash
+export HYDRACEPT_API_KEY=hydracept_...
+python -m hydracept quickstart --json --smoke
+python -m hydracept consumer-check --strict
 ```
 
-Activate at https://hydracept.com/start · Docs: https://docs.hydracept.com · 5-minute path: https://docs.hydracept.com/five-minute-game-asset/
+## Breaking change in 0.2.3
 
-A Zencode product · © Zencode Consulting Inc.
+`hydracept login` (device flow) stores a **human session** only. Mint a workspace API key with:
+
+```bash
+python -m hydracept keys create --configure
+```
+
+Docs: https://docs.hydracept.com · Start: https://hydracept.com/start
+
+A Zencode company · © Zencode Consulting Inc.

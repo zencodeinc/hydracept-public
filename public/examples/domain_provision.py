@@ -30,11 +30,12 @@ EXAMPLE_PROVISION_JOB = {
 }
 
 FLOW = [
-    "POST /v1/connections — store Porkbun BYOK (apiKey + secretKey)",
-    "POST /v1/connections/{id}/bindings — bind to project/environment",
-    "POST /v1/capabilities/domain.search.v1/invoke — check availability",
+    "GET /v1/capabilities — public domain/DNS catalog (search, list, DNS CRUD, TLS, transfer)",
+    "MCP hydracept_invoke domain.search.v1 — check availability (managed registrar by default)",
+    "MCP hydracept_invoke dns.record.list.v1 — inspect records after registration",
     "POST /v1/capabilities/web.domain.provision.v1/jobs — submit outcome job",
-    "approve job with authorizedMaxAmount via unified job approval endpoint",
+    "approve purchase (domain, registrant, prices, registrar agreement) via unified job approval",
     "poll unified job status until succeeded or needs_attention",
+    "optional: POST /v1/connections with registrar apiKey+secretKey for customer custody",
     "fetch unified job receipt for externalActions ledger summary",
 ]

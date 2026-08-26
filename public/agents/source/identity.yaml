@@ -1,0 +1,41 @@
+schemaVersion: 1
+id: hydracept-agent-plugin
+legacyPackId: hydracept-agent-pack
+version: 0.1.0
+distributionVersion: 0.1.5
+registryName: com.hydracept/mcp
+minimumHydraceptVersion: 0.3.0
+name: Hydracept
+displayName: Hydracept
+author:
+  name: Zencode Consulting Inc.
+  email: support@hydracept.com
+canonicalDescription: >-
+  Hydracept gives game teams production-ready assets through one API.
+  Every job leaves a receipt.
+tagline: Production-ready game assets, with a receipt for every run.
+category: Game asset generation API
+positioning: Native integrations for Cursor, Claude Code, OpenAI Codex, and OpenClaw.
+operator: Zencode Consulting Inc.
+logo: assets/logo.png
+urls:
+  home: https://hydracept.com
+  plugin: https://hydracept.com/plugin
+  api: https://api.hydracept.com
+  docs: https://docs.hydracept.com
+  openapi: https://hydracept.com/openapi/hydracept-v1.json
+  agentContext: https://api.hydracept.com/v1/agent-context
+  start: https://hydracept.com/start
+  logo: https://hydracept.com/hydracept-logo.png
+skills:
+  - hydracept
+  - hydracept-setup
+  - hydracept-smoke
+  - hydracept-image
+  - hydracept-sheet
+hosts:
+  - cursor
+  - claude
+  - openai
+  - openclaw
+  - antigravity

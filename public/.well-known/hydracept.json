@@ -1,6 +1,11 @@
 {
   "agentContext": "https://api.hydracept.com/v1/agent-context",
+  "agentPlugin": {
+    "id": "hydracept-agent-plugin",
+    "version": "0.1.3"
+  },
   "api": "https://api.hydracept.com",
+  "authorityPage": "https://hydracept.com/agent-game-assets",
   "byok": true,
   "capabilities": [
     "text.general.fast.v1",
@@ -8,18 +13,80 @@
     "text.structured.extraction.v1",
     "text.creative.longform.v1",
     "image.generate.v1",
+    "image.edit.v1",
+    "video.generate.v1",
     "audio.sfx.generate.v1",
     "audio.voice.generate.v1",
-    "audio.music.generate.v1"
+    "audio.music.generate.v1",
+    "model.generate.3d.v1",
+    "model.generate.3d.from-image.v1",
+    "domain.search.v1",
+    "domain.list.v1",
+    "domain.get.v1",
+    "domain.pricing.v1",
+    "domain.register.v1",
+    "domain.renew.v1",
+    "domain.transfer.in.v1",
+    "domain.transfer.out.v1",
+    "domain.configure.v1",
+    "domain.nameservers.get.v1",
+    "domain.nameservers.update.v1",
+    "domain.contacts.update.v1",
+    "domain.autorenew.update.v1",
+    "domain.forward.list.v1",
+    "domain.forward.create.v1",
+    "domain.forward.delete.v1",
+    "domain.ssl.get.v1",
+    "dns.record.list.v1",
+    "dns.record.create.v1",
+    "dns.record.update.v1",
+    "dns.record.delete.v1",
+    "dns.dnssec.list.v1",
+    "dns.dnssec.create.v1",
+    "dns.dnssec.delete.v1",
+    "web.domain.provision.v1"
   ],
-  "description": "One API for AI workloads in games.",
+  "description": "Hydracept gives game teams production-ready assets through one API. Every job leaves a receipt.",
+  "hydraceptServiceFeePercent": 10,
   "inferenceMarkupPercent": 0,
-  "name": "Hydracept",
-  "pricing": {
-    "free": true,
-    "indie_usd_monthly": 29,
-    "studio_usd_monthly": 99
+  "keywords": [
+    "hydracept",
+    "mcp",
+    "unity",
+    "gamedev",
+    "image-generation",
+    "sprite-sheet",
+    "transparent-png",
+    "reference-image",
+    "multi-provider",
+    "game-ai"
+  ],
+  "managedInference": {
+    "billingAdmissionEnforced": true,
+    "paygWallet": true,
+    "serviceFeeBps": 1000,
+    "walletTopUpLive": false
   },
+  "mcp": {
+    "hosted": "https://api.hydracept.com/mcp",
+    "hostedWhen": "no project checkout",
+    "inRepo": "python -m hydracept init --apply --yes --json",
+    "stdio": "python -m hydracept mcp serve"
+  },
+  "name": "Hydracept",
+  "pluginHomepage": "https://hydracept.com/plugin",
+  "pricing": {
+    "enterprise_sales_only": true,
+    "free": true,
+    "team_usd_monthly": 49
+  },
+  "sameAs": [
+    "https://www.npmjs.com/package/@hydracept/sdk",
+    "https://pypi.org/project/hydracept/",
+    "https://github.com/hydracept/hydracept-public",
+    "https://docs.hydracept.com"
+  ],
   "selfServeBootstrapLive": true,
-  "url": "https://hydracept.com"
+  "url": "https://hydracept.com",
+  "workflow": "AI game assets from Cursor or Claude: reference image \u2192 cohesive sheet \u2192 transparent slices \u2192 Unity project, routed across providers with price and receipt provenance."
 }

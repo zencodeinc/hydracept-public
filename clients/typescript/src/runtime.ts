@@ -51,6 +51,55 @@ export function createHydraceptRuntimeApi(http: HydraceptHttp) {
       return http.fetchJson<T>(`/capabilities/${encodeURIComponent(key)}`);
     },
 
+    resolveCapability<T = unknown>(body: unknown): Promise<T> {
+      return http.fetchJson<T>('/capabilities/resolve', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+
+    estimateCapability<T = unknown>(key: string, body: unknown): Promise<T> {
+      return http.fetchJson<T>(`/capabilities/${encodeURIComponent(key)}/quote`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+
+    quoteCapability<T = unknown>(key: string, body: unknown): Promise<T> {
+      return http.fetchJson<T>(`/capabilities/${encodeURIComponent(key)}/quote`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+
+    createCapabilityRequest<T = unknown>(body: unknown): Promise<T> {
+      return http.fetchJson<T>('/capability-requests', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+
+    reviseCapabilityRequest<T = unknown>(requestId: string, body: unknown): Promise<T> {
+      return http.fetchJson<T>(`/capability-requests/${encodeURIComponent(requestId)}/revisions`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+
+    submitCapabilityRequest<T = unknown>(requestId: string): Promise<T> {
+      return http.fetchJson<T>(`/capability-requests/${encodeURIComponent(requestId)}/submit`, {
+        method: 'POST',
+      });
+    },
+
+    getCapabilityRequest<T = unknown>(requestId: string): Promise<T> {
+      return http.fetchJson<T>(`/capability-requests/${encodeURIComponent(requestId)}`);
+    },
+
+    getCapabilityRequestQuote<T = unknown>(requestId: string): Promise<T> {
+      return http.fetchJson<T>(`/capability-requests/${encodeURIComponent(requestId)}/quote`);
+    },
+
     invokeCapability<T = unknown>(key: string, body: unknown, init: RequestInit = {}): Promise<T> {
       return http.fetchJson<T>(`/capabilities/${encodeURIComponent(key)}/invoke`, {
         method: 'POST',
@@ -71,12 +120,115 @@ export function createHydraceptRuntimeApi(http: HydraceptHttp) {
       });
     },
 
+    createComparison<T = unknown>(key: string, body: unknown): Promise<T> {
+      return http.fetchJson<T>(`/capabilities/${encodeURIComponent(key)}/comparisons`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+
+    estimateComparison<T = unknown>(key: string, body: unknown): Promise<T> {
+      return http.fetchJson<T>(`/capabilities/${encodeURIComponent(key)}/comparisons/estimate`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+
+    getComparison<T = unknown>(comparisonId: string): Promise<T> {
+      return http.fetchJson<T>(`/comparisons/${encodeURIComponent(comparisonId)}`);
+    },
+
+    submitComparisonJudgement<T = unknown>(comparisonId: string, body: unknown): Promise<T> {
+      return http.fetchJson<T>(`/comparisons/${encodeURIComponent(comparisonId)}/judgements`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+
     getJobReceipt<T = unknown>(jobId: string): Promise<T> {
       return http.fetchJson<T>(`/jobs/${encodeURIComponent(jobId)}/receipt`);
     },
 
     cancelJob<T = unknown>(jobId: string): Promise<T> {
       return http.fetchJson<T>(`/jobs/${encodeURIComponent(jobId)}/cancel`, { method: 'POST' });
+    },
+
+    createPinnedInference<T = unknown>(body: unknown, init: RequestInit = {}): Promise<T> {
+      return http.fetchJson<T>('/inference/pinned', {
+        method: 'POST',
+        body: JSON.stringify(body),
+        ...init,
+      });
+    },
+
+    getPinnedReceipt<T = unknown>(receiptId: string): Promise<T> {
+      return http.fetchJson<T>(`/inference/pinned/${encodeURIComponent(receiptId)}`);
+    },
+
+    listPinnedReceipts<T = unknown>(): Promise<T> {
+      return http.fetchJson<T>('/inference/pinned');
+    },
+
+    createRunManifest<T = unknown>(body: unknown, init: RequestInit = {}): Promise<T> {
+      return http.fetchJson<T>('/provenance/manifests', {
+        method: 'POST',
+        body: JSON.stringify(body),
+        ...init,
+      });
+    },
+
+    getRunManifest<T = unknown>(manifestId: string): Promise<T> {
+      return http.fetchJson<T>(`/provenance/manifests/${encodeURIComponent(manifestId)}`);
+    },
+
+    verifyRunManifest<T = unknown>(manifestId: string, init: RequestInit = {}): Promise<T> {
+      return http.fetchJson<T>(`/provenance/manifests/${encodeURIComponent(manifestId)}/verify`, {
+        method: 'POST',
+        ...init,
+      });
+    },
+
+    getLockfile<T = unknown>(receiptId: string): Promise<T> {
+      return http.fetchJson<T>(
+        `/provenance/lockfile?receipt_id=${encodeURIComponent(receiptId)}`,
+      );
+    },
+
+    verifyLockfile<T = unknown>(body: unknown, init: RequestInit = {}): Promise<T> {
+      return http.fetchJson<T>('/provenance/lockfile/verify', {
+        method: 'POST',
+        body: JSON.stringify(body),
+        ...init,
+      });
+    },
+
+    downloadJobArtifact(jobId: string, artifactId: string): Promise<Blob> {
+      return http.fetchBlob(
+        `/jobs/${encodeURIComponent(jobId)}/artifacts/${encodeURIComponent(artifactId)}`,
+      );
+    },
+
+    async pollJobUntilTerminal<T extends { status?: string } = { status?: string }>(
+      jobId: string,
+      options: { intervalMs?: number; signal?: AbortSignal; terminal?: string[] } = {},
+    ): Promise<T> {
+      const intervalMs = options.intervalMs ?? 2000;
+      const terminal = new Set(
+        (options.terminal ?? ['succeeded', 'failed', 'canceled', 'cancelled']).map((s) =>
+          s.toLowerCase(),
+        ),
+      );
+      for (;;) {
+        if (options.signal?.aborted) {
+          throw new DOMException('Aborted', 'AbortError');
+        }
+        const job = await http.fetchJsonWithRetry<T>(`/jobs/${encodeURIComponent(jobId)}`);
+        const status = String(job.status ?? '').toLowerCase();
+        if (terminal.has(status)) {
+          return job;
+        }
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      }
     },
 
     streamInvocationEvents(

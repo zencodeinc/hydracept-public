@@ -98,11 +98,36 @@ def scan(root: Path) -> list[str]:
     return violations
 
 
+def scan_tracked_secrets(root: Path) -> list[str]:
+    """Detect Hydracept secrets.json tracked by git."""
+    violations: list[str] = []
+    git_dir = root / ".git"
+    if not git_dir.is_dir():
+        return violations
+    try:
+        import subprocess
+
+        result = subprocess.run(
+            ["git", "ls-files", "--", ".hydracept/secrets.json", "**/.hydracept/secrets.json"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if line:
+                violations.append(f"{line}: Hydracept secrets.json must not be committed")
+    except Exception:
+        pass
+    return violations
+
+
 def scan_path(target: Path) -> tuple[int, str]:
     expired = _expired_exceptions(_load_exceptions())
     if expired:
         return 1, "Expired hydracept-consumer-exceptions:\n" + "\n".join(f"  - {e}" for e in expired)
-    violations = scan(target)
+    violations = scan(target) + scan_tracked_secrets(target)
     if violations:
         detail = "Consumer boundary violations:\n" + "\n".join(f"  - {v}" for v in violations)
         return 1, detail

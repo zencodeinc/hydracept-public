@@ -8,6 +8,7 @@ from hydracept.cli.doctor import (
     _capability_keys,
     _environment_from_context,
     _project_id_from_context,
+    project_alignment_checks,
 )
 
 
@@ -38,3 +39,47 @@ def test_doctor_report_fails_on_fatal() -> None:
     report = DoctorReport()
     report.add(DoctorCheck("bad", False, "broken"))
     assert not report.passed
+
+
+def test_project_alignment_home_mismatch_is_warning() -> None:
+    checks = project_alignment_checks(
+        "cpr_checkout",
+        token_project="cpr_checkout",
+        home_project="cpr_home",
+    )
+    assert len(checks) == 1
+    assert checks[0].passed is False
+    assert checks[0].fatal is False
+    report = DoctorReport()
+    report.add(checks[0])
+    assert report.passed
+
+
+def test_project_alignment_token_mismatch_is_fatal() -> None:
+    checks = project_alignment_checks(
+        "cpr_checkout",
+        token_project="cpr_token",
+        home_project="cpr_checkout",
+    )
+    assert checks[0].passed is False
+    assert checks[0].fatal is True
+    report = DoctorReport()
+    report.add(checks[0])
+    assert not report.passed
+
+
+def test_project_alignment_home_echoed_as_token_is_warning() -> None:
+    checks = project_alignment_checks(
+        "cpr_checkout",
+        token_project="cpr_home",
+        home_project="cpr_home",
+    )
+    assert len(checks) == 1
+    assert checks[0].passed is False
+    assert checks[0].fatal is False
+    report = DoctorReport()
+    report.add(checks[0])
+    assert report.passed
+    payload = report.to_json_dict()
+    assert payload["failedChecks"] == []
+    assert payload["warnings"][0]["name"] == "local.config_project"

@@ -26,7 +26,7 @@ python -m hydracept integrations install unity
 From your Unity project root:
 
 ```bash
-python -m hydracept quickstart --token <HYDRACEPT_API_KEY> --json
+python -m hydracept init --apply --yes --json
 ```
 
 Then in Unity: **Window → Hydracept → Refresh**.

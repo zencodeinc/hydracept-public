@@ -76,6 +76,12 @@ namespace Hydracept.Unity.Editor.Api.Generated
 
         [JsonProperty("requestSnapshot")]
         public Dictionary<string, object>? RequestSnapshot;
+
+        [JsonProperty("nextAction")]
+        public string? NextAction;
+
+        [JsonProperty("pollAfterSeconds")]
+        public int? PollAfterSeconds;
     }
 
     public sealed class HydraceptJobArtifactRef
@@ -94,6 +100,15 @@ namespace Hydracept.Unity.Editor.Api.Generated
 
         [JsonProperty("variantIndex")]
         public int? VariantIndex;
+
+        [JsonProperty("label")]
+        public string? Label;
+
+        [JsonProperty("filename")]
+        public string? Filename;
+
+        [JsonProperty("sliceCellId")]
+        public string? SliceCellId;
     }
 
     public sealed class HydraceptReceipt

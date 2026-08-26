@@ -1,0 +1,7 @@
+{
+  "id": "hydracept",
+  "name": "Hydracept",
+  "version": "0.1.0",
+  "description": "Game asset generation for Antigravity via Hydracept capabilities, MCP, and Skills.",
+  "minimumHydraceptVersion": "0.2.3"
+}

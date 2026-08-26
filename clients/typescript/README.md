@@ -33,6 +33,43 @@ const status = await client.runtime.getJob(job.jobId);
 const receipt = await client.runtime.getJobReceipt(job.jobId);
 ```
 
+### Pinned Execution (RIP)
+
+```ts
+const result = await client.runtime.createPinnedInference({
+  pin: { provider: 'openai', model: 'gpt-5.6-sol', api: 'responses' },
+  isolation: 'stateless',
+  input: 'ping',
+});
+const pinned = await client.runtime.getPinnedReceipt(result.receipt.receipt_id);
+const lock = await client.runtime.getLockfile(pinned.receiptId);
+await client.runtime.verifyLockfile(lock);
+```
+
+### Panel sessions (embed host)
+
+```ts
+import { createHydraceptClient } from '@hydracept/sdk';
+
+const client = createHydraceptClient({
+  baseUrl: 'https://api.hydracept.com',
+  getToken: () => process.env.HYDRACEPT_API_KEY ?? '',
+});
+
+const { definitions } = await client.panels.listPanelDefinitions();
+const created = await client.panels.createPanelSession({
+  panelDefinitionId: definitions[0]!.id,
+  projectId: process.env.HYDRACEPT_PROJECT,
+  environment: 'development',
+  allowedOrigins: ['http://localhost:5173'],
+});
+
+// Pass sessionId + accessToken to @hydracept/elements PanelIframeManager
+console.log(created.sessionId, created.accessToken);
+```
+
+Pair with [`@hydracept/elements`](https://www.npmjs.com/package/@hydracept/elements) to mount the hosted iframe — do not copy protocol code.
+
 Activate at https://hydracept.com/start · Docs: https://docs.hydracept.com
 
-A Zencode product · © Zencode Consulting Inc.
+A Zencode company · © Zencode Consulting Inc.

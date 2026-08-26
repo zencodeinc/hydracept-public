@@ -37,7 +37,10 @@ namespace Hydracept.Unity.Editor.Import
             CancellationToken cancellationToken = default)
         {
             var jobFolder = $"{options.DestinationRoot.TrimEnd('/')}/{options.CapabilityKey}/{job.JobId}";
-            var fileName = $"{artifact.ArtifactId}.png";
+            var fileName = Path.GetFileName(
+                string.IsNullOrWhiteSpace(artifact.Filename)
+                    ? (string.IsNullOrWhiteSpace(artifact.Label) ? $"{artifact.ArtifactId}.png" : $"{artifact.Label}.png")
+                    : artifact.Filename);
             var preflight = ImportPreflight.ValidateBatch(
                 jobFolder,
                 new[] { (artifact.ArtifactId, fileName) });
@@ -60,7 +63,12 @@ namespace Hydracept.Unity.Editor.Import
             var index = 1;
             foreach (var artifact in job.Artifacts)
             {
-                var label = $"{index:00}_{artifact.ArtifactId}.png";
+                var label = Path.GetFileName(
+                    !string.IsNullOrWhiteSpace(artifact.Filename)
+                        ? artifact.Filename
+                        : !string.IsNullOrWhiteSpace(artifact.Label)
+                            ? $"{artifact.Label}.png"
+                            : $"{index:00}_{artifact.ArtifactId}.png");
                 artifacts.Add((artifact.ArtifactId, label));
                 index++;
             }

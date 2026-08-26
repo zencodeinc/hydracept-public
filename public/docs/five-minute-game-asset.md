@@ -1,62 +1,55 @@
 # 5-minute game asset
 
-Generate a game-ready image through Hydracept in about five minutes. This path uses a durable job (`image.generate.v1`) so retries, polling, and receipts work the same way in CI as they do locally.
+Generate your first game asset through Hydracept in about five minutes.
 
-**Bring your own key (BYOK):** Hydracept does not mark up inference. You authenticate to Hydracept with an API key, then attach a provider credential (for example OpenAI) so image jobs can run. Without a bound provider credential, job submit may succeed but execution will fail provider readiness checks.
+**For a free test:** Run `python -m hydracept smoke` to verify your setup. For ongoing production use, connect your own OpenAI, ElevenLabs, or Meshy key; Hydracept adds no inference markup.
 
 ## 1. Activate
 
-Pick one path:
-
-### Option A — Browser (fastest first account)
+### Option A — Browser (fastest)
 
 1. Open [https://hydracept.com/start](https://hydracept.com/start)
-2. Sign in with GitHub (or Google when enabled)
-3. Save the printed `HYDRACEPT_API_KEY`, project id, and environment
+2. Sign in with GitHub or Google
+3. Save the printed API key — click **Copy setup for coding agent** if an agent will continue
 
-### Option B — CLI device login
+### Option B — CLI (humans)
 
 ```bash
-pip install hydracept
-# Windows / PATH issues: use python -m hydracept instead of hydracept
-python -m hydracept login
-python -m hydracept init --apply --yes
+pip install -U hydracept
+python -m hydracept init --apply --yes --wait
+```
+
+Sign in on the connect page, choose workspace and project, then approve. Use **Use a different account** if you have multiple GitHub or Google logins.
+
+### Option C — Agents / headless (API key paste)
+
+```bash
+pip install -U hydracept
+python -m hydracept quickstart --token "$HYDRACEPT_API_KEY" --json --smoke
+```
+
+Legacy path (still supported): `login --token` → `init --apply --yes` → `doctor` → `smoke`.  
+Browser connect without API key: `init --apply --yes --json` → human opens connect URL → `init --apply --yes --json --wait`.
+
+## 2. Verify
+
+```bash
 python -m hydracept doctor
 ```
 
-`login` opens `https://api.hydracept.com/device`. Sign in, enter the terminal code, approve, then return to the terminal.
+Doctor prints **Next** actions when something is missing (PATH tip, BYOK URL, smoke command).
 
-## 2. Configure environment
+## 3. First image (smoke test or BYOK)
+
+```bash
+python -m hydracept smoke
+```
+
+Or submit manually:
 
 ```bash
 export HYDRACEPT_API_URL=https://api.hydracept.com
-export HYDRACEPT_API_KEY=hydracept_...
-export HYDRACEPT_PROJECT=cpr_...
-export HYDRACEPT_ENVIRONMENT=development
-```
-
-On Windows PowerShell:
-
-```powershell
-$env:HYDRACEPT_API_URL="https://api.hydracept.com"
-$env:HYDRACEPT_API_KEY="hydracept_..."
-$env:HYDRACEPT_PROJECT="cpr_..."
-$env:HYDRACEPT_ENVIRONMENT="development"
-```
-
-## 3. Attach a provider credential (BYOK)
-
-Hydracept identity ≠ provider billing. Create and bind a provider credential for the project/environment that will run image jobs. See [Connections / BYOK](../connections/).
-
-Typical flow:
-
-1. `POST /v1/organizations/{orgId}/provider-credentials` with your OpenAI (or other) secret
-2. `POST .../bindings` to attach it to `HYDRACEPT_PROJECT` + `HYDRACEPT_ENVIRONMENT`
-3. Confirm with `python -m hydracept doctor` (provider readiness checks)
-
-## 4. Submit an image job
-
-```bash
+# keys from activation / .hydracept/local.env
 JOB_JSON=$(curl -sS -X POST \
   -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
   -H "Content-Type: application/json" \
@@ -66,38 +59,31 @@ JOB_JSON=$(curl -sS -X POST \
       \"projectId\": \"$HYDRACEPT_PROJECT\",
       \"environment\": \"$HYDRACEPT_ENVIRONMENT\"
     },
-    \"input\": { \"prompt\": \"cute slime enemy icon, flat game art, transparent background\" },
+    \"input\": { \"prompt\": \"cute slime enemy icon, flat game art\" },
     \"execution\": { \"executionPreference\": \"automatic\" },
     \"idempotencyKey\": \"five-minute-slime-1\"
   }" \
   "$HYDRACEPT_API_URL/v1/capabilities/image.generate.v1/jobs")
-
-echo "$JOB_JSON"
-JOB_ID=$(printf '%s' "$JOB_JSON" | python -c "import sys,json; print(json.load(sys.stdin)['jobId'])")
 ```
 
-## 5. Poll and fetch the receipt
+## 4. Connect BYOK (recommended for production)
 
-```bash
-curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
-  "$HYDRACEPT_API_URL/v1/jobs/$JOB_ID"
+Open the BYOK form from activation (**Configure BYOK**), or visit:
 
-curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
-  "$HYDRACEPT_API_URL/v1/jobs/$JOB_ID/receipt"
-```
+`https://api.hydracept.com/v1/onboarding/byok?organizationId=…&projectId=…&environment=development`
 
-Poll until status is `succeeded`, `failed`, or `canceled`. The receipt includes artifact download paths when generation succeeds.
+Paste an OpenAI, ElevenLabs, or Meshy key — Hydracept encrypts and binds it. See [Connections / BYOK](../connections/).
 
-## What you just proved
+## What you have now
 
-- Hydracept authenticated your **caller** (API key)
-- Your **provider credential** paid for inference (BYOK)
-- A durable capability job is the right primitive for game asset pipelines
+- Your Hydracept workspace is authenticated
+- Your first game asset job has run successfully
+- Your provider billing stays on your account through BYOK
 
 ## Next
 
 - [Quick Start](../)
-- [Authentication & Activation](../authentication/)
+- [Authentication](../authentication/)
 - [Connections / BYOK](../connections/)
-- [Durable Jobs & Receipts](../jobs/)
-- [Capabilities](../capabilities/)
+- [Jobs](../jobs/)
+- [Agent context](https://api.hydracept.com/v1/agent-context)

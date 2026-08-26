@@ -7,10 +7,13 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>Hydracept.Client</RootNamespace>
     <AssemblyName>Hydracept.Client</AssemblyName>
-    <Description>Thin HTTP + SSE client for the Hydracept public API — AI execution infrastructure for games.</Description>
-    <Version>0.1.0</Version>
+    <Description>Thin HTTP + SSE client for the Hydracept public API — production-ready game assets, with a receipt for every run.</Description>
+    <Version>0.3.2</Version>
     <Authors>Zencode</Authors>
     <PackageId>Hydracept.Client</PackageId>
+    <PackageTags>hydracept;mcp;gamedev;unity;image-generation;sprite-sheet;transparent-png;reference-image;multi-provider;game-ai</PackageTags>
+    <PackageProjectUrl>https://hydracept.com</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/hydracept/hydracept-public</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <IsPackable>true</IsPackable>
     <PackageReadmeFile>README.md</PackageReadmeFile>
