@@ -1,4 +1,4 @@
-# Coding Agents
+﻿# Coding Agents
 
 Coding agents can integrate Hydracept from the published docs, OpenAPI, and agent-context endpoints.
 
@@ -48,8 +48,8 @@ Hydracept exposes an MCP server for tool-using agents. **In a project checkout, 
 Install into a coding agent:
 
 - **Plugin homepage:** [https://hydracept.com/plugin](https://hydracept.com/plugin)
-- **Cursor:** install Hydracept from the Cursor Marketplace when listed, or add `github.com/hydracept/agent-plugins`. Then `python -m hydracept init --apply --yes --json` and reload MCP.
-- **Claude Code:** `/plugin marketplace add hydracept/agent-plugins` then `/plugin install hydracept@hydracept`. Init in the repo and reload MCP.
+- **Cursor:** install Hydracept from the Cursor Marketplace when listed, or add `github.com/zencodeinc/hydracept-agent-plugins`. Then `python -m hydracept init --apply --yes --json` and reload MCP.
+- **Claude Code:** `/plugin marketplace add zencodeinc/hydracept-agent-plugins` then `/plugin install hydracept@hydracept`. Init in the repo and reload MCP.
 - **No checkout (ChatGPT, MCP Registry):** hosted MCP at `https://api.hydracept.com/mcp` with a bearer API key
 - **CLI fallback:** `python -m hydracept agents install --auto` / `python -m hydracept mcp serve` / `jobs submit`
 

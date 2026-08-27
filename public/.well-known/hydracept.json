@@ -1,4 +1,4 @@
-{
+﻿{
   "agentContext": "https://api.hydracept.com/v1/agent-context",
   "agentPlugin": {
     "id": "hydracept-agent-plugin",
@@ -83,7 +83,7 @@
   "sameAs": [
     "https://www.npmjs.com/package/@hydracept/sdk",
     "https://pypi.org/project/hydracept/",
-    "https://github.com/hydracept/hydracept-public",
+    "https://github.com/zencodeinc/hydracept-public",
     "https://docs.hydracept.com"
   ],
   "selfServeBootstrapLive": true,

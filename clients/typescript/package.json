@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "@hydracept/sdk",
   "version": "0.3.2",
   "description": "TypeScript client for Hydracept — production-ready game assets, with a receipt for every run.",
@@ -50,11 +50,11 @@
   "license": "MIT",
   "homepage": "https://hydracept.com",
   "bugs": {
-    "url": "https://github.com/hydracept/hydracept-public/issues"
+    "url": "https://github.com/zencodeinc/hydracept-public/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hydracept/hydracept-public.git",
+    "url": "git+https://github.com/zencodeinc/hydracept-public.git",
     "directory": "clients/typescript"
   },
   "publishConfig": {

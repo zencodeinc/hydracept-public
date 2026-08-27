@@ -1,4 +1,4 @@
-# Hydracept for Unity
+﻿# Hydracept for Unity
 
 Editor-only integration for generating and importing Hydracept production assets.
 
@@ -12,7 +12,7 @@ Editor-only integration for generating and importing Hydracept production assets
 ### Package Manager (Git URL)
 
 ```
-https://github.com/hydracept/hydracept-public.git?path=/packages/unity#v0.1.0
+https://github.com/zencodeinc/hydracept-public.git?path=/packages/unity#v0.1.0
 ```
 
 ### CLI

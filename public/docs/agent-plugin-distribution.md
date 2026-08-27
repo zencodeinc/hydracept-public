@@ -1,8 +1,8 @@
-# Coding agent integrations
+﻿# Coding agent integrations
 
 Use **`hydracept-agent-plugin`** to give coding agents access to Hydracept capabilities, job submission, and result records.
 
-Marketplace packaging is a **distribution layer** compiled from `public/agents/source/` into native host projections and the public catalog repo `hydracept/agent-plugins`. The CLI (`python -m hydracept agents install --auto`) remains the universal local fallback.
+Marketplace packaging is a **distribution layer** compiled from `public/agents/source/` into native host projections and the public catalog repo `zencodeinc/hydracept-agent-plugins`. The CLI (`python -m hydracept agents install --auto`) remains the universal local fallback.
 
 ## What agents can do
 
@@ -51,7 +51,7 @@ Outputs under `dist/`:
 
 - `cursor/` — Cursor Plugin
 - `claude/` — Claude Code plugin
-- `agent-plugins-repo/` — public catalog assembly for `hydracept/agent-plugins`
+- `agent-plugins-repo/` — public catalog assembly for `zencodeinc/hydracept-agent-plugins`
 - `mcp-registry/server.json` — Official MCP Registry metadata
 - `agent-plugins/` — Agent Plugins 1.0 projection
 - `openai/` / `openclaw/` — later channels (not this push)
@@ -68,8 +68,8 @@ python -m hydracept agents install --auto
 |------|------|
 | Plugin homepage | [https://hydracept.com/plugin](https://hydracept.com/plugin) |
 | CLI (all hosts) | `python -m hydracept agents install --auto` |
-| Cursor | Cursor Marketplace listing of `hydracept/agent-plugins`, or enable `plugins/cursor` |
-| Claude Code | `/plugin marketplace add hydracept/agent-plugins` then `/plugin install hydracept@hydracept` |
+| Cursor | Cursor Marketplace listing of `zencodeinc/hydracept-agent-plugins`, or enable `plugins/cursor` |
+| Claude Code | `/plugin marketplace add zencodeinc/hydracept-agent-plugins` then `/plugin install hydracept@hydracept` |
 | MCP Registry | `com.hydracept/mcp` at `https://api.hydracept.com/mcp` |
 
 Do not document `/plugin install hydracept` as the canonical Claude form. The marketplace name (`hydracept`) participates in install.
@@ -92,17 +92,17 @@ canonical agent source
   → install generated Cursor plugin into isolated project
   → zero-knowledge marketplace-first benchmark
   → consumer-check --strict
-  → export exact tested bytes to hydracept/agent-plugins
+  → export exact tested bytes to zencodeinc/hydracept-agent-plugins
   → owner publication/submission
 ```
 
 ## Owner checklist (this push)
 
-- [x] Create public GitHub repo `hydracept/agent-plugins`
+- [x] Create public GitHub repo `zencodeinc/hydracept-agent-plugins`
 - [x] Run `python scripts/generate_mcp_registry_http_auth.py` and backup `.hydracept/mcp-registry-http.pem` locally (do **not** put it in GitHub secrets yet)
 - [x] Deploy `https://hydracept.com/.well-known/mcp-registry-auth`
 - [x] After marketplace-first benchmark: `python scripts/sync_agent_plugins.py --tag v0.1.3` (do not retag `v0.1.0`, `v0.1.1`, or `v0.1.2`)
-- [ ] Submit `hydracept/agent-plugins` at [cursor.com/marketplace/publish](https://cursor.com/marketplace/publish)
+- [ ] Submit `zencodeinc/hydracept-agent-plugins` at [cursor.com/marketplace/publish](https://cursor.com/marketplace/publish)
 - [ ] Run `mcp-publisher login http --domain hydracept.com` + `mcp-publisher publish` from `dist/mcp-registry/` (private key stays local)
 - [ ] Record listing URLs in `architecture/hydracept-launch-gate.yaml` → `marketplace_listings`
 

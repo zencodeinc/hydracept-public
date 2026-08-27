@@ -1,4 +1,4 @@
-"""Unity UPM install helper."""
+﻿"""Unity UPM install helper."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 DEFAULT_UNITY_PACKAGE_URL = (
-    "https://github.com/hydracept/hydracept-public.git?path=/packages/unity#v0.1.0"
+    "https://github.com/zencodeinc/hydracept-public.git?path=/packages/unity#v0.1.0"
 )
 PACKAGE_NAME = "com.hydracept.unity"
 

@@ -1,4 +1,4 @@
-# Hydracept Unity integration
+﻿# Hydracept Unity integration
 
 Generate and import production assets directly from the Unity 6 Editor. Player builds stay independent of Hydracept.
 
@@ -16,7 +16,7 @@ This adds the package to your Unity project `Packages/manifest.json`.
 ### Package Manager (UPM)
 
 ```
-https://github.com/hydracept/hydracept-public.git?path=/packages/unity#v0.1.0
+https://github.com/zencodeinc/hydracept-public.git?path=/packages/unity#v0.1.0
 ```
 <!-- docs:endif -->
 

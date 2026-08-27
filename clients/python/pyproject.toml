@@ -1,4 +1,4 @@
-[build-system]
+﻿[build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
@@ -33,7 +33,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://hydracept.com"
 Documentation = "https://hydracept.com/docs"
-Repository = "https://github.com/hydracept/hydracept-public"
+Repository = "https://github.com/zencodeinc/hydracept-public"
 
 [project.scripts]
 hydracept = "hydracept.cli.main:app"

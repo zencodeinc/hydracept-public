@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "@hydracept/elements",
   "version": "0.1.0",
   "description": "Embed Hydracept generation panels in web apps — iframe host SDK with hydracept.panel.v1 postMessage protocol.",
@@ -45,11 +45,11 @@
   ],
   "homepage": "https://hydracept.com",
   "bugs": {
-    "url": "https://github.com/hydracept/hydracept-public/issues"
+    "url": "https://github.com/zencodeinc/hydracept-public/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hydracept/hydracept-public.git",
+    "url": "git+https://github.com/zencodeinc/hydracept-public.git",
     "directory": "packages/elements"
   },
   "publishConfig": {

@@ -1,4 +1,4 @@
-{
+﻿{
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "{{registryName}}",
   "title": "{{displayName}}",
@@ -6,7 +6,7 @@
   "version": "{{distributionVersion}}",
   "websiteUrl": "{{pluginHomepage}}",
   "repository": {
-    "url": "https://github.com/hydracept/agent-plugins",
+    "url": "https://github.com/zencodeinc/hydracept-agent-plugins",
     "source": "github"
   },
   "remotes": [

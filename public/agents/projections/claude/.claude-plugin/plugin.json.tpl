@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "hydracept",
   "displayName": "{{displayName}}",
   "version": "{{distributionVersion}}",
@@ -8,6 +8,6 @@
     "name": "{{authorName}}"
   },
   "homepage": "{{pluginHomepage}}",
-  "repository": "https://github.com/hydracept/agent-plugins",
+  "repository": "https://github.com/zencodeinc/hydracept-agent-plugins",
   "license": "MIT"
 }

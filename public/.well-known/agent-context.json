@@ -1,4 +1,4 @@
-{
+﻿{
   "agentOperating": {
     "bindMcp": "python -m hydracept mcp bind",
     "hostedMcp": "In a git checkout, stdio MCP after init is the default. Hosted MCP can look ready and still fail with no workspace key. If hydracept_* tools are not listed this turn, skip hosted MCP. Use python -m hydracept mcp serve or HydraceptWorkspace.open(). Do not put the workspace key in Plugins \u2192 Configure. Hosted MCP is for clients with no checkout.",
@@ -10,7 +10,7 @@
     "upgrade": "pip install -U hydracept"
   },
   "agentPack": {
-    "catalog": "https://github.com/hydracept/agent-plugins",
+    "catalog": "https://github.com/zencodeinc/hydracept-agent-plugins",
     "explicitSmokeOnly": true,
     "homepage": "https://hydracept.com/plugin",
     "install": "python -m hydracept agents install --auto",

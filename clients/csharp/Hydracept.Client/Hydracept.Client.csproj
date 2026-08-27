@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
@@ -13,7 +13,7 @@
     <PackageId>Hydracept.Client</PackageId>
     <PackageTags>hydracept;mcp;gamedev;unity;image-generation;sprite-sheet;transparent-png;reference-image;multi-provider;game-ai</PackageTags>
     <PackageProjectUrl>https://hydracept.com</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/hydracept/hydracept-public</RepositoryUrl>
+    <RepositoryUrl>https://github.com/zencodeinc/hydracept-public</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <IsPackable>true</IsPackable>
     <PackageReadmeFile>README.md</PackageReadmeFile>
