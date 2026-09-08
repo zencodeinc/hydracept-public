@@ -1,29 +1,29 @@
 # Integrating safely
 
-Use the public Hydracept API as the single path from your product to the AI providers it uses.
+Use the public Hydracept API as the single path from your product to the external capabilities Hydracept owns for that integration.
 
 ## Rule
 
-This keeps credentials, provider configuration, job status, and execution records in one place.
+This keeps credentials, provider configuration, job status, cost, and execution records in one place.
 
-When Hydracept is meant to own generation execution:
+When Hydracept is meant to own execution:
 
 - call Hydracept capabilities and jobs from trusted tooling or your server
-- keep provider SDKs out of the generation path handled by Hydracept
+- keep direct provider/service SDKs out of paths handled by Hydracept
 - never embed provider keys in game clients or other shipped public code
 
 ## CI gate
 
 <!-- docs:if packages.cli.releasePublished -->
 ```bash
-hydracept consumer-check --strict
+python -m hydracept consumer-check --strict --json
 ```
 
-Add a CI check if you want to prevent direct provider clients from entering paths handled by Hydracept.
+Require `passed: true` in automated consumer/integration audits. `--strict` expands the scanner beyond source files into common configuration manifests so provider hosts and legacy integration paths cannot hide in deployment/build configuration. `--json` emits `hydracept.cli.consumer-check.v1` for agents and CI.
 <!-- docs:endif -->
 
 <!-- docs:if !packages.cli.releasePublished -->
-When the CLI release is published, add the consumer-check gate to product CI. Until then, review integrations manually against this boundary and the public OpenAPI contract.
+When the CLI release is published, add the strict consumer-check gate to product CI. Until then, review integrations manually against this boundary and the public OpenAPI contract.
 <!-- docs:endif -->
 
 ## Related

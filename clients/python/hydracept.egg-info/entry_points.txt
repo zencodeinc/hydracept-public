@@ -1,2 +1,0 @@
-[console_scripts]
-hydracept = hydracept.cli.main:app

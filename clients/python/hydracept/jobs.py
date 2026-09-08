@@ -74,7 +74,9 @@ class JobRunner:
 
     def submit(self, capability_key: str, body: dict[str, Any]) -> dict[str, Any]:
         from hydracept.cli.job_context import merge_workspace_job_context
+        from hydracept.context import assert_execution_allowed
 
+        assert_execution_allowed(self._workspace)
         payload = merge_workspace_job_context(dict(body), self._workspace)
         return self._client.submit_capability_job(capability_key, payload)
 

@@ -1,10 +1,12 @@
 # hydracept
 
-Python client for the Hydracept public API — production-ready game assets, with a receipt for every run.
+Python client for the Hydracept public API — an execution control plane for software and agents that need external capabilities.
 
 ```bash
 pip install hydracept
 ```
+
+The current PyPI cut is **0.3.12**. Receipts do not invent BYOK or managed trial when funding evidence is missing. Domain and CPU capabilities omit inference `billingModes`.
 
 ```bash
 python -m hydracept init

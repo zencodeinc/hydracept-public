@@ -3,14 +3,16 @@ server:
   instructions: >-
     Hydracept public capability jobs. In a git checkout, use stdio MCP after
     `python -m hydracept init` (workspace secrets). Hosted MCP with an API key
-    is for clients with no checkout. Credentials never enter model context.
+    is for clients with no checkout. One capability call is enough — do not
+    assume repeated usage is required. hydracept_run composes workspace
+    bootstrap when possible. Credentials never enter model context.
 tools:
   - name: hydracept_status
     summary: Local workspace readiness (stdio) or session diagnostics (hosted).
     readOnlyHint: true
     destructiveHint: false
   - name: hydracept_capabilities
-    summary: List capabilities or describe one when key is provided.
+    summary: List, find (query), or describe a capability, including one-shot readiness facts. Look for features.deferredProcessing on text job_async capabilities.
     readOnlyHint: true
     destructiveHint: false
   - name: resolve_capability
@@ -33,8 +35,12 @@ tools:
     summary: Invoke a synchronous capability such as domain search, DNS list, or TLS retrieve.
     readOnlyHint: true
     destructiveHint: false
+  - name: hydracept_run
+    summary: Run a capability from a prompt. Composes init when the workspace can be bootstrapped.
+    readOnlyHint: false
+    destructiveHint: false
   - name: hydracept_submit_job
-    summary: Submit a capability job. Body follows the public OpenAPI contract.
+    summary: Submit a capability job. Eligible durable text jobs use deferred processing at 50% of standard token rates.
     readOnlyHint: false
     destructiveHint: false
   - name: hydracept_job_status
@@ -54,8 +60,16 @@ tools:
     readOnlyHint: false
     destructiveHint: false
   - name: hydracept_pinned_run
-    summary: Submit pinned execution (RIP). Same quoteId rules as jobs.
+    summary: Submit pinned execution. Standard by default. Opt in with processing=deferred on eligible OpenAI Responses pins (50% Flex); one logical model execution, admission retries recorded, no truncation rewrite.
     readOnlyHint: false
+    destructiveHint: false
+  - name: hydracept_pinned_bulk
+    summary: Submit a durable pinned bulk of independent items (one logical execution each; admission retries recorded).
+    readOnlyHint: false
+    destructiveHint: false
+  - name: hydracept_pinned_bulk_get
+    summary: GET a pinned bulk once. If nextAction is poll, wait pollAfterSeconds and call again.
+    readOnlyHint: true
     destructiveHint: false
   - name: hydracept_pinned_get
     summary: GET a pinned execution receipt by id.
@@ -103,5 +117,9 @@ tools:
     destructiveHint: false
   - name: hydracept_project_get_operation
     summary: GET a project operation by id.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: hydracept_interaction_surface
+    summary: Present one Hydracept App state. Follow presentation.agentAction; present_and_yield means stop the turn.
     readOnlyHint: true
     destructiveHint: false

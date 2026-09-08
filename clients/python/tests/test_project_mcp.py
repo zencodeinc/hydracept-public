@@ -22,6 +22,11 @@ def test_stdio_mcp_advertises_stylized_h_icon() -> None:
     assert any(icon.src == HYDRACEPT_LOGO_URL for icon in server.icons)
 
 
+def test_stdio_mcp_instructions_direct_agents_to_interaction_surface() -> None:
+    assert "hydracept_interaction_surface" in (server.instructions or "")
+    assert "capability.launch" in (server.instructions or "")
+
+
 def _bind_workspace(root: Path) -> None:
     hydra = root / ".hydracept"
     hydra.mkdir(parents=True)
@@ -97,8 +102,11 @@ def test_stdio_server_registers_project_tools() -> None:
         assert expected in names
     assert "hydracept_submit_job" in names
     assert "hydracept_invoke" in names
+    assert "hydracept_interaction_surface" in names
     for expected in (
         "hydracept_pinned_run",
+        "hydracept_pinned_bulk",
+        "hydracept_pinned_bulk_get",
         "hydracept_pinned_get",
         "hydracept_manifest_create",
         "hydracept_manifest_verify",

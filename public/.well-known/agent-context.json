@@ -1,4 +1,4 @@
-﻿{
+{
   "agentOperating": {
     "bindMcp": "python -m hydracept mcp bind",
     "hostedMcp": "In a git checkout, stdio MCP after init is the default. Hosted MCP can look ready and still fail with no workspace key. If hydracept_* tools are not listed this turn, skip hosted MCP. Use python -m hydracept mcp serve or HydraceptWorkspace.open(). Do not put the workspace key in Plugins \u2192 Configure. Hosted MCP is for clients with no checkout.",
@@ -19,10 +19,112 @@
     "status": "python -m hydracept agent-status --json",
     "version": "0.1.0"
   },
+  "asyncJobs": {
+    "discovery": [
+      {
+        "List capabilities": "GET /v1/capabilities"
+      },
+      {
+        "Describe capability": "GET /v1/capabilities/{key}"
+      },
+      "Treat inputConstraints on the descriptor as the overflow contract. Hydracept never silently truncates semantic user input.",
+      {
+        "Resolve missing capability": "POST /v1/capabilities/resolve (side-effect free; never spends)"
+      },
+      {
+        "Retail quote": "POST /v1/capabilities/{key}/quote (optional preview; never reserves or charges). /estimate is the HTTP alias of the same 0.3 response."
+      },
+      {
+        "Anonymous catalog prices": "pricingContext catalog_default, authoritativeForExecution false"
+      },
+      {
+        "Authenticated quotes": "account billing currency, authoritativeForExecution true"
+      },
+      {
+        "Agent context bundle": "GET /v1/agent-context"
+      },
+      {
+        "Capability request": "POST /v1/capability-requests (non-binding; humans pay quotes)"
+      }
+    ],
+    "download": "GET /v1/jobs/{jobId}/artifacts/{artifactId}",
+    "idempotencyKeyRequired": true,
+    "jobIdIsNavigationKey": true,
+    "jobWait": {
+      "failure": [
+        "failed",
+        "canceled"
+      ],
+      "humanGate": [
+        "awaiting_approval",
+        "needs_attention"
+      ],
+      "intervalSeconds": 4,
+      "nextActions": {
+        "download_artifacts": "Job succeeded \u2014 hydracept_download_artifact(job_id) uses primaryArtifactId. If ARTIFACT_SELECTION_REQUIRED, select among artifacts. jobId is the navigation key; GET /v1/jobs/{jobId}/receipt without extracting receiptId.",
+        "inspect_error": "Stop polling. Read job.error and job.error.recovery before any resubmit. Do not retry a sealed route that is not routable.",
+        "poll": "Job is still running \u2014 call GET /v1/jobs/{jobId} or hydracept_job_status again after intervalSeconds.",
+        "present_approval": "Stop polling. Show the approval URL or quote to the human.",
+        "stop": "Terminal failure or cancel. Do not poll again. Read job.error.recovery before resubmitting."
+      },
+      "success": [
+        "succeeded"
+      ],
+      "terminal": [
+        "awaiting_approval",
+        "canceled",
+        "failed",
+        "needs_attention",
+        "succeeded"
+      ],
+      "timeoutSeconds": 600,
+      "unknownStatusKeepsPolling": true,
+      "waiting": [
+        "canceling",
+        "queued",
+        "running"
+      ]
+    },
+    "mcp": {
+      "download": "hydracept_download_artifact(job_id) uses primaryArtifactId when artifact_id/label omitted",
+      "poll": "hydracept_job_status \u2014 returns immediately; read nextAction",
+      "receipt": "hydracept_get_receipt(job_id) \u2014 do not extract receiptId merely to proceed",
+      "submit": "hydracept_submit_job \u2014 returns immediately; does not wait"
+    },
+    "missingReceiptIdOnSucceededIsContractViolation": true,
+    "notes": [
+      "Submit via POST /v1/capabilities/{key}/jobs with idempotencyKey.",
+      "Poll GET /v1/jobs/{jobId} until status is succeeded, failed, or canceled.",
+      "Fetch receipt via GET /v1/jobs/{jobId}/receipt."
+    ],
+    "poll": "GET /v1/jobs/{jobId}",
+    "pollUntilNonWaiting": true,
+    "receipt": "GET /v1/jobs/{jobId}/receipt",
+    "receiptIdIsProvenance": true,
+    "submit": "POST /v1/capabilities/{key}/jobs",
+    "terminalJobFields": [
+      "jobId",
+      "status",
+      "projectId",
+      "receiptId",
+      "primaryArtifactId"
+    ]
+  },
+  "authentication": {
+    "apiKey": true,
+    "browserConnect": true,
+    "changeGithubAccount": "gh auth switch",
+    "githubCliReuse": "If GitHub CLI is already authenticated, Hydracept may reuse the active github.com identity for local activation. Provider/API credentials are not read from GitHub and remain separate.",
+    "multipleAccounts": "gh has one active github.com account. Hydracept uses that account. Switch with gh auth switch before init, or pick the account on the connect page.",
+    "supportedLocalIdentities": [
+      "github"
+    ]
+  },
   "bootstrap": {
     "command": "python -m hydracept init --apply --yes --json",
     "diagnostic": "python -m hydracept doctor --json",
     "rules": [
+      "Do not inspect Hydracept implementation source. Prefer CLI help, doctor, agent-status, GET /v1/agent-context, public docs, and public OpenAPI.",
       "Do not inspect provider credential values.",
       "Do not ask the user to paste provider credentials.",
       "Do not use .hydracept/agent-context.json as the capability catalog; GET /v1/agent-context or python -m hydracept doctor.",
@@ -35,11 +137,17 @@
       "domain.list.v1 is invoke (not jobs). Filter with domain or nameContains and read typedOutput; the first page can omit domains \u2014 paginate or filter.",
       "Hosted MCP can list tools with no workspace key. Use stdio MCP after python -m hydracept init. Do not put the workspace key in Plugins \u2192 Configure.",
       "Sheet & Slice: each slice needs >= 655360 px and edges multiple of 16 (min 816x816 per slice).",
+      "If the user asked for a capability, prefer python -m hydracept run \u2014 it composes init automatically.",
+      "Do not run a separate setup ceremony first unless run returns interaction_required.",
       "Preferred unattended path: HYDRACEPT_API_KEY then init --ci --json.",
-      "If init returns interaction_required, present action.url to the user.",
+      "Init infers or creates the current project from workspace/git context when identity is already authenticated.",
+      "Browser project selection is a fallback for ambiguous matches, not a required approval gate.",
+      "If init returns interaction_required, stop and present action.url to the user. Read identity and projectResolution so project selection is not mistaken for a failed login. A human must open the URL; then rerun init --json --wait.",
       "After the user completes browser setup, run init with --json --wait (reuses bootstrapSessionId from .hydracept/bootstrap-session.json).",
       "If the user has multiple sign-in accounts, remind them to pick the right one on the connect page.",
-      "Do not use project API credentials to modify provider connections."
+      "To change the automatic project binding later, run hydracept project use <project> or init --project <project>.",
+      "Do not use project API credentials to modify provider connections.",
+      "Prefer durable jobs (POST /v1/capabilities/{key}/jobs) for text work that can wait. Eligible models use deferred processing at 50% of standard token rates (features.deferredProcessing on the capability descriptor). Pins stay on standard processing unless processing is deferred. Invoke and stream stay on standard processing."
     ],
     "waitCommand": "python -m hydracept init --apply --yes --json --wait"
   },
@@ -118,20 +226,61 @@
           },
           "providerChargesExternal": false,
           "providerChargesIncluded": true,
-          "serviceFeeBps": 1000
+          "serviceFeeBps": 600
         }
       },
+      "category": "generation",
+      "constraints": null,
       "credentialSources": null,
       "defaultCredentialSource": null,
       "description": "Low-latency general-purpose text generation.",
       "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
       "executionModes": [
         "invoke_sync",
         "invoke_stream",
         "job_async"
       ],
-      "features": {},
+      "family": "text",
+      "features": {
+        "deferredProcessing": {
+          "appliesTo": [
+            "job_async",
+            "pinned"
+          ],
+          "available": true,
+          "defaultFor": [
+            "job_async"
+          ],
+          "discountBps": 5000,
+          "optInFor": [
+            "pinned"
+          ]
+        }
+      },
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
       "idempotencyRequired": true,
+      "inputConstraints": {
+        "messages": {
+          "measurement": "tokens",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -162,6 +311,16 @@
             },
             "minItems": 1,
             "type": "array"
+          },
+          "responseFormat": {
+            "enum": [
+              "text",
+              "json_object"
+            ],
+            "type": "string"
+          },
+          "responseSchema": {
+            "type": "object"
           }
         },
         "required": [
@@ -169,8 +328,16 @@
         ],
         "type": "object"
       },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
       "key": "text.general.fast.v1",
       "modality": "text",
+      "output": {
+        "kind": "text",
+        "mediaType": "text/plain"
+      },
       "outputSchema": {
         "properties": {
           "content": {
@@ -222,6 +389,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/text.general.fast.v1/quote"
       },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
       "title": "General fast text"
     },
     {
@@ -298,20 +466,61 @@
           },
           "providerChargesExternal": false,
           "providerChargesIncluded": true,
-          "serviceFeeBps": 1000
+          "serviceFeeBps": 600
         }
       },
+      "category": "generation",
+      "constraints": null,
       "credentialSources": null,
       "defaultCredentialSource": null,
       "description": "Deeper reasoning for complex tasks.",
       "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
       "executionModes": [
         "invoke_sync",
         "invoke_stream",
         "job_async"
       ],
-      "features": {},
+      "family": "text",
+      "features": {
+        "deferredProcessing": {
+          "appliesTo": [
+            "job_async",
+            "pinned"
+          ],
+          "available": true,
+          "defaultFor": [
+            "job_async"
+          ],
+          "discountBps": 5000,
+          "optInFor": [
+            "pinned"
+          ]
+        }
+      },
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
       "idempotencyRequired": true,
+      "inputConstraints": {
+        "messages": {
+          "measurement": "tokens",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -342,6 +551,16 @@
             },
             "minItems": 1,
             "type": "array"
+          },
+          "responseFormat": {
+            "enum": [
+              "text",
+              "json_object"
+            ],
+            "type": "string"
+          },
+          "responseSchema": {
+            "type": "object"
           }
         },
         "required": [
@@ -349,8 +568,16 @@
         ],
         "type": "object"
       },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
       "key": "text.reasoning.high.v1",
       "modality": "text",
+      "output": {
+        "kind": "text",
+        "mediaType": "text/plain"
+      },
       "outputSchema": {
         "properties": {
           "content": {
@@ -402,7 +629,253 @@
         },
         "quoteEndpoint": "/v1/capabilities/text.reasoning.high.v1/quote"
       },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
       "title": "High reasoning text"
+    },
+    {
+      "billingModes": {
+        "byok": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Hydracept charge: Free. Provider charges your connected account separately.",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "free",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Model",
+                "key": "model",
+                "kind": "selection",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Maximum output",
+                "key": "maxOutputTokens",
+                "kind": "usage-ceiling",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Input size",
+                "key": "inputTokens",
+                "kind": "measured-usage",
+                "requiredForEstimate": true
+              }
+            ],
+            "pricingVersion": "price_2026_08_1"
+          },
+          "providerChargesExternal": true,
+          "providerChargesIncluded": false,
+          "serviceFeeBps": null
+        },
+        "managed": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Varies by model and usage. Optional /quote preview; the API seals pricing at job admission.",
+            "estimateEndpoint": "/v1/capabilities/text.reasoning.maximum.v1/estimate",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "metered",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Model",
+                "key": "model",
+                "kind": "selection",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Maximum output",
+                "key": "maxOutputTokens",
+                "kind": "usage-ceiling",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Input size",
+                "key": "inputTokens",
+                "kind": "measured-usage",
+                "requiredForEstimate": true
+              }
+            ],
+            "pricingVersion": "price_2026_08_1",
+            "quoteEndpoint": "/v1/capabilities/text.reasoning.maximum.v1/quote"
+          },
+          "providerChargesExternal": false,
+          "providerChargesIncluded": true,
+          "serviceFeeBps": 600
+        }
+      },
+      "category": "generation",
+      "constraints": null,
+      "credentialSources": null,
+      "defaultCredentialSource": null,
+      "description": "Maximum-reasoning long-context text on GPT-6 Astra, including multi-document jobs.",
+      "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
+      "executionModes": [
+        "invoke_sync",
+        "invoke_stream",
+        "job_async"
+      ],
+      "family": "text",
+      "features": {
+        "contextWindowTokens": 1050000,
+        "deferredProcessing": {
+          "appliesTo": [
+            "job_async",
+            "pinned"
+          ],
+          "available": true,
+          "defaultFor": [
+            "job_async"
+          ],
+          "discountBps": 5000,
+          "optInFor": [
+            "pinned"
+          ]
+        },
+        "documentInput": "text-native",
+        "longContext": true,
+        "noSilentTruncation": true,
+        "recommendedMaxInputTokens": 900000
+      },
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
+      "idempotencyRequired": true,
+      "inputConstraints": {
+        "messages": {
+          "measurement": "tokens",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "maxOutputTokens": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "messages": {
+            "items": {
+              "properties": {
+                "content": {
+                  "type": "string"
+                },
+                "role": {
+                  "enum": [
+                    "system",
+                    "user",
+                    "assistant"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ],
+              "type": "object"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "responseFormat": {
+            "enum": [
+              "text",
+              "json_object"
+            ],
+            "type": "string"
+          },
+          "responseSchema": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "type": "object"
+      },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
+      "key": "text.reasoning.maximum.v1",
+      "modality": "text",
+      "output": {
+        "kind": "text",
+        "mediaType": "text/plain"
+      },
+      "outputSchema": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "pricing": {
+        "authoritativeForExecution": false,
+        "billable": true,
+        "billingCurrency": "USD",
+        "display": "Varies by model and usage. Optional /quote preview; the API seals pricing at job admission.",
+        "estimateEndpoint": "/v1/capabilities/text.reasoning.maximum.v1/estimate",
+        "estimateRequired": false,
+        "examples": [],
+        "mode": "metered",
+        "pricingContext": "catalog_default",
+        "pricingFactors": [
+          {
+            "display": "Model",
+            "key": "model",
+            "kind": "selection",
+            "requiredForEstimate": true
+          },
+          {
+            "display": "Maximum output",
+            "key": "maxOutputTokens",
+            "kind": "usage-ceiling",
+            "requiredForEstimate": true
+          },
+          {
+            "display": "Input size",
+            "key": "inputTokens",
+            "kind": "measured-usage",
+            "requiredForEstimate": true
+          }
+        ],
+        "pricingVersion": "price_2026_08_1",
+        "quote": {
+          "requirements": [
+            "/input/maxOutputTokens",
+            "/input/inputTokens"
+          ],
+          "supported": true
+        },
+        "quoteEndpoint": "/v1/capabilities/text.reasoning.maximum.v1/quote"
+      },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "title": "Maximum reasoning text"
     },
     {
       "billingModes": {
@@ -466,19 +939,65 @@
           },
           "providerChargesExternal": false,
           "providerChargesIncluded": true,
-          "serviceFeeBps": 1000
+          "serviceFeeBps": 600
         }
       },
+      "category": "generation",
+      "constraints": null,
       "credentialSources": null,
       "defaultCredentialSource": null,
       "description": "Extract structured data from documents.",
       "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
       "executionModes": [
         "invoke_sync",
         "job_async"
       ],
-      "features": {},
+      "family": "text",
+      "features": {
+        "deferredProcessing": {
+          "appliesTo": [
+            "job_async",
+            "pinned"
+          ],
+          "available": true,
+          "defaultFor": [
+            "job_async"
+          ],
+          "discountBps": 5000,
+          "optInFor": [
+            "pinned"
+          ]
+        }
+      },
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
       "idempotencyRequired": true,
+      "inputConstraints": {
+        "document": {
+          "measurement": "tokens",
+          "overflow": "reject",
+          "semantic": true
+        },
+        "instructions": {
+          "measurement": "tokens",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -498,8 +1017,16 @@
         ],
         "type": "object"
       },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
       "key": "text.structured.extraction.v1",
       "modality": "text",
+      "output": {
+        "kind": "structured",
+        "mediaType": "application/json"
+      },
       "outputSchema": {
         "type": "object"
       },
@@ -537,7 +1064,647 @@
         },
         "quoteEndpoint": "/v1/capabilities/text.structured.extraction.v1/quote"
       },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
       "title": "Structured extraction"
+    },
+    {
+      "billingModes": {
+        "byok": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Hydracept charge: Free. Provider charges your connected account separately.",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "free",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Maximum output",
+                "key": "maxOutputTokens",
+                "kind": "usage-ceiling",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Input size",
+                "key": "inputTokens",
+                "kind": "measured-usage",
+                "requiredForEstimate": true
+              }
+            ],
+            "pricingVersion": "price_2026_08_1"
+          },
+          "providerChargesExternal": true,
+          "providerChargesIncluded": false,
+          "serviceFeeBps": null
+        },
+        "managed": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Varies by usage. Optional /quote preview; the API seals pricing at job admission.",
+            "estimateEndpoint": "/v1/capabilities/text.structured.generation.v1/estimate",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "metered",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Maximum output",
+                "key": "maxOutputTokens",
+                "kind": "usage-ceiling",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Input size",
+                "key": "inputTokens",
+                "kind": "measured-usage",
+                "requiredForEstimate": true
+              }
+            ],
+            "pricingVersion": "price_2026_08_1",
+            "quoteEndpoint": "/v1/capabilities/text.structured.generation.v1/quote"
+          },
+          "providerChargesExternal": false,
+          "providerChargesIncluded": true,
+          "serviceFeeBps": 600
+        }
+      },
+      "category": "generation",
+      "constraints": null,
+      "credentialSources": null,
+      "defaultCredentialSource": null,
+      "description": "Generate JSON that conforms to a caller-supplied schema.",
+      "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
+      "executionModes": [
+        "invoke_sync",
+        "job_async"
+      ],
+      "family": "text",
+      "features": {
+        "deferredProcessing": {
+          "appliesTo": [
+            "job_async",
+            "pinned"
+          ],
+          "available": true,
+          "defaultFor": [
+            "job_async"
+          ],
+          "discountBps": 5000,
+          "optInFor": [
+            "pinned"
+          ]
+        }
+      },
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
+      "idempotencyRequired": true,
+      "inputConstraints": {
+        "messages": {
+          "measurement": "tokens",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "maxOutputTokens": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "messages": {
+            "items": {
+              "properties": {
+                "content": {
+                  "type": "string"
+                },
+                "role": {
+                  "enum": [
+                    "system",
+                    "user",
+                    "assistant"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ],
+              "type": "object"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "responseFormat": {
+            "enum": [
+              "text",
+              "json_object"
+            ],
+            "type": "string"
+          },
+          "responseSchema": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "type": "object"
+      },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
+      "key": "text.structured.generation.v1",
+      "modality": "text",
+      "output": {
+        "kind": "structured",
+        "mediaType": "application/json"
+      },
+      "outputSchema": {
+        "type": "object"
+      },
+      "pricing": {
+        "authoritativeForExecution": false,
+        "billable": true,
+        "billingCurrency": "USD",
+        "display": "Varies by usage. Optional /quote preview; the API seals pricing at job admission.",
+        "estimateEndpoint": "/v1/capabilities/text.structured.generation.v1/estimate",
+        "estimateRequired": false,
+        "examples": [],
+        "mode": "metered",
+        "pricingContext": "catalog_default",
+        "pricingFactors": [
+          {
+            "display": "Maximum output",
+            "key": "maxOutputTokens",
+            "kind": "usage-ceiling",
+            "requiredForEstimate": true
+          },
+          {
+            "display": "Input size",
+            "key": "inputTokens",
+            "kind": "measured-usage",
+            "requiredForEstimate": true
+          }
+        ],
+        "pricingVersion": "price_2026_08_1",
+        "quote": {
+          "requirements": [
+            "/input/maxOutputTokens",
+            "/input/inputTokens"
+          ],
+          "supported": true
+        },
+        "quoteEndpoint": "/v1/capabilities/text.structured.generation.v1/quote"
+      },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "title": "Structured generation"
+    },
+    {
+      "billingModes": {
+        "byok": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Hydracept charge: Free. Provider charges your connected account separately.",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "free",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Maximum output",
+                "key": "maxOutputTokens",
+                "kind": "usage-ceiling",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Input size",
+                "key": "inputTokens",
+                "kind": "measured-usage",
+                "requiredForEstimate": true
+              }
+            ],
+            "pricingVersion": "price_2026_08_1"
+          },
+          "providerChargesExternal": true,
+          "providerChargesIncluded": false,
+          "serviceFeeBps": null
+        },
+        "managed": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Varies by usage. Optional /quote preview; the API seals pricing at job admission.",
+            "estimateEndpoint": "/v1/capabilities/text.structured.ranking.v1/estimate",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "metered",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Maximum output",
+                "key": "maxOutputTokens",
+                "kind": "usage-ceiling",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Input size",
+                "key": "inputTokens",
+                "kind": "measured-usage",
+                "requiredForEstimate": true
+              }
+            ],
+            "pricingVersion": "price_2026_08_1",
+            "quoteEndpoint": "/v1/capabilities/text.structured.ranking.v1/quote"
+          },
+          "providerChargesExternal": false,
+          "providerChargesIncluded": true,
+          "serviceFeeBps": 600
+        }
+      },
+      "category": "generation",
+      "constraints": null,
+      "credentialSources": null,
+      "defaultCredentialSource": null,
+      "description": "Rank or score candidates as structured JSON.",
+      "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
+      "executionModes": [
+        "invoke_sync",
+        "job_async"
+      ],
+      "family": "text",
+      "features": {
+        "deferredProcessing": {
+          "appliesTo": [
+            "job_async",
+            "pinned"
+          ],
+          "available": true,
+          "defaultFor": [
+            "job_async"
+          ],
+          "discountBps": 5000,
+          "optInFor": [
+            "pinned"
+          ]
+        }
+      },
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
+      "idempotencyRequired": true,
+      "inputConstraints": {
+        "messages": {
+          "measurement": "tokens",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "maxOutputTokens": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "messages": {
+            "items": {
+              "properties": {
+                "content": {
+                  "type": "string"
+                },
+                "role": {
+                  "enum": [
+                    "system",
+                    "user",
+                    "assistant"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ],
+              "type": "object"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "responseFormat": {
+            "enum": [
+              "text",
+              "json_object"
+            ],
+            "type": "string"
+          },
+          "responseSchema": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "type": "object"
+      },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
+      "key": "text.structured.ranking.v1",
+      "modality": "text",
+      "output": {
+        "kind": "structured",
+        "mediaType": "application/json"
+      },
+      "outputSchema": {
+        "type": "object"
+      },
+      "pricing": {
+        "authoritativeForExecution": false,
+        "billable": true,
+        "billingCurrency": "USD",
+        "display": "Varies by usage. Optional /quote preview; the API seals pricing at job admission.",
+        "estimateEndpoint": "/v1/capabilities/text.structured.ranking.v1/estimate",
+        "estimateRequired": false,
+        "examples": [],
+        "mode": "metered",
+        "pricingContext": "catalog_default",
+        "pricingFactors": [
+          {
+            "display": "Maximum output",
+            "key": "maxOutputTokens",
+            "kind": "usage-ceiling",
+            "requiredForEstimate": true
+          },
+          {
+            "display": "Input size",
+            "key": "inputTokens",
+            "kind": "measured-usage",
+            "requiredForEstimate": true
+          }
+        ],
+        "pricingVersion": "price_2026_08_1",
+        "quote": {
+          "requirements": [
+            "/input/maxOutputTokens",
+            "/input/inputTokens"
+          ],
+          "supported": true
+        },
+        "quoteEndpoint": "/v1/capabilities/text.structured.ranking.v1/quote"
+      },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "title": "Structured ranking"
+    },
+    {
+      "billingModes": {
+        "byok": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Hydracept charge: Free. Provider charges your connected account separately.",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "free",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Maximum output",
+                "key": "maxOutputTokens",
+                "kind": "usage-ceiling",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Input size",
+                "key": "inputTokens",
+                "kind": "measured-usage",
+                "requiredForEstimate": true
+              }
+            ],
+            "pricingVersion": "price_2026_08_1"
+          },
+          "providerChargesExternal": true,
+          "providerChargesIncluded": false,
+          "serviceFeeBps": null
+        },
+        "managed": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Varies by usage. Optional /quote preview; the API seals pricing at job admission.",
+            "estimateEndpoint": "/v1/capabilities/text.structured.adjudication.v1/estimate",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "metered",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Maximum output",
+                "key": "maxOutputTokens",
+                "kind": "usage-ceiling",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Input size",
+                "key": "inputTokens",
+                "kind": "measured-usage",
+                "requiredForEstimate": true
+              }
+            ],
+            "pricingVersion": "price_2026_08_1",
+            "quoteEndpoint": "/v1/capabilities/text.structured.adjudication.v1/quote"
+          },
+          "providerChargesExternal": false,
+          "providerChargesIncluded": true,
+          "serviceFeeBps": 600
+        }
+      },
+      "category": "generation",
+      "constraints": null,
+      "credentialSources": null,
+      "defaultCredentialSource": null,
+      "description": "Judge or score content as structured JSON.",
+      "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
+      "executionModes": [
+        "invoke_sync",
+        "job_async"
+      ],
+      "family": "text",
+      "features": {
+        "deferredProcessing": {
+          "appliesTo": [
+            "job_async",
+            "pinned"
+          ],
+          "available": true,
+          "defaultFor": [
+            "job_async"
+          ],
+          "discountBps": 5000,
+          "optInFor": [
+            "pinned"
+          ]
+        }
+      },
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
+      "idempotencyRequired": true,
+      "inputConstraints": {
+        "messages": {
+          "measurement": "tokens",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "maxOutputTokens": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "messages": {
+            "items": {
+              "properties": {
+                "content": {
+                  "type": "string"
+                },
+                "role": {
+                  "enum": [
+                    "system",
+                    "user",
+                    "assistant"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ],
+              "type": "object"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "responseFormat": {
+            "enum": [
+              "text",
+              "json_object"
+            ],
+            "type": "string"
+          },
+          "responseSchema": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "type": "object"
+      },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
+      "key": "text.structured.adjudication.v1",
+      "modality": "text",
+      "output": {
+        "kind": "structured",
+        "mediaType": "application/json"
+      },
+      "outputSchema": {
+        "type": "object"
+      },
+      "pricing": {
+        "authoritativeForExecution": false,
+        "billable": true,
+        "billingCurrency": "USD",
+        "display": "Varies by usage. Optional /quote preview; the API seals pricing at job admission.",
+        "estimateEndpoint": "/v1/capabilities/text.structured.adjudication.v1/estimate",
+        "estimateRequired": false,
+        "examples": [],
+        "mode": "metered",
+        "pricingContext": "catalog_default",
+        "pricingFactors": [
+          {
+            "display": "Maximum output",
+            "key": "maxOutputTokens",
+            "kind": "usage-ceiling",
+            "requiredForEstimate": true
+          },
+          {
+            "display": "Input size",
+            "key": "inputTokens",
+            "kind": "measured-usage",
+            "requiredForEstimate": true
+          }
+        ],
+        "pricingVersion": "price_2026_08_1",
+        "quote": {
+          "requirements": [
+            "/input/maxOutputTokens",
+            "/input/inputTokens"
+          ],
+          "supported": true
+        },
+        "quoteEndpoint": "/v1/capabilities/text.structured.adjudication.v1/quote"
+      },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "title": "Structured adjudication"
     },
     {
       "billingModes": {
@@ -613,20 +1780,59 @@
           },
           "providerChargesExternal": false,
           "providerChargesIncluded": true,
-          "serviceFeeBps": 1000
+          "serviceFeeBps": 600
         }
       },
+      "category": "generation",
+      "constraints": null,
       "credentialSources": null,
       "defaultCredentialSource": null,
-      "description": "Long-form creative writing.",
+      "description": "Long-form creative writing. Time-to-first-byte can exceed the public HTTP edge, so this capability is durable-job only.",
       "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
       "executionModes": [
-        "invoke_sync",
-        "invoke_stream",
         "job_async"
       ],
-      "features": {},
+      "family": "text",
+      "features": {
+        "deferredProcessing": {
+          "appliesTo": [
+            "job_async",
+            "pinned"
+          ],
+          "available": true,
+          "defaultFor": [
+            "job_async"
+          ],
+          "discountBps": 5000,
+          "optInFor": [
+            "pinned"
+          ]
+        }
+      },
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
       "idempotencyRequired": true,
+      "inputConstraints": {
+        "messages": {
+          "measurement": "tokens",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -657,6 +1863,16 @@
             },
             "minItems": 1,
             "type": "array"
+          },
+          "responseFormat": {
+            "enum": [
+              "text",
+              "json_object"
+            ],
+            "type": "string"
+          },
+          "responseSchema": {
+            "type": "object"
           }
         },
         "required": [
@@ -664,8 +1880,16 @@
         ],
         "type": "object"
       },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
       "key": "text.creative.longform.v1",
       "modality": "text",
+      "output": {
+        "kind": "text",
+        "mediaType": "text/plain"
+      },
       "outputSchema": {
         "properties": {
           "content": {
@@ -717,6 +1941,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/text.creative.longform.v1/quote"
       },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
       "title": "Creative longform text"
     },
     {
@@ -793,30 +2018,91 @@
           },
           "providerChargesExternal": false,
           "providerChargesIncluded": true,
-          "serviceFeeBps": 1000
+          "serviceFeeBps": 600
+        }
+      },
+      "category": "generation",
+      "constraints": {
+        "dimensions": {
+          "catalogueMinEdge": 256,
+          "maxAspectRatio": 3.0,
+          "maxEdge": 3840,
+          "maxPixels": 8294400,
+          "minPixels": 655360,
+          "multipleOf": 16
+        },
+        "sheet": {
+          "alignedMinimumSquareCell": 816,
+          "cellMinPixels": 655360,
+          "derivedCellSize": "sheetWidth/columns \u00d7 sheetHeight/rows"
         }
       },
       "credentialSources": null,
       "defaultCredentialSource": null,
       "description": "Generate images from text prompts.",
       "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": true
+      },
       "executionModes": [
         "job_async"
       ],
+      "family": "image",
       "features": {},
+      "funding": {
+        "eligible": true,
+        "fundingOptions": null,
+        "mode": "managed_trial",
+        "remainingMicros": null,
+        "status": "ready"
+      },
       "idempotencyRequired": true,
+      "inputConstraints": {
+        "prompt": {
+          "byModel": {
+            "gpt-image-1": {
+              "max": 32000,
+              "overflow": null
+            },
+            "gpt-image-2": {
+              "max": 32000,
+              "overflow": null
+            }
+          },
+          "max": 32000,
+          "measurement": "characters",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
           "height": {
             "default": 1024,
-            "description": "Rounded up to a multiple of 16. Open Graph 1200\u00d7630 becomes 1200\u00d7640.",
-            "maximum": 2048,
+            "description": "Requested catalogue height. Rounded up to a multiple of 16. gpt-image-2 allows each edge up to 3840 (max 8.29MP). Open Graph 1200\u00d7630 becomes 1200\u00d7640. Provider execution may normalize; sheet cell geometry is a separate constraint.",
+            "maximum": 3840,
             "minimum": 256,
+            "multipleOf": 16,
             "type": "integer"
           },
+          "keyColor": {
+            "description": "Chroma-key matte only. Plate color when transparencyMethod is matte-v9 or the catalog model has no native transparent background.",
+            "enum": [
+              "#ff00ff",
+              "#00ffff",
+              "#00ff00"
+            ],
+            "type": "string"
+          },
           "prompt": {
-            "maxLength": 4000,
+            "maxLength": 32000,
             "minLength": 1,
             "type": "string"
           },
@@ -922,6 +2208,23 @@
             ],
             "type": "object"
           },
+          "transparencyMethod": {
+            "description": "Advanced. Omit to use the catalog model default: native alpha when the model supports it, chroma-key matte otherwise. matte-v9 forces keyed plate + OpenCV matte even on models with native transparency.",
+            "enum": [
+              "native",
+              "matte-v9"
+            ],
+            "type": "string"
+          },
+          "transparentRegions": {
+            "default": "borderConnected",
+            "description": "Chroma-key matte only. borderConnected keys unused canvas connected to the frame edge. borderConnectedAndEnclosed also keys enclosed chroma islands such as interior openings that do not touch the border.",
+            "enum": [
+              "borderConnected",
+              "borderConnectedAndEnclosed"
+            ],
+            "type": "string"
+          },
           "variantCount": {
             "default": 1,
             "maximum": 4,
@@ -930,9 +2233,10 @@
           },
           "width": {
             "default": 1024,
-            "description": "Rounded up to a multiple of 16. Open Graph 1200\u00d7630 becomes 1200\u00d7640.",
-            "maximum": 2048,
+            "description": "Requested catalogue width. Rounded up to a multiple of 16. gpt-image-2 allows each edge up to 3840 (max 8.29MP). Open Graph 1200\u00d7630 becomes 1200\u00d7640. Provider execution may normalize; sheet cell geometry is a separate constraint.",
+            "maximum": 3840,
             "minimum": 256,
+            "multipleOf": 16,
             "type": "integer"
           }
         },
@@ -941,8 +2245,16 @@
         ],
         "type": "object"
       },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
       "key": "image.generate.v1",
       "modality": "image",
+      "output": {
+        "kind": "artifact",
+        "mediaType": "image/png"
+      },
       "outputSchema": {
         "properties": {
           "artifacts": {
@@ -1002,6 +2314,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/image.generate.v1/quote"
       },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
       "title": "Image generation"
     },
     {
@@ -1078,30 +2391,101 @@
           },
           "providerChargesExternal": false,
           "providerChargesIncluded": true,
-          "serviceFeeBps": 1000
+          "serviceFeeBps": 600
+        }
+      },
+      "category": "generation",
+      "constraints": {
+        "dimensions": {
+          "catalogueMinEdge": 256,
+          "maxAspectRatio": 3.0,
+          "maxEdge": 3840,
+          "maxPixels": 8294400,
+          "minPixels": 655360,
+          "multipleOf": 16
+        },
+        "sheet": {
+          "alignedMinimumSquareCell": 816,
+          "cellMinPixels": 655360,
+          "derivedCellSize": "sheetWidth/columns \u00d7 sheetHeight/rows"
         }
       },
       "credentialSources": null,
       "defaultCredentialSource": null,
-      "description": "Edit or outpaint images using reference and optional mask inputs.",
+      "description": "In-place edit of a source PNG via the provider images.edit API. sourceImage is the canvas (image[0]); referenceImages are insert graphics (later image entries); optional mask uses alpha 0 as the editable region so unmasked pixels are preserved by the provider. Not a generate-from-brief alias.",
       "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": true
+      },
       "executionModes": [
         "job_async"
       ],
-      "features": {},
+      "family": "image",
+      "features": {
+        "insertImages": true,
+        "maskedEdit": true,
+        "maxInsertImages": 3,
+        "preservesUnmaskedPixels": true,
+        "sourceImage": true
+      },
+      "funding": {
+        "eligible": true,
+        "fundingOptions": null,
+        "mode": "managed_trial",
+        "remainingMicros": null,
+        "status": "ready"
+      },
       "idempotencyRequired": true,
+      "inputConstraints": {
+        "prompt": {
+          "byModel": {
+            "gpt-image-1": {
+              "max": 32000,
+              "overflow": null
+            },
+            "gpt-image-2": {
+              "max": 32000,
+              "overflow": null
+            }
+          },
+          "max": 32000,
+          "measurement": "characters",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
           "height": {
-            "default": 1024,
-            "description": "Rounded up to a multiple of 16. Open Graph 1200\u00d7630 becomes 1200\u00d7640.",
             "maximum": 2048,
             "minimum": 256,
             "type": "integer"
           },
+          "mask": {
+            "description": "Optional PNG, same size as sourceImage. Alpha 0 = editable (OpenAI images.edit mask). Hydracept converts a white-on-black placement map into that convention internally.",
+            "properties": {
+              "dataBase64": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              },
+              "mimeType": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
           "prompt": {
-            "maxLength": 4000,
+            "description": "What to do in the editable region. Unmasked pixels are preserved by the provider, not by prompt instructions.",
+            "maxLength": 32000,
             "minLength": 1,
             "type": "string"
           },
@@ -1117,6 +2501,7 @@
             "type": "string"
           },
           "referenceImages": {
+            "description": "0\u20133 insert graphics (logo, overlay, etc.) sent as later images.edit image entries after sourceImage.",
             "items": {
               "properties": {
                 "dataBase64": {
@@ -1131,81 +2516,43 @@
               },
               "type": "object"
             },
-            "maxItems": 4,
+            "maxItems": 3,
             "type": "array"
           },
           "requestTransparentOutput": {
             "default": false,
             "type": "boolean"
           },
-          "sheet": {
-            "additionalProperties": false,
+          "size": {
+            "description": "Output size as WIDTHxHEIGHT (for example 1024x1024). Alternative to width/height.",
+            "pattern": "^[0-9]+x[0-9]+$",
+            "type": "string"
+          },
+          "sourceImage": {
+            "description": "PNG being edited (provider images.edit image[0]). Not a style reference.",
             "properties": {
-              "animation": {
-                "oneOf": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "additionalProperties": false,
-                    "properties": {
-                      "facing": {
-                        "default": "right",
-                        "type": "string"
-                      }
-                    },
-                    "type": "object"
-                  }
-                ]
+              "dataBase64": {
+                "type": "string"
               },
-              "columns": {
-                "maximum": 8,
-                "minimum": 1,
-                "type": "integer"
+              "filename": {
+                "type": "string"
               },
-              "labels": {
-                "items": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              "normalize": {
-                "additionalProperties": false,
-                "properties": {
-                  "center": {
-                    "default": true,
-                    "type": "boolean"
-                  },
-                  "height": {
-                    "maximum": 1024,
-                    "minimum": 32,
-                    "type": "integer"
-                  },
-                  "width": {
-                    "maximum": 1024,
-                    "minimum": 32,
-                    "type": "integer"
-                  }
-                },
-                "type": "object"
-              },
-              "rows": {
-                "maximum": 8,
-                "minimum": 1,
-                "type": "integer"
-              },
-              "slice": {
-                "default": false,
-                "type": "boolean"
+              "mimeType": {
+                "type": "string"
               }
             },
-            "required": [
-              "rows",
-              "columns",
-              "slice"
-            ],
             "type": "object"
+          },
+          "transparencyMethod": {
+            "description": "Advanced override. Defaults to native transparent output on supported models.",
+            "enum": [
+              "native",
+              "provider",
+              "matte",
+              "matte-v9",
+              "chroma"
+            ],
+            "type": "string"
           },
           "variantCount": {
             "default": 1,
@@ -1214,20 +2561,27 @@
             "type": "integer"
           },
           "width": {
-            "default": 1024,
-            "description": "Rounded up to a multiple of 16. Open Graph 1200\u00d7630 becomes 1200\u00d7640.",
             "maximum": 2048,
             "minimum": 256,
             "type": "integer"
           }
         },
         "required": [
-          "prompt"
+          "prompt",
+          "sourceImage"
         ],
         "type": "object"
       },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
       "key": "image.edit.v1",
       "modality": "image",
+      "output": {
+        "kind": "artifact",
+        "mediaType": "image/png"
+      },
       "outputSchema": {
         "properties": {
           "artifacts": {
@@ -1287,6 +2641,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/image.edit.v1/quote"
       },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
       "title": "Image editing"
     },
     {
@@ -1351,16 +2706,27 @@
           },
           "providerChargesExternal": false,
           "providerChargesIncluded": true,
-          "serviceFeeBps": 1000
+          "serviceFeeBps": 600
         }
       },
+      "category": "generation",
+      "constraints": null,
       "credentialSources": null,
       "defaultCredentialSource": null,
       "description": "Generate short videos from text and optional reference images.",
       "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
       "executionModes": [
         "job_async"
       ],
+      "family": "video",
       "features": {
         "aspectRatios": [
           "16:9",
@@ -1376,7 +2742,23 @@
         "startEndFrames": false,
         "textToVideo": true
       },
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
       "idempotencyRequired": true,
+      "inputConstraints": {
+        "prompt": {
+          "max": 4000,
+          "measurement": "characters",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -1427,8 +2809,16 @@
         ],
         "type": "object"
       },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
       "key": "video.generate.v1",
       "modality": "video",
+      "output": {
+        "kind": "artifact",
+        "mediaType": "video/mp4"
+      },
       "outputSchema": {
         "properties": {
           "artifacts": {
@@ -1476,6 +2866,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/video.generate.v1/quote"
       },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
       "title": "Video generation"
     },
     {
@@ -1540,18 +2931,45 @@
           },
           "providerChargesExternal": false,
           "providerChargesIncluded": true,
-          "serviceFeeBps": 1000
+          "serviceFeeBps": 600
         }
       },
+      "category": "generation",
+      "constraints": null,
       "credentialSources": null,
       "defaultCredentialSource": null,
       "description": "Generate sound effects. Output is Ogg (`audio/ogg`) with a `.ogg` filename, not WAV.",
       "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": true
+      },
       "executionModes": [
         "job_async"
       ],
+      "family": "audio",
       "features": {},
+      "funding": {
+        "eligible": true,
+        "fundingOptions": null,
+        "mode": "managed_trial",
+        "remainingMicros": null,
+        "status": "ready"
+      },
       "idempotencyRequired": true,
+      "inputConstraints": {
+        "prompt": {
+          "max": 450,
+          "measurement": "characters",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -1598,8 +3016,16 @@
         ],
         "type": "object"
       },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
       "key": "audio.sfx.generate.v1",
       "modality": "audio",
+      "output": {
+        "kind": "artifact",
+        "mediaType": "audio/ogg"
+      },
       "outputSchema": {
         "properties": {
           "artifacts": {
@@ -1656,6 +3082,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/audio.sfx.generate.v1/quote"
       },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
       "title": "Sound effect generation"
     },
     {
@@ -1720,18 +3147,59 @@
           },
           "providerChargesExternal": false,
           "providerChargesIncluded": true,
-          "serviceFeeBps": 1000
+          "serviceFeeBps": 600
         }
       },
+      "category": "generation",
+      "constraints": null,
       "credentialSources": null,
       "defaultCredentialSource": null,
       "description": "Text-to-speech.",
       "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
       "executionModes": [
         "job_async"
       ],
+      "family": "audio",
       "features": {},
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
       "idempotencyRequired": true,
+      "inputConstraints": {
+        "text": {
+          "byModel": {
+            "eleven_flash_v2_5": {
+              "max": 40000,
+              "overflow": null
+            },
+            "eleven_multilingual_v2": {
+              "max": 10000,
+              "overflow": null
+            },
+            "eleven_turbo_v2_5": {
+              "max": 40000,
+              "overflow": null
+            }
+          },
+          "max": 10000,
+          "measurement": "characters",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -1760,7 +3228,7 @@
             "type": "integer"
           },
           "text": {
-            "maxLength": 5000,
+            "maxLength": 40000,
             "minLength": 1,
             "type": "string"
           },
@@ -1810,8 +3278,16 @@
         ],
         "type": "object"
       },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
       "key": "audio.voice.generate.v1",
       "modality": "audio",
+      "output": {
+        "kind": "artifact",
+        "mediaType": "audio/ogg"
+      },
       "outputSchema": {
         "properties": {
           "artifacts": {
@@ -1870,6 +3346,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/audio.voice.generate.v1/quote"
       },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
       "title": "Voice / TTS generation"
     },
     {
@@ -1934,18 +3411,51 @@
           },
           "providerChargesExternal": false,
           "providerChargesIncluded": true,
-          "serviceFeeBps": 1000
+          "serviceFeeBps": 600
         }
       },
+      "category": "generation",
+      "constraints": null,
       "credentialSources": null,
       "defaultCredentialSource": null,
       "description": "Generate music.",
       "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
       "executionModes": [
         "job_async"
       ],
+      "family": "audio",
       "features": {},
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
       "idempotencyRequired": true,
+      "inputConstraints": {
+        "prompt": {
+          "byModel": {
+            "music_v1": {
+              "max": 4100,
+              "overflow": null
+            }
+          },
+          "max": 4100,
+          "measurement": "characters",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -1963,7 +3473,7 @@
             "type": "string"
           },
           "prompt": {
-            "maxLength": 2000,
+            "maxLength": 4100,
             "minLength": 1,
             "type": "string"
           },
@@ -1984,8 +3494,16 @@
         ],
         "type": "object"
       },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
       "key": "audio.music.generate.v1",
       "modality": "audio",
+      "output": {
+        "kind": "artifact",
+        "mediaType": "audio/mpeg"
+      },
       "outputSchema": {
         "properties": {
           "artifacts": {
@@ -2042,6 +3560,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/audio.music.generate.v1/quote"
       },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
       "title": "Music generation"
     },
     {
@@ -2106,18 +3625,51 @@
           },
           "providerChargesExternal": false,
           "providerChargesIncluded": true,
-          "serviceFeeBps": 1000
+          "serviceFeeBps": 600
         }
       },
+      "category": "generation",
+      "constraints": null,
       "credentialSources": null,
       "defaultCredentialSource": null,
       "description": "Generate a GLB mesh from 1\u20134 reference view images.",
       "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
       "executionModes": [
         "job_async"
       ],
+      "family": "geometry",
       "features": {},
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
       "idempotencyRequired": true,
+      "inputConstraints": {
+        "meshSettings.overrides.texturePrompt": {
+          "max": 800,
+          "measurement": "characters",
+          "overflow": "reject",
+          "semantic": true
+        },
+        "meshSettings.texturePrompt": {
+          "max": 800,
+          "measurement": "characters",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -2157,6 +3709,12 @@
             "properties": {
               "overrides": {
                 "additionalProperties": true,
+                "properties": {
+                  "texturePrompt": {
+                    "maxLength": 800,
+                    "type": "string"
+                  }
+                },
                 "type": "object"
               },
               "profile": {
@@ -2174,6 +3732,10 @@
                 "type": "boolean"
               },
               "textureMode": {
+                "type": "string"
+              },
+              "texturePrompt": {
+                "maxLength": 800,
                 "type": "string"
               },
               "textureReferenceArtifactId": {
@@ -2194,8 +3756,16 @@
         ],
         "type": "object"
       },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
       "key": "model.generate.3d.v1",
       "modality": "mesh",
+      "output": {
+        "kind": "artifact",
+        "mediaType": "model/gltf-binary"
+      },
       "outputSchema": {
         "properties": {
           "artifacts": {
@@ -2252,6 +3822,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/model.generate.3d.v1/quote"
       },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
       "title": "3D mesh generation"
     },
     {
@@ -2316,18 +3887,67 @@
           },
           "providerChargesExternal": false,
           "providerChargesIncluded": true,
-          "serviceFeeBps": 1000
+          "serviceFeeBps": 600
         }
       },
+      "category": "generation",
+      "constraints": null,
       "credentialSources": null,
       "defaultCredentialSource": null,
       "description": "Turn a concept image into turnaround views and a GLB mesh (image-to-mesh pipeline).",
       "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
       "executionModes": [
         "job_async"
       ],
+      "family": "geometry",
       "features": {},
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
       "idempotencyRequired": true,
+      "inputConstraints": {
+        "meshSettings.overrides.texturePrompt": {
+          "max": 800,
+          "measurement": "characters",
+          "overflow": "reject",
+          "semantic": true
+        },
+        "meshSettings.texturePrompt": {
+          "max": 800,
+          "measurement": "characters",
+          "overflow": "reject",
+          "semantic": true
+        },
+        "resolvedPrompt": {
+          "byModel": {
+            "gpt-image-1": {
+              "max": 32000,
+              "overflow": null
+            },
+            "gpt-image-2": {
+              "max": 32000,
+              "overflow": null
+            }
+          },
+          "max": 32000,
+          "measurement": "characters",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -2358,6 +3978,12 @@
             "properties": {
               "overrides": {
                 "additionalProperties": true,
+                "properties": {
+                  "texturePrompt": {
+                    "maxLength": 800,
+                    "type": "string"
+                  }
+                },
                 "type": "object"
               },
               "profile": {
@@ -2368,6 +3994,10 @@
                   "hero_hd",
                   "enhanced_retry"
                 ],
+                "type": "string"
+              },
+              "texturePrompt": {
+                "maxLength": 800,
                 "type": "string"
               }
             },
@@ -2382,7 +4012,7 @@
             "type": "boolean"
           },
           "resolvedPrompt": {
-            "maxLength": 4000,
+            "maxLength": 32000,
             "type": "string"
           },
           "turnaroundMode": {
@@ -2401,8 +4031,16 @@
         ],
         "type": "object"
       },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
       "key": "model.generate.3d.from-image.v1",
       "modality": "mesh",
+      "output": {
+        "kind": "artifact",
+        "mediaType": "model/gltf-binary"
+      },
       "outputSchema": {
         "properties": {
           "artifacts": {
@@ -2459,6 +4097,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/model.generate.3d.from-image.v1/quote"
       },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
       "title": "3D mesh from single image"
     },
     {
@@ -2476,6 +4115,8 @@
           "serviceFeeBps": null
         }
       },
+      "category": "infrastructure",
+      "constraints": null,
       "credentialSources": [
         "managed",
         "customer"
@@ -2483,13 +4124,31 @@
       "defaultCredentialSource": "managed",
       "description": "Look up domain availability and first-year/renewal pricing only. This cannot register a domain, create DNS records, or put a site live. Registration and DNS are separate registrar capabilities after lookup succeeds.",
       "estimateAvailable": false,
+      "execution": {
+        "estimateAvailable": false,
+        "managedAvailable": false,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": true,
+        "trialEligible": false
+      },
       "executionModes": [
         "invoke_sync"
       ],
+      "family": "domain",
       "features": {
         "purchaseRequiresHumanApproval": false
       },
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "byok",
+        "remainingMicros": null,
+        "status": "ready"
+      },
       "idempotencyRequired": false,
+      "inputConstraints": {},
+      "inputMediaTypes": [],
       "inputSchema": {
         "properties": {
           "credentialSource": {
@@ -2510,8 +4169,16 @@
         ],
         "type": "object"
       },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
       "key": "domain.search.v1",
       "modality": "infrastructure",
+      "output": {
+        "kind": "structured",
+        "mediaType": "application/json"
+      },
       "outputSchema": {
         "properties": {
           "agreementUrl": {
@@ -2551,6 +4218,7 @@
           "supported": false
         }
       },
+      "readySummary": "BYOK required",
       "title": "Domain search"
     },
     {
@@ -2568,145 +4236,8 @@
           "serviceFeeBps": null
         }
       },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "List domains in the connected registrar account. Invoke (not jobs). Filter with domain or nameContains; unfiltered lists paginate past the first page.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "invoke_sync"
-      ],
-      "features": {},
-      "idempotencyRequired": false,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "description": "Exact domain filter (e.g. roshambucks.com).",
-            "type": "string"
-          },
-          "includeLabels": {
-            "default": false,
-            "type": "boolean"
-          },
-          "nameContains": {
-            "description": "Substring filter. Aliases: query, q, filter, name.",
-            "type": "string"
-          },
-          "query": {
-            "type": "string"
-          },
-          "start": {
-            "default": 0,
-            "minimum": 0,
-            "type": "integer"
-          }
-        },
-        "type": "object"
-      },
-      "key": "domain.list.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "List domains"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Get metadata for one domain in the connected registrar account.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "invoke_sync"
-      ],
-      "features": {},
-      "idempotencyRequired": false,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "minLength": 3,
-            "type": "string"
-          },
-          "includeLabels": {
-            "default": false,
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "domain"
-        ],
-        "type": "object"
-      },
-      "key": "domain.get.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Get domain"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
+      "category": "infrastructure",
+      "constraints": null,
       "credentialSources": [
         "managed",
         "customer"
@@ -2714,11 +4245,29 @@
       "defaultCredentialSource": "managed",
       "description": "List default registration, renewal, and transfer prices by TLD.",
       "estimateAvailable": false,
+      "execution": {
+        "estimateAvailable": false,
+        "managedAvailable": false,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": true,
+        "trialEligible": false
+      },
       "executionModes": [
         "invoke_sync"
       ],
+      "family": "domain",
       "features": {},
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "byok",
+        "remainingMicros": null,
+        "status": "ready"
+      },
       "idempotencyRequired": false,
+      "inputConstraints": {},
+      "inputMediaTypes": [],
       "inputSchema": {
         "properties": {
           "credentialSource": {
@@ -2738,8 +4287,16 @@
         },
         "type": "object"
       },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
       "key": "domain.pricing.v1",
       "modality": "infrastructure",
+      "output": {
+        "kind": "structured",
+        "mediaType": "application/json"
+      },
       "outputSchema": {
         "type": "object"
       },
@@ -2750,1646 +4307,845 @@
           "supported": false
         }
       },
+      "readySummary": "BYOK required",
       "title": "Domain TLD pricing"
     },
     {
       "billingModes": {
         "byok": {
-          "available": false,
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Hydracept charge: Free. Provider charges your connected account separately.",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "free",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [],
+            "pricingVersion": "price_2026_08_1"
+          },
           "providerChargesExternal": true,
           "providerChargesIncluded": false,
           "serviceFeeBps": null
         },
         "managed": {
-          "available": false,
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Free",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "free",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [],
+            "pricingVersion": "price_2026_08_1"
+          },
           "providerChargesExternal": false,
           "providerChargesIncluded": true,
-          "serviceFeeBps": null
+          "serviceFeeBps": 600
         }
       },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Register a domain through Hydracept-managed registrar (default) or a connected customer registrar account. Never auto-purchases; requires human approval of the exact domain, registrant, prices, and registrar terms.",
+      "category": "generation",
+      "constraints": null,
+      "credentialSources": null,
+      "defaultCredentialSource": null,
+      "description": "Turn an immutable GLB into an immediately inspectable model-review sheet and deterministic 2D references. The default review bundle shows a three-quarter hero view plus front, right, back, and left orientation views. Authored base colors are retained and embedded base-color textures are sampled when supported. It is a fast review/reference renderer, not a full PBR or animation renderer.",
       "estimateAvailable": false,
+      "execution": {
+        "estimateAvailable": false,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
       "executionModes": [
         "job_async"
       ],
+      "family": "geometry",
       "features": {
-        "purchaseRequiresHumanApproval": true,
-        "transferToCustomerRegistrar": true
+        "acceptedSourceMediaTypes": [
+          "model/gltf-binary"
+        ],
+        "baseColorFactorsApplied": true,
+        "embeddedBaseColorTextureSampling": true,
+        "executionClass": "cpu_processing",
+        "fullPbr": false,
+        "humanReviewSheet": true,
+        "preservesSource": true,
+        "provenanceManifest": true,
+        "renderer": "hydracept-cpu-review-v2",
+        "semanticFrontInference": false,
+        "standardViews": [
+          "front",
+          "three-quarter",
+          "right",
+          "back",
+          "left"
+        ],
+        "staticGeometryReference": true,
+        "technicalQa": true
+      },
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
       },
       "idempotencyRequired": true,
+      "inputConstraints": {},
+      "inputMediaTypes": [],
       "inputSchema": {
+        "additionalProperties": false,
         "properties": {
-          "credentialSource": {
-            "default": "managed",
+          "background": {
+            "default": "light",
+            "description": "Backdrop for rendered views. Transparent is useful when feeding the PNG into another visual tool.",
             "enum": [
-              "managed",
-              "customer"
+              "light",
+              "dark",
+              "transparent"
             ],
             "type": "string"
           },
-          "domain": {
-            "minLength": 3,
+          "framing": {
+            "default": "fit",
+            "description": "Fit leaves a comfortable review margin. Tight keeps the full model with minimal margin.",
+            "enum": [
+              "fit",
+              "tight"
+            ],
             "type": "string"
           },
-          "registrant": {
+          "height": {
+            "default": 640,
+            "description": "Height in pixels for each underlying reference view.",
+            "maximum": 2048,
+            "minimum": 128,
+            "type": "integer"
+          },
+          "output": {
+            "default": "reference_bundle",
+            "description": "Choose a single PNG, five separate orientation views, or the recommended review bundle with a human-readable review sheet plus all five views. Every mode also records a provenance/QA manifest.",
+            "enum": [
+              "image",
+              "views",
+              "reference_bundle"
+            ],
+            "type": "string"
+          },
+          "source": {
+            "additionalProperties": false,
             "properties": {
-              "address1": {
-                "type": "string"
-              },
-              "address2": {
-                "type": "string"
-              },
-              "city": {
-                "type": "string"
-              },
-              "country": {
-                "type": "string"
-              },
-              "email": {
-                "type": "string"
-              },
-              "firstName": {
-                "type": "string"
-              },
-              "lastName": {
-                "type": "string"
-              },
-              "organization": {
-                "type": "string"
-              },
-              "phone": {
-                "type": "string"
-              },
-              "phoneCountryCode": {
-                "type": "string"
-              },
-              "postalCode": {
-                "type": "string"
-              },
-              "state": {
+              "artifactId": {
+                "description": "Opaque Hydracept artifact id (art_\u2026).",
+                "minLength": 1,
                 "type": "string"
               }
             },
             "required": [
-              "firstName",
-              "lastName",
-              "email",
-              "address1",
-              "city",
-              "postalCode",
-              "country"
+              "artifactId"
             ],
             "type": "object"
-          }
-        },
-        "required": [
-          "domain"
-        ],
-        "type": "object"
-      },
-      "key": "domain.register.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "properties": {
-          "amountUsd": {
-            "type": "number"
           },
-          "credentialSource": {
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          },
-          "registered": {
-            "type": "boolean"
-          },
-          "transferOutAvailable": {
-            "type": "boolean"
-          }
-        },
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Domain registration"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Renew a domain for the registry-minimum duration. Requires human approval of the quoted price.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {
-        "purchaseRequiresHumanApproval": true
-      },
-      "idempotencyRequired": true,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
+          "style": {
+            "default": "material",
+            "description": "Material keeps authored base colors and samples embedded base-color textures where supported. Neutral/clay/flat are deterministic geometry-inspection modes. This is not a full PBR renderer.",
             "enum": [
-              "managed",
-              "customer"
+              "material",
+              "neutral",
+              "clay",
+              "flat"
             ],
             "type": "string"
           },
-          "domain": {
-            "minLength": 3,
-            "type": "string"
-          }
-        },
-        "required": [
-          "domain"
-        ],
-        "type": "object"
-      },
-      "key": "domain.renew.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Renew domain"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Start an inbound domain transfer with an EPP auth code. Requires human approval of the quoted transfer price.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {
-        "purchaseRequiresHumanApproval": true
-      },
-      "idempotencyRequired": true,
-      "inputSchema": {
-        "properties": {
-          "authCode": {
-            "type": "string"
-          },
-          "credentialSource": {
-            "default": "managed",
+          "view": {
+            "default": "auto",
+            "description": "Angle for a single preview. Auto uses a three-quarter view. Front follows the glTF +Z convention; arbitrary models do not encode a semantic character front. Ignored when creating a multi-view set.",
             "enum": [
-              "managed",
-              "customer"
+              "auto",
+              "front",
+              "three-quarter",
+              "right",
+              "back",
+              "left",
+              "top",
+              "bottom"
             ],
             "type": "string"
           },
-          "domain": {
-            "minLength": 3,
-            "type": "string"
+          "width": {
+            "default": 640,
+            "description": "Width in pixels for each underlying reference view.",
+            "maximum": 2048,
+            "minimum": 128,
+            "type": "integer"
           }
         },
         "required": [
-          "domain",
-          "authCode"
+          "source"
         ],
         "type": "object"
       },
-      "key": "domain.transfer.in.v1",
-      "modality": "infrastructure",
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
+      "key": "3d.render_reference.v1",
+      "modality": "mesh",
+      "output": {
+        "kind": "artifact",
+        "mediaType": "model/gltf-binary"
+      },
       "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Transfer domain in"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Apply DNS records for a domain after registration.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {},
-      "idempotencyRequired": true,
-      "inputSchema": {
         "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          },
-          "records": {
+          "artifacts": {
             "items": {
               "properties": {
-                "content": {
+                "artifactId": {
                   "type": "string"
                 },
-                "id": {
+                "downloadPath": {
                   "type": "string"
                 },
-                "name": {
+                "kind": {
+                  "enum": [
+                    "reference_view",
+                    "reference_contact_sheet",
+                    "reference_manifest"
+                  ],
                   "type": "string"
                 },
-                "prio": {
-                  "type": "integer"
+                "label": {
+                  "type": "string"
                 },
-                "ttl": {
-                  "default": 600,
-                  "type": "integer"
-                },
-                "type": {
+                "mediaType": {
                   "type": "string"
                 }
               },
+              "required": [
+                "artifactId",
+                "mediaType",
+                "kind"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "pricing": {
+        "authoritativeForExecution": false,
+        "billable": false,
+        "billingCurrency": "USD",
+        "display": "Free",
+        "estimateRequired": false,
+        "examples": [],
+        "mode": "free",
+        "pricingContext": "catalog_default",
+        "pricingFactors": [],
+        "pricingVersion": "price_2026_08_1",
+        "quote": {
+          "requirements": [],
+          "supported": false
+        }
+      },
+      "readySummary": "Ready now \u00b7 managed execution",
+      "title": "Review a 3D model"
+    },
+    {
+      "billingModes": {
+        "byok": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Hydracept charge: Free. Provider charges your connected account separately.",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "free",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Maximum output",
+                "key": "maxOutputTokens",
+                "kind": "usage-ceiling",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Input size",
+                "key": "inputTokens",
+                "kind": "measured-usage",
+                "requiredForEstimate": true
+              }
+            ],
+            "pricingVersion": "price_2026_08_1"
+          },
+          "providerChargesExternal": true,
+          "providerChargesIncluded": false,
+          "serviceFeeBps": null
+        },
+        "managed": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Varies by usage. Optional /quote preview; the API seals pricing at job admission.",
+            "estimateEndpoint": "/v1/capabilities/text.vision.structured.v1/estimate",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "metered",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Maximum output",
+                "key": "maxOutputTokens",
+                "kind": "usage-ceiling",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Input size",
+                "key": "inputTokens",
+                "kind": "measured-usage",
+                "requiredForEstimate": true
+              }
+            ],
+            "pricingVersion": "price_2026_08_1",
+            "quoteEndpoint": "/v1/capabilities/text.vision.structured.v1/quote"
+          },
+          "providerChargesExternal": false,
+          "providerChargesIncluded": true,
+          "serviceFeeBps": 600
+        }
+      },
+      "category": "generation",
+      "constraints": null,
+      "credentialSources": null,
+      "defaultCredentialSource": null,
+      "description": "Read attached image pixels and return structured JSON.",
+      "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
+      "executionModes": [
+        "invoke_sync",
+        "job_async"
+      ],
+      "family": "text",
+      "features": {
+        "deferredProcessing": {
+          "appliesTo": [
+            "job_async",
+            "pinned"
+          ],
+          "available": true,
+          "defaultFor": [
+            "job_async"
+          ],
+          "discountBps": 5000,
+          "optInFor": [
+            "pinned"
+          ]
+        },
+        "inputMediaTypes": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "jsonObject": true,
+        "visionInput": true
+      },
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
+      "idempotencyRequired": true,
+      "inputConstraints": {},
+      "inputMediaTypes": [
+        "image/png",
+        "image/jpeg",
+        "image/webp"
+      ],
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "maxOutputTokens": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "messages": {
+            "items": {
+              "properties": {
+                "content": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "text": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "const": "text",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "text"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "data": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "mediaType": {
+                                "enum": [
+                                  "image/png",
+                                  "image/jpeg",
+                                  "image/webp"
+                                ],
+                                "type": "string"
+                              },
+                              "type": {
+                                "const": "image",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "mediaType",
+                              "data"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "minItems": 1,
+                      "type": "array"
+                    }
+                  ]
+                },
+                "role": {
+                  "enum": [
+                    "system",
+                    "user",
+                    "assistant"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ],
+              "type": "object"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "responseFormat": {
+            "enum": [
+              "text",
+              "json_object"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "type": "object"
+      },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
+      "key": "text.vision.structured.v1",
+      "modality": "text",
+      "output": {
+        "kind": "structured",
+        "mediaType": "application/json"
+      },
+      "outputSchema": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "pricing": {
+        "authoritativeForExecution": false,
+        "billable": true,
+        "billingCurrency": "USD",
+        "display": "Varies by usage. Optional /quote preview; the API seals pricing at job admission.",
+        "estimateEndpoint": "/v1/capabilities/text.vision.structured.v1/estimate",
+        "estimateRequired": false,
+        "examples": [],
+        "mode": "metered",
+        "pricingContext": "catalog_default",
+        "pricingFactors": [
+          {
+            "display": "Maximum output",
+            "key": "maxOutputTokens",
+            "kind": "usage-ceiling",
+            "requiredForEstimate": true
+          },
+          {
+            "display": "Input size",
+            "key": "inputTokens",
+            "kind": "measured-usage",
+            "requiredForEstimate": true
+          }
+        ],
+        "pricingVersion": "price_2026_08_1",
+        "quote": {
+          "requirements": [
+            "/input/maxOutputTokens",
+            "/input/inputTokens"
+          ],
+          "supported": true
+        },
+        "quoteEndpoint": "/v1/capabilities/text.vision.structured.v1/quote"
+      },
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "title": "Structured vision text"
+    },
+    {
+      "billingModes": {
+        "byok": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Hydracept charge: Free. Provider charges your connected account separately.",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "free",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Model",
+                "key": "model",
+                "kind": "selection",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Maximum output",
+                "key": "maxOutputTokens",
+                "kind": "usage-ceiling",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Input size",
+                "key": "inputTokens",
+                "kind": "measured-usage",
+                "requiredForEstimate": true
+              }
+            ],
+            "pricingVersion": "price_2026_08_1"
+          },
+          "providerChargesExternal": true,
+          "providerChargesIncluded": false,
+          "serviceFeeBps": null
+        },
+        "managed": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Varies by input size and output usage. Optional /quote preview; the API seals pricing at admission.",
+            "estimateEndpoint": "/v1/capabilities/text.translate.v1/estimate",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "metered",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Model",
+                "key": "model",
+                "kind": "selection",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Maximum output",
+                "key": "maxOutputTokens",
+                "kind": "usage-ceiling",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Input size",
+                "key": "inputTokens",
+                "kind": "measured-usage",
+                "requiredForEstimate": true
+              }
+            ],
+            "pricingVersion": "price_2026_08_1",
+            "quoteEndpoint": "/v1/capabilities/text.translate.v1/quote"
+          },
+          "providerChargesExternal": false,
+          "providerChargesIncluded": true,
+          "serviceFeeBps": 600
+        }
+      },
+      "category": "translation",
+      "constraints": null,
+      "credentialSources": null,
+      "defaultCredentialSource": null,
+      "description": "Translate one or more strings with optional context, glossary mappings, explicit placeholders, and preserved terms. This is a stateless translation primitive; localization memory, approvals, corpus refinement, readiness, and export remain caller-owned workflows.",
+      "estimateAvailable": true,
+      "execution": {
+        "estimateAvailable": true,
+        "managedAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "providerSetupRequired": false,
+        "trialEligible": false
+      },
+      "executionModes": [
+        "invoke_sync",
+        "job_async"
+      ],
+      "family": "text",
+      "features": {
+        "batchTranslation": true,
+        "deferredProcessing": {
+          "appliesTo": [
+            "job_async",
+            "pinned"
+          ],
+          "available": true,
+          "defaultFor": [
+            "job_async"
+          ],
+          "discountBps": 5000,
+          "optInFor": [
+            "pinned"
+          ]
+        },
+        "explicitPlaceholders": true,
+        "glossaryHints": true,
+        "localizationWorkflow": false,
+        "preserveTerms": true,
+        "productPolicyOwnedByCaller": true,
+        "structuredOutput": true
+      },
+      "funding": {
+        "eligible": false,
+        "fundingOptions": null,
+        "mode": "managed",
+        "remainingMicros": null,
+        "status": "ready"
+      },
+      "idempotencyRequired": true,
+      "inputConstraints": {},
+      "inputMediaTypes": [],
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "glossary": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "source": {
+                  "maxLength": 512,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "target": {
+                  "maxLength": 512,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "source",
+                "target"
+              ],
+              "type": "object"
+            },
+            "maxItems": 500,
+            "type": "array"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "context": {
+                  "maxLength": 4000,
+                  "type": "string"
+                },
+                "id": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxLength": {
+                  "maximum": 20000,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "placeholders": {
+                  "items": {
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "maxItems": 100,
+                  "type": "array"
+                },
+                "text": {
+                  "maxLength": 20000,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "text"
+              ],
+              "type": "object"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": "array"
+          },
+          "preserveTerms": {
+            "items": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 500,
+            "type": "array"
+          },
+          "sourceLocale": {
+            "default": "auto",
+            "description": "BCP 47 source locale, or 'auto' to detect from the supplied text.",
+            "minLength": 2,
+            "type": "string"
+          },
+          "targetLocale": {
+            "description": "BCP 47 target locale.",
+            "minLength": 2,
+            "type": "string"
+          }
+        },
+        "required": [
+          "targetLocale",
+          "items"
+        ],
+        "type": "object"
+      },
+      "interaction": {
+        "reason": null,
+        "typicallyRequired": false
+      },
+      "key": "text.translate.v1",
+      "modality": "text",
+      "output": {
+        "kind": "text",
+        "mediaType": "text/plain"
+      },
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "translation": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "translation"
+              ],
               "type": "object"
             },
             "type": "array"
           }
         },
         "required": [
-          "domain"
+          "items"
         ],
         "type": "object"
       },
-      "key": "domain.configure.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
       "pricing": {
+        "authoritativeForExecution": false,
         "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Configure domain DNS"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Read the authoritative nameservers for a domain.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "invoke_sync"
-      ],
-      "features": {},
-      "idempotencyRequired": false,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
+        "billingCurrency": "USD",
+        "display": "Varies by input size and output usage. Optional /quote preview; the API seals pricing at admission.",
+        "estimateEndpoint": "/v1/capabilities/text.translate.v1/estimate",
+        "estimateRequired": false,
+        "examples": [],
+        "mode": "metered",
+        "pricingContext": "catalog_default",
+        "pricingFactors": [
+          {
+            "display": "Model",
+            "key": "model",
+            "kind": "selection",
+            "requiredForEstimate": true
           },
-          "domain": {
-            "type": "string"
+          {
+            "display": "Maximum output",
+            "key": "maxOutputTokens",
+            "kind": "usage-ceiling",
+            "requiredForEstimate": true
+          },
+          {
+            "display": "Input size",
+            "key": "inputTokens",
+            "kind": "measured-usage",
+            "requiredForEstimate": true
           }
-        },
-        "required": [
-          "domain"
         ],
-        "type": "object"
-      },
-      "key": "domain.nameservers.get.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "properties": {
-          "domain": {
-            "type": "string"
-          },
-          "ns": {
-            "type": "array"
-          }
-        },
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
+        "pricingVersion": "price_2026_08_1",
         "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Get nameservers"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "requirements": [
+            "/input/maxOutputTokens",
+            "/input/inputTokens"
+          ],
+          "supported": true
         },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
+        "quoteEndpoint": "/v1/capabilities/text.translate.v1/quote"
       },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Set the authoritative nameservers for a domain.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {},
-      "idempotencyRequired": true,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          },
-          "ns": {
-            "items": {
-              "type": "string"
-            },
-            "minItems": 2,
-            "type": "array"
-          }
-        },
-        "required": [
-          "domain",
-          "ns"
-        ],
-        "type": "object"
-      },
-      "key": "domain.nameservers.update.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Update nameservers"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Update registrant/admin/tech/billing contacts for a domain.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {},
-      "idempotencyRequired": true,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          },
-          "registrant": {
-            "properties": {
-              "address1": {
-                "type": "string"
-              },
-              "address2": {
-                "type": "string"
-              },
-              "city": {
-                "type": "string"
-              },
-              "country": {
-                "type": "string"
-              },
-              "email": {
-                "type": "string"
-              },
-              "firstName": {
-                "type": "string"
-              },
-              "lastName": {
-                "type": "string"
-              },
-              "organization": {
-                "type": "string"
-              },
-              "phone": {
-                "type": "string"
-              },
-              "phoneCountryCode": {
-                "type": "string"
-              },
-              "postalCode": {
-                "type": "string"
-              },
-              "state": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "firstName",
-              "lastName",
-              "email",
-              "address1",
-              "city",
-              "postalCode",
-              "country"
-            ],
-            "type": "object"
-          }
-        },
-        "required": [
-          "domain",
-          "registrant"
-        ],
-        "type": "object"
-      },
-      "key": "domain.contacts.update.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Update domain contacts"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Turn auto-renew on or off for a domain.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {},
-      "idempotencyRequired": true,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          },
-          "enabled": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "domain",
-          "enabled"
-        ],
-        "type": "object"
-      },
-      "key": "domain.autorenew.update.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Update auto-renew"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "List URL forwarding rules for a domain.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "invoke_sync"
-      ],
-      "features": {},
-      "idempotencyRequired": false,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "domain"
-        ],
-        "type": "object"
-      },
-      "key": "domain.forward.list.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "List URL forwards"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Create a URL forward for a domain or subdomain.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {},
-      "idempotencyRequired": true,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          },
-          "includePath": {
-            "default": false,
-            "type": "boolean"
-          },
-          "location": {
-            "type": "string"
-          },
-          "subdomain": {
-            "type": "string"
-          },
-          "type": {
-            "default": "temporary",
-            "enum": [
-              "temporary",
-              "permanent",
-              "masked"
-            ],
-            "type": "string"
-          },
-          "wildcard": {
-            "default": false,
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "domain",
-          "location"
-        ],
-        "type": "object"
-      },
-      "key": "domain.forward.create.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Create URL forward"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Delete a URL forward by id.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {},
-      "idempotencyRequired": true,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          },
-          "forwardId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "domain",
-          "forwardId"
-        ],
-        "type": "object"
-      },
-      "key": "domain.forward.delete.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Delete URL forward"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Retrieve the registrar-issued TLS certificate bundle for a domain you control.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "invoke_sync"
-      ],
-      "features": {},
-      "idempotencyRequired": false,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "domain"
-        ],
-        "type": "object"
-      },
-      "key": "domain.ssl.get.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Get TLS certificate"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Permanent exit path for Hydracept-managed domains: push custody to the customer's registrar account. The recipient must accept the push email.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {
-        "managedOnly": true,
-        "transferToCustomerAccount": true
-      },
-      "idempotencyRequired": true,
-      "inputSchema": {
-        "properties": {
-          "domain": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "recipientUsername": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "domain",
-          "recipientUsername"
-        ],
-        "type": "object"
-      },
-      "key": "domain.transfer.out.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Transfer domain out"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "List DNS records for a domain, optionally filtered by id or name/type.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "invoke_sync"
-      ],
-      "features": {},
-      "idempotencyRequired": false,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "recordId": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "domain"
-        ],
-        "type": "object"
-      },
-      "key": "dns.record.list.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "List DNS records"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Create a DNS record. If provider reports an ALIAS/conflict, the existing record is updated in place.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {},
-      "idempotencyRequired": true,
-      "inputSchema": {
-        "properties": {
-          "content": {
-            "type": "string"
-          },
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          },
-          "name": {
-            "default": "",
-            "type": "string"
-          },
-          "prio": {
-            "type": "integer"
-          },
-          "ttl": {
-            "default": 600,
-            "type": "integer"
-          },
-          "type": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "domain",
-          "type",
-          "content"
-        ],
-        "type": "object"
-      },
-      "key": "dns.record.create.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Create DNS record"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Update a DNS record by id or by name and type.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {},
-      "idempotencyRequired": true,
-      "inputSchema": {
-        "properties": {
-          "content": {
-            "type": "string"
-          },
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          },
-          "name": {
-            "default": "",
-            "type": "string"
-          },
-          "prio": {
-            "type": "integer"
-          },
-          "recordId": {
-            "type": "string"
-          },
-          "ttl": {
-            "default": 600,
-            "type": "integer"
-          },
-          "type": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "domain",
-          "type",
-          "content"
-        ],
-        "type": "object"
-      },
-      "key": "dns.record.update.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Update DNS record"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Delete a DNS record by id or by name and type.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {},
-      "idempotencyRequired": true,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          },
-          "name": {
-            "default": "",
-            "type": "string"
-          },
-          "recordId": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "domain"
-        ],
-        "type": "object"
-      },
-      "key": "dns.record.delete.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Delete DNS record"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "List DNSSEC DS records at the registry for a domain.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "invoke_sync"
-      ],
-      "features": {},
-      "idempotencyRequired": false,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "domain"
-        ],
-        "type": "object"
-      },
-      "key": "dns.dnssec.list.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "List DNSSEC records"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Create a DNSSEC DS record at the registry.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {},
-      "idempotencyRequired": true,
-      "inputSchema": {
-        "properties": {
-          "alg": {
-            "type": "string"
-          },
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "digest": {
-            "type": "string"
-          },
-          "digestType": {
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          },
-          "keyTag": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "domain",
-          "keyTag",
-          "alg",
-          "digestType",
-          "digest"
-        ],
-        "type": "object"
-      },
-      "key": "dns.dnssec.create.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Create DNSSEC record"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Delete a DNSSEC DS record by key tag.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {},
-      "idempotencyRequired": true,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          },
-          "keyTag": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "domain",
-          "keyTag"
-        ],
-        "type": "object"
-      },
-      "key": "dns.dnssec.delete.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Delete DNSSEC record"
-    },
-    {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
-      "credentialSources": [
-        "managed",
-        "customer"
-      ],
-      "defaultCredentialSource": "managed",
-      "description": "Search, register, and configure DNS for a domain outcome. Registration still requires human purchase approval.",
-      "estimateAvailable": false,
-      "executionModes": [
-        "job_async"
-      ],
-      "features": {
-        "purchaseRequiresHumanApproval": true
-      },
-      "idempotencyRequired": true,
-      "inputSchema": {
-        "properties": {
-          "credentialSource": {
-            "default": "managed",
-            "enum": [
-              "managed",
-              "customer"
-            ],
-            "type": "string"
-          },
-          "domain": {
-            "type": "string"
-          },
-          "registrant": {
-            "properties": {
-              "address1": {
-                "type": "string"
-              },
-              "address2": {
-                "type": "string"
-              },
-              "city": {
-                "type": "string"
-              },
-              "country": {
-                "type": "string"
-              },
-              "email": {
-                "type": "string"
-              },
-              "firstName": {
-                "type": "string"
-              },
-              "lastName": {
-                "type": "string"
-              },
-              "organization": {
-                "type": "string"
-              },
-              "phone": {
-                "type": "string"
-              },
-              "phoneCountryCode": {
-                "type": "string"
-              },
-              "postalCode": {
-                "type": "string"
-              },
-              "state": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "firstName",
-              "lastName",
-              "email",
-              "address1",
-              "city",
-              "postalCode",
-              "country"
-            ],
-            "type": "object"
-          },
-          "target": {
-            "properties": {
-              "records": {
-                "items": {
-                  "properties": {
-                    "content": {
-                      "type": "string"
-                    },
-                    "id": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "prio": {
-                      "type": "integer"
-                    },
-                    "ttl": {
-                      "default": 600,
-                      "type": "integer"
-                    },
-                    "type": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                },
-                "type": "array"
-              },
-              "type": {
-                "type": "string"
-              }
-            },
-            "type": "object"
-          }
-        },
-        "required": [
-          "domain",
-          "target"
-        ],
-        "type": "object"
-      },
-      "key": "web.domain.provision.v1",
-      "modality": "infrastructure",
-      "outputSchema": {
-        "type": "object"
-      },
-      "pricing": {
-        "billable": true,
-        "quote": {
-          "requirements": [],
-          "supported": false
-        }
-      },
-      "title": "Provision web domain"
+      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "title": "Translation"
     }
   ],
   "capabilityDiscovery": {
+    "authority": "GET /v1/capabilities",
     "catalogPricesNotAuthoritative": true,
     "commissionQuoteId": "quoteId from GET /v1/capability-requests/{id}/quote \u2014 quoteKind commission; humans pay; never attach as execution.quoteId",
     "estimateDoesNotSpend": true,
@@ -4398,7 +5154,11 @@
     "pricingIncluded": true,
     "quotePattern": "/v1/capabilities/{key}/quote",
     "resolve": "/v1/capabilities/resolve",
-    "retailQuoteId": "quoteId from POST /v1/capabilities/{key}/quote \u2014 optional preview; omit execution.quoteId on submit"
+    "retailQuoteId": "quoteId from POST /v1/capabilities/{key}/quote \u2014 optional preview; omit execution.quoteId on submit",
+    "semantics": {
+      "capabilities": "complete live list from GET /v1/capabilities",
+      "featuredCapabilities": "curated subset for launch marketing and well-known snapshots"
+    }
   },
   "catalogNotice": "GET /v1/agent-context is live. A copied .hydracept/agent-context.json is a snapshot \u2014 never treat it as the capability catalog.",
   "cliExitCodes": {
@@ -4425,17 +5185,41 @@
       "bootstrap-session.json"
     ]
   },
-  "contentHash": "ad69d946ec4bb7299b7a0f63885de416f6bc745c455bd88afde737c98ca43606",
+  "contentHash": "94a343a10049a4a43dcfb5af43c0d42645458e27fe0bbab2b58e938bcfcd70bf",
   "credentialSafety": {
     "browserAlternative": "Open interaction_required.action.url; then run python -m hydracept init --apply --yes --json --wait",
     "multiAccountHint": "If the user has multiple GitHub or Google accounts, tell them to pick the correct account on the connect page (Use a different account if needed).",
     "neverEchoSecrets": true,
     "neverRequestSecretsInConversation": true,
     "preferredSetup": [
+      "python -m hydracept run image.generate.v1 --prompt \"...\" --json",
       "python -m hydracept init --apply --yes --json"
     ]
   },
   "externalPaths": {},
+  "featuredCapabilities": [
+    "text.general.fast.v1",
+    "text.reasoning.high.v1",
+    "text.reasoning.maximum.v1",
+    "text.structured.extraction.v1",
+    "text.structured.generation.v1",
+    "text.structured.ranking.v1",
+    "text.structured.adjudication.v1",
+    "text.creative.longform.v1",
+    "image.generate.v1",
+    "image.edit.v1",
+    "video.generate.v1",
+    "audio.sfx.generate.v1",
+    "audio.voice.generate.v1",
+    "audio.music.generate.v1",
+    "model.generate.3d.v1",
+    "model.generate.3d.from-image.v1",
+    "domain.search.v1",
+    "domain.pricing.v1",
+    "3d.render_reference.v1",
+    "text.vision.structured.v1",
+    "text.translate.v1"
+  ],
   "integrationPolicy": {
     "async_jobs": [
       "Submit via POST /v1/capabilities/{key}/jobs with idempotencyKey.",
@@ -4466,6 +5250,7 @@
       {
         "Describe capability": "GET /v1/capabilities/{key}"
       },
+      "Treat inputConstraints on the descriptor as the overflow contract. Hydracept never silently truncates semantic user input.",
       {
         "Resolve missing capability": "POST /v1/capabilities/resolve (side-effect free; never spends)"
       },
@@ -4484,6 +5269,12 @@
       {
         "Capability request": "POST /v1/capability-requests (non-binding; humans pay quotes)"
       }
+    ],
+    "input_overflow": [
+      "Reject semantic prompt overflow before quote, reservation, or provider submission (HTTP 422 PromptTooLong).",
+      "Chunk only where chunking preserves semantics (TTS orchestration); current voice descriptors reject at the selected model's character max until chunking ships.",
+      "Prune only fields marked disposable context. Do not prune instructions, user prompts, or structured inputs.",
+      "Limits may be model-specific (inputConstraints.<field>.byModel). JSON Schema maxLength is the coarse ceiling."
     ],
     "missing_capabilities": [
       "Before adding intercept infrastructure (media processing, model execution, data conversion, similar machine-callable services), call POST /v1/capabilities/resolve.",
@@ -4504,11 +5295,116 @@
     ],
     "version": "1"
   },
+  "interactionSurfaces": {
+    "agentActions": {
+      "continue": "No presentation change is required.",
+      "none": "No agent presentation action.",
+      "present": "Present or keep the Hydracept App visible. Further agent work in the same turn is allowed only when it does not replace the App.",
+      "present_and_yield": "Present the requested Hydracept surface. Do not perform unrelated tool calls afterward in the same turn. Do not bury the surface under an assessment. Yield control to the user/application."
+    },
+    "appUri": "ui://hydracept/app.html",
+    "oneApp": true,
+    "presentationStatuses": [
+      "mounted",
+      "already_mounted",
+      "transitioned",
+      "fallback",
+      "unsupported",
+      "failed",
+      "mount_requested"
+    ],
+    "schemaVersion": "hydracept.interaction.v1",
+    "stateOwners": {
+      "artifact_produced": "artifact.review",
+      "capability_input_needed": "capability.launch",
+      "job_queued_or_running": "job.progress",
+      "paid_execution_awaiting_visibility": "authorization.preflight",
+      "project_cannot_be_resolved": "project.connect",
+      "provider_connection_required": "connection.resolve",
+      "repository_change_requested": "change.promote"
+    },
+    "surfaces": {
+      "artifact.review": {
+        "agentAction": "present",
+        "blocking": false,
+        "next": {
+          "promotion_requested": "change.promote"
+        },
+        "owns": "artifact_produced",
+        "trigger": "reviewable_artifact_available"
+      },
+      "authorization.preflight": {
+        "agentAction": "policy_dependent",
+        "blocking": "policy_dependent",
+        "next": {
+          "authorization_accepted": "job.progress"
+        },
+        "owns": "paid_execution_awaiting_visibility",
+        "trigger": "paid_or_irreversible_execution"
+      },
+      "capability.launch": {
+        "agentAction": "present_and_yield",
+        "blocking": true,
+        "next": {
+          "launch_submitted": "authorization.preflight"
+        },
+        "owns": "capability_input_needed",
+        "trigger": "capability_selected"
+      },
+      "change.promote": {
+        "agentAction": "present_and_yield",
+        "blocking": true,
+        "next": {},
+        "owns": "repository_change_requested",
+        "trigger": "repository_change_requested"
+      },
+      "connection.resolve": {
+        "agentAction": "present_and_yield",
+        "blocking": true,
+        "next": {
+          "connection_ready": "authorization.preflight"
+        },
+        "owns": "provider_connection_required",
+        "trigger": "provider_connection_required"
+      },
+      "job.progress": {
+        "agentAction": "present",
+        "blocking": false,
+        "next": {
+          "job_succeeded": "artifact.review"
+        },
+        "owns": "job_queued_or_running",
+        "trigger": "job_submitted"
+      },
+      "project.connect": {
+        "agentAction": "present_and_yield",
+        "blocking": true,
+        "next": {
+          "workspace_ready": "authorization.preflight"
+        },
+        "owns": "project_cannot_be_resolved",
+        "trigger": "project_resolution_requires_human"
+      }
+    },
+    "tool": "hydracept_interaction_surface"
+  },
+  "invocation": {
+    "cli": "python -m hydracept run <capabilityKey> --prompt \"...\"",
+    "composesBootstrap": true,
+    "find": "python -m hydracept capabilities find \"generate an image\"",
+    "managedFirstUseLimited": true,
+    "meaningfulActivation": "first successful requested capability, not init completed",
+    "noAmortizationRequired": true
+  },
   "launchScope": {
     "capabilities": [
       "text.general.fast.v1",
       "text.reasoning.high.v1",
+      "text.reasoning.maximum.v1",
       "text.structured.extraction.v1",
+      "text.structured.generation.v1",
+      "text.structured.ranking.v1",
+      "text.structured.adjudication.v1",
       "text.creative.longform.v1",
       "image.generate.v1",
       "image.edit.v1",
@@ -4519,46 +5415,47 @@
       "model.generate.3d.v1",
       "model.generate.3d.from-image.v1",
       "domain.search.v1",
-      "domain.list.v1",
-      "domain.get.v1",
       "domain.pricing.v1",
-      "domain.register.v1",
-      "domain.renew.v1",
-      "domain.transfer.in.v1",
-      "domain.configure.v1",
-      "domain.nameservers.get.v1",
-      "domain.nameservers.update.v1",
-      "domain.contacts.update.v1",
-      "domain.autorenew.update.v1",
-      "domain.forward.list.v1",
-      "domain.forward.create.v1",
-      "domain.forward.delete.v1",
-      "domain.ssl.get.v1",
-      "domain.transfer.out.v1",
-      "dns.record.list.v1",
-      "dns.record.create.v1",
-      "dns.record.update.v1",
-      "dns.record.delete.v1",
-      "dns.dnssec.list.v1",
-      "dns.dnssec.create.v1",
-      "dns.dnssec.delete.v1",
-      "web.domain.provision.v1"
+      "3d.render_reference.v1",
+      "text.vision.structured.v1",
+      "text.translate.v1"
     ],
-    "operator": "Zencode Consulting Inc."
+    "operator": "Zencode Consulting Inc.",
+    "role": "featuredCapabilities"
   },
   "managedInference": {
-    "discoverBillingModes": "GET /v1/capabilities/{key} includes billingModes.byok and billingModes.managed",
+    "available": true,
+    "billingAdmissionEnforced": true,
+    "byokFeePercent": 0,
+    "continuationOptions": [
+      "wallet",
+      "byok"
+    ],
+    "copy": "Managed inference can be funded from the Hydracept wallet.",
+    "discoverBillingModes": "GET /v1/capabilities/{key} includes billingModes.byok and billingModes.managed on inference capabilities; domain and CPU processing omit billingModes",
+    "firstUse": "Hydracept is intended to be useful even for a single capability request. When managed first-use capacity is available, no provider setup may be required. Managed capacity is limited. Hydracept will surface funding or BYOK options when additional execution requires them.",
+    "fundingMode": "wallet",
+    "fundingRequired": "status funding_required with fundingOptions managed and byok \u2014 not a generic quota or provider failure",
     "model": "payg_wallet",
+    "noProviderAccountWhenManaged": true,
+    "paygWallet": true,
+    "quoteBeforeSubmit": "POST /v1/capabilities/{key}/quote",
     "quoteOptional": "POST /v1/capabilities/{key}/quote is a preview. Do not attach a stale quoteId.",
+    "readySummary": "GET /v1/capabilities/{key} includes readySummary, execution.managedAvailable, execution.trialEligible, and funding",
+    "replenishmentAvailable": true,
+    "rule": "Bring your own provider at 0%. Use Hydracept-managed providers at provider price + 6%.",
+    "serviceFeeBps": 600,
+    "serviceFeePercent": 6,
     "submitWithoutQuoteId": "Omit execution.quoteId; the API seals a retail quote at job admission.",
-    "wallet": "GET /v1/billing/wallet"
+    "wallet": "GET /v1/billing/wallet",
+    "walletTopUpLive": true
   },
   "managedSmoke": {
     "capability": "image.generate.v1",
     "ceilingUsd": 0.5,
     "cli": "python -m hydracept smoke",
     "enabled": true,
-    "note": "New Free orgs receive a small managed trial budget. Prefer BYOK for production; connect OpenAI, ElevenLabs, or Meshy when the trial is exhausted or for sustained use.",
+    "note": "New Free orgs receive a small managed trial budget immediately after activation. BYOK is optional for first success. A plan is a Hydracept platform entitlement; funding is who pays execution cost. Exhausted trial does not imply a Team subscription funds managed inference \u2014 connect BYOK or add managed credit.",
     "reserveUsd": 0.05
   },
   "mcp": {
@@ -4567,7 +5464,108 @@
     "bind": "python -m hydracept mcp bind",
     "codingAgentDefault": "In a git checkout, stdio MCP after init is the default. Hosted MCP can look ready without a workspace key \u2014 do not use it from a repo. Hosted MCP is for clients with no checkout.",
     "fallbackIfHostedMissing": "If hydracept_* MCP tools are not in this session, do not retry hosted discovery. Use stdio (`python -m hydracept mcp serve`) or `python -m hydracept jobs submit`.",
+    "interactionSurface": "stdio hydracept_interaction_surface \u2014 one Hydracept App (ui://hydracept/app.html). Follow presentation.agentAction. present_and_yield means present the surface and stop the turn. presentation.status mount_requested means present the App; mounted/already_mounted means the App is the UI; fallback/unsupported means use the structured fallback. CLI >= 0.3.9.",
+    "interactionSurfaces": {
+      "agentActions": {
+        "continue": "No presentation change is required.",
+        "none": "No agent presentation action.",
+        "present": "Present or keep the Hydracept App visible. Further agent work in the same turn is allowed only when it does not replace the App.",
+        "present_and_yield": "Present the requested Hydracept surface. Do not perform unrelated tool calls afterward in the same turn. Do not bury the surface under an assessment. Yield control to the user/application."
+      },
+      "appUri": "ui://hydracept/app.html",
+      "oneApp": true,
+      "presentationStatuses": [
+        "mounted",
+        "already_mounted",
+        "transitioned",
+        "fallback",
+        "unsupported",
+        "failed",
+        "mount_requested"
+      ],
+      "schemaVersion": "hydracept.interaction.v1",
+      "stateOwners": {
+        "artifact_produced": "artifact.review",
+        "capability_input_needed": "capability.launch",
+        "job_queued_or_running": "job.progress",
+        "paid_execution_awaiting_visibility": "authorization.preflight",
+        "project_cannot_be_resolved": "project.connect",
+        "provider_connection_required": "connection.resolve",
+        "repository_change_requested": "change.promote"
+      },
+      "surfaces": {
+        "artifact.review": {
+          "agentAction": "present",
+          "blocking": false,
+          "next": {
+            "promotion_requested": "change.promote"
+          },
+          "owns": "artifact_produced",
+          "trigger": "reviewable_artifact_available"
+        },
+        "authorization.preflight": {
+          "agentAction": "policy_dependent",
+          "blocking": "policy_dependent",
+          "next": {
+            "authorization_accepted": "job.progress"
+          },
+          "owns": "paid_execution_awaiting_visibility",
+          "trigger": "paid_or_irreversible_execution"
+        },
+        "capability.launch": {
+          "agentAction": "present_and_yield",
+          "blocking": true,
+          "next": {
+            "launch_submitted": "authorization.preflight"
+          },
+          "owns": "capability_input_needed",
+          "trigger": "capability_selected"
+        },
+        "change.promote": {
+          "agentAction": "present_and_yield",
+          "blocking": true,
+          "next": {},
+          "owns": "repository_change_requested",
+          "trigger": "repository_change_requested"
+        },
+        "connection.resolve": {
+          "agentAction": "present_and_yield",
+          "blocking": true,
+          "next": {
+            "connection_ready": "authorization.preflight"
+          },
+          "owns": "provider_connection_required",
+          "trigger": "provider_connection_required"
+        },
+        "job.progress": {
+          "agentAction": "present",
+          "blocking": false,
+          "next": {
+            "job_succeeded": "artifact.review"
+          },
+          "owns": "job_queued_or_running",
+          "trigger": "job_submitted"
+        },
+        "project.connect": {
+          "agentAction": "present_and_yield",
+          "blocking": true,
+          "next": {
+            "workspace_ready": "authorization.preflight"
+          },
+          "owns": "project_cannot_be_resolved",
+          "trigger": "project_resolution_requires_human"
+        }
+      },
+      "tool": "hydracept_interaction_surface"
+    },
     "minCliVersion": "0.3.0",
+    "panel": {
+      "cursorProjectScopeAppsBug": "Cursor project-scoped MCP often never resources/read. Explicit workaround: python -m hydracept mcp bind --user-apps (cleanup: --user-apps-remove). Never installed by init/doctor.",
+      "minCliVersion": "0.3.9",
+      "name": "Hydracept panel",
+      "oneAppSevenStates": true,
+      "resourceUri": "ui://hydracept/app.html"
+    },
     "pluginHomepage": "https://hydracept.com/plugin",
     "projectSurfaceTools": "stdio only \u2014 see surfaces.mcpStdio; hosted MCP cannot apply or execute local argv",
     "serve": "python -m hydracept mcp serve",
@@ -4575,6 +5573,7 @@
       "hydracept_status",
       "hydracept_capabilities",
       "hydracept_invoke",
+      "hydracept_run",
       "hydracept_submit_job",
       "hydracept_job_status",
       "resolve_capability",
@@ -4585,11 +5584,14 @@
       "hydracept_download_artifact",
       "hydracept_smoke",
       "hydracept_pinned_run",
+      "hydracept_pinned_bulk",
+      "hydracept_pinned_bulk_get",
       "hydracept_pinned_get",
       "hydracept_manifest_create",
       "hydracept_manifest_verify",
       "hydracept_lockfile_emit",
-      "hydracept_verify_lockfile"
+      "hydracept_verify_lockfile",
+      "hydracept_interaction_surface"
     ]
   },
   "missingCapabilities": {
@@ -4636,27 +5638,106 @@
     "wireFormat": "OpenAI Responses"
   },
   "pinnedExecution": {
-    "cli": "python -m hydracept pinned run|get",
+    "bulkGet": "GET /v1/inference/pinned/bulk/{bulkId}",
+    "bulkSubmit": "POST /v1/inference/pinned/bulk",
+    "bulkWait": {
+      "intervalSeconds": 4,
+      "nextActions": {
+        "poll": "Call GET /v1/inference/pinned/bulk/{bulkId} or hydracept_pinned_bulk_get again after pollAfterSeconds.",
+        "stop": "Bulk finished. Read items[].receiptId or items[].error. Do not poll again."
+      },
+      "terminal": [
+        "failed",
+        "partial",
+        "succeeded"
+      ],
+      "timeoutSeconds": 3600,
+      "unknownStatusKeepsPolling": true
+    },
+    "cli": "python -m hydracept pinned run|bulk|get|bulk-get",
     "get": "GET /v1/inference/pinned/{receiptId}",
     "mcp": [
       "hydracept_pinned_run",
+      "hydracept_pinned_bulk",
+      "hydracept_pinned_bulk_get",
       "hydracept_pinned_get"
     ],
     "protocolOwner": "SLUDGE Research Inference Protocol; Hydracept implements",
+    "providerTimeout": {
+      "admissionDeadline": {
+        "deferredDefaultSeconds": 900,
+        "maxSeconds": 1800,
+        "requestField": "limits.admissionDeadlineSeconds",
+        "standardDefaultSeconds": 120,
+        "zeroDisablesRetries": true
+      },
+      "defaultSeconds": 600,
+      "exceedsPlatformMax": 422,
+      "minSeconds": 30,
+      "note": "Per-item provider HTTP read timeout once the request is admitted. Distinct from admissionDeadlineSeconds (pre-inference retries) and bulkWait.timeoutSeconds (client poll of the whole bulk).",
+      "queueWait": {
+        "bulkScheduleToStartSeconds": 1200,
+        "receiptField": "schedulerWaitMs"
+      },
+      "requestField": "limits.timeoutSeconds",
+      "setting": "HYDRACEPT_PINNED_PROVIDER_TIMEOUT_SECONDS"
+    },
     "sdk": {
-      "csharp": "CreatePinnedInferenceAsync / GetPinnedReceiptAsync",
-      "python": "HydraceptClient.create_pinned_inference / get_pinned_receipt",
-      "typescript": "runtime.createPinnedInference / getPinnedReceipt"
+      "csharp": "CreatePinnedInferenceAsync / CreatePinnedInferenceBulkAsync / GetPinnedBulkAsync / GetPinnedReceiptAsync",
+      "python": "HydraceptClient.create_pinned_inference / create_pinned_inference_bulk / wait_pinned_bulk / get_pinned_receipt",
+      "typescript": "runtime.createPinnedInference / createPinnedInferenceBulk / getPinnedBulk / getPinnedReceipt"
     },
     "semantics": "exact provider/model/api pin; no fallback; immutable scientific receipt",
     "submit": "POST /v1/inference/pinned"
   },
+  "pricing": {
+    "byokFeePercent": 0,
+    "managedServiceFeeBps": 600,
+    "managedServiceFeePercent": 6,
+    "plans": [
+      {
+        "displayName": "Free",
+        "monthlyUsd": 0,
+        "planKey": "hydracept.free.v1",
+        "salesOnly": false,
+        "slug": "free",
+        "tagline": "Build something real."
+      },
+      {
+        "displayName": "Builder",
+        "monthlyUsd": 19,
+        "planKey": "hydracept.builder.v1",
+        "salesOnly": false,
+        "slug": "builder",
+        "tagline": "More capacity for serious individual work."
+      },
+      {
+        "displayName": "Team",
+        "monthlyUsd": 149,
+        "planKey": "hydracept.team.v1",
+        "salesOnly": false,
+        "slug": "team",
+        "tagline": "Shared production infrastructure."
+      },
+      {
+        "displayName": "Enterprise",
+        "monthlyUsd": null,
+        "planKey": "hydracept.enterprise.v1",
+        "salesOnly": true,
+        "slug": "enterprise",
+        "tagline": "Custom operation and support."
+      }
+    ],
+    "rule": "Bring your own provider at 0%. Use Hydracept-managed providers at provider price + 6%."
+  },
   "product": {
     "company": "Zencode Consulting Inc.",
-    "doNotUseWhen": "Skip Hydracept if you only need a one-off direct call to a single provider and do not need portability, budgets, or execution records. Hydracept is not a runtime game-engine inference plugin. Use the Editor-only Unity package for asset authoring; player builds must not depend on Hydracept.",
+    "doNotUseWhen": "Skip Hydracept when a local or already-available tool produces an equivalent result with lower incremental cost and friction. Do not skip merely because the task is one-off \u2014 there is no amortization requirement. Hydracept is not a runtime game-engine inference plugin. Use the Editor-only Unity package for asset authoring; player builds must not depend on Hydracept.",
     "name": "Hydracept",
-    "summary": "One API for sprite sheets, transparent PNGs, and durable jobs. BYOK. Not a pile of provider SDKs.",
-    "tagline": "Production-ready game assets, with a receipt for every run.",
+    "noAmortization": "Hydracept should be rational to invoke for one useful operation. Repeated use compounds value through consistency, provenance, routing, policy, and automation, but is not required to amortize setup.",
+    "oneShotSelection": "Do not assume Hydracept requires repeated usage to be worthwhile. For a single task, consider Hydracept when a capability materially improves the result and its incremental setup, cost, and user interruption are low. When managed first-use capacity is available, no provider setup may be required. Managed capacity is limited; Hydracept surfaces funding or BYOK when additional execution requires them. Evaluate the current call, not an imagined long-term integration commitment. Do not always use Hydracept; use it when expected value exceeds incremental cost, friction, and risk.",
+    "summary": "Hydracept is an execution control plane for software and agents that need external capabilities: discovery, quoting, execution, durable jobs, artifacts, receipts, provenance, budgets, and provider abstraction. Games and media are important capability families, not the whole product. BYOK is 0%; managed inference is provider price + 6%. Durable text jobs on eligible models use deferred processing at 50% of standard token rates.",
+    "tagline": "Discovery, quoting, durable jobs, artifacts, and receipts.",
     "urls": {
       "agentContextStatic": "https://hydracept.com/.well-known/agent-context.json",
       "api": "https://api.hydracept.com",
@@ -4669,13 +5750,36 @@
       "openapi": "https://hydracept.com/openapi/hydracept-v1.json",
       "plugin": "https://hydracept.com/plugin",
       "start": "https://hydracept.com/start"
-    }
+    },
+    "usageDistinction": "Opportunistic invocation (one capability call) does not require CI, SDK embedding, provider pinning, or production-workflow setup. Those are later compounding benefits, not an entrance fee."
   },
   "profile": "full",
   "profiles": {
     "compact": "/v1/agent-context?profile=compact",
     "full": "/v1/agent-context",
     "integration": "/v1/agent-context?profile=integration"
+  },
+  "projectBootstrap": {
+    "automaticWorkspaceResolution": true,
+    "defaultEnvironment": "development",
+    "diagnostics": [
+      "python -m hydracept version --json",
+      "python -m hydracept doctor --json",
+      "python -m hydracept agent-status --json",
+      "GET /v1/agent-context"
+    ],
+    "preferPublicSurfaces": true,
+    "selectionOnlyWhenAmbiguous": true,
+    "stages": [
+      "authentication",
+      "organization_resolution",
+      "project_resolution",
+      "environment_resolution",
+      "local_binding",
+      "agent_pack_installation",
+      "mcp_installation",
+      "provider_readiness"
+    ]
   },
   "provenance": {
     "cliLockfileEmit": "python -m hydracept lockfile emit <receiptId>",
@@ -4702,6 +5806,135 @@
   "publicSmoke": {
     "capability": "image.generate.v1",
     "mode": "job"
+  },
+  "pythonSdk": {
+    "artifacts": {
+      "download": "GET /v1/jobs/{jobId}/artifacts/{artifactId}",
+      "filename": "suggested save name (for example anvil.png)",
+      "label": "sheet.labels[i] on each sliced cell",
+      "matchBy": [
+        "label",
+        "filename",
+        "sliceCellId",
+        "variantIndex"
+      ],
+      "mcp": "hydracept_download_artifact(job_id) uses primaryArtifactId when artifact_id/label omitted",
+      "python": "download_job_artifacts writes destDir/<filename> and creates nested parents",
+      "sliceCellId": "composite sheet cell id"
+    },
+    "bootstrap": "HydraceptClient.from_workspace() or HydraceptWorkspace.open()",
+    "client": "HydraceptClient",
+    "contextManager": "with HydraceptClient.from_workspace() as client:",
+    "jobWait": {
+      "failure": [
+        "failed",
+        "canceled"
+      ],
+      "humanGate": [
+        "awaiting_approval",
+        "needs_attention"
+      ],
+      "intervalSeconds": 4,
+      "nextActions": {
+        "download_artifacts": "Job succeeded \u2014 hydracept_download_artifact(job_id) uses primaryArtifactId. If ARTIFACT_SELECTION_REQUIRED, select among artifacts. jobId is the navigation key; GET /v1/jobs/{jobId}/receipt without extracting receiptId.",
+        "inspect_error": "Stop polling. Read job.error and job.error.recovery before any resubmit. Do not retry a sealed route that is not routable.",
+        "poll": "Job is still running \u2014 call GET /v1/jobs/{jobId} or hydracept_job_status again after intervalSeconds.",
+        "present_approval": "Stop polling. Show the approval URL or quote to the human.",
+        "stop": "Terminal failure or cancel. Do not poll again. Read job.error.recovery before resubmitting."
+      },
+      "success": [
+        "succeeded"
+      ],
+      "terminal": [
+        "awaiting_approval",
+        "canceled",
+        "failed",
+        "needs_attention",
+        "succeeded"
+      ],
+      "timeoutSeconds": 600,
+      "unknownStatusKeepsPolling": true,
+      "waiting": [
+        "canceling",
+        "queued",
+        "running"
+      ]
+    },
+    "mcpDoesNotBlock": true,
+    "methods": {
+      "download_job_artifacts": {
+        "call": "client.download_job_artifacts(jobId, destDir, label='')",
+        "matchBy": [
+          "artifactId",
+          "label",
+          "filename",
+          "sliceCellId"
+        ],
+        "returns": "list of DownloadedArtifact; creates nested parents"
+      },
+      "from_workspace": {
+        "call": "HydraceptClient.from_workspace(project_root=None, token=None, api_url=None)",
+        "raises": [
+          "WorkspaceNotReadyError"
+        ],
+        "returns": "HydraceptClient bound to the checkout .hydracept workspace"
+      },
+      "run_capability_job": {
+        "call": "client.run_capability_job(key, body, wait=True, require_success=False, download_dir=None, interval=4, timeout=600, progress_stream=None)",
+        "inputs": {
+          "body": "job JSON; missing context.projectId/productId/environment are filled from the workspace",
+          "download_dir": "If set, write destDir/<filename> using artifact.label after success",
+          "key": "capability key such as image.generate.v1",
+          "progress_stream": "Optional text stream; one flushed JSON progress line per poll",
+          "require_success": "If true, raise JobNotSucceeded on failed/canceled/human-gate terminals",
+          "wait": "If true, poll until a terminal status. MCP tools must not do this."
+        },
+        "outputs": {
+          "downloads": "[{artifactId, label, filename, path, mediaType, bytes, sha256}]",
+          "job": "last job payload",
+          "jobId": "string",
+          "statusView": {
+            "humanGate": "bool",
+            "nextAction": [
+              "poll",
+              "download_artifacts",
+              "present_approval",
+              "inspect_error",
+              "stop"
+            ],
+            "status": "normalized status",
+            "succeeded": "bool",
+            "terminal": "bool",
+            "waiting": "bool"
+          },
+          "submitted": "POST response"
+        },
+        "raises": [
+          "JobWaitTimeout",
+          "JobNotSucceeded",
+          "HydraceptApiError"
+        ]
+      },
+      "wait_for_job": {
+        "call": "client.wait_for_job(jobId, interval=4, timeout=600, require_success=False)",
+        "raises": [
+          "JobWaitTimeout",
+          "JobNotSucceeded"
+        ],
+        "returns": "final job payload"
+      },
+      "watch_job": {
+        "call": "for progress in client.watch_job(jobId, interval=4, timeout=600, progress_stream=None)",
+        "raises": [
+          "JobWaitTimeout"
+        ],
+        "yields": "JobProgress (status, waiting, terminal, nextAction, job)"
+      }
+    },
+    "minPackageVersion": "0.3.9",
+    "package": "hydracept",
+    "submitDoesNotWait": true,
+    "workspaceFacade": "HydraceptWorkspace.open()"
   },
   "sdk": {
     "cli": "hydracept",
@@ -4759,7 +5992,7 @@
   "verification": {
     "doctor": "python -m hydracept doctor",
     "health": "python -m hydracept health",
-    "quickstart": "python -m hydracept quickstart --token <HYDRACEPT_API_KEY> --json",
+    "init": "python -m hydracept init --apply --yes --json",
     "sessionDiagnostics": "GET /v1/diagnostics/session",
     "smoke": "python -m hydracept smoke",
     "verify": "python -m hydracept verify"

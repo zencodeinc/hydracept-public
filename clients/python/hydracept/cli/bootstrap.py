@@ -165,15 +165,13 @@ def run_configure(
     )
     if base is None:
         raise ConfigureError(
-            "No credential. Run python -m hydracept login then keys create --configure",
+            "No workspace API credential — run python -m hydracept init --apply --yes --json",
             exit_code=AUTH,
         )
 
     secrets = read_json(secrets_path(project_root))
     human_token = base.token
-    config: dict[str, Any] = {
-        "detectedStack": detect_stack(project_root),
-    }
+    config: dict[str, Any] = {"detectedStack": detect_stack(project_root)}
     if cfg_path.exists():
         config = {**read_json(cfg_path), **config}
 
@@ -232,11 +230,7 @@ def run_configure(
 
         if bootstrap.status_code < 400:
             body = bootstrap.json()
-            api_key = (
-                body.get("apiKey")
-                or body.get("token")
-                or (body.get("credential") or {}).get("secret")
-            )
+            api_key = body.get("apiKey") or body.get("token") or (body.get("credential") or {}).get("secret")
             if body.get("organizationId"):
                 config["organizationId"] = body["organizationId"]
             from hydracept.cli.project import write_project_binding
@@ -252,7 +246,7 @@ def run_configure(
         elif not api_key:
             raise ConfigureError(
                 f"bootstrap-free failed ({bootstrap.status_code}). "
-                "Complete activation at https://hydracept.com/start",
+                "Run python -m hydracept init --apply --yes --json and follow its interaction_required action.url exactly.",
                 exit_code=CONNECTIVITY,
             )
 
@@ -293,7 +287,7 @@ def run_configure(
 
     if workspace_state(workspace) != WorkspaceState.READY:
         raise ConfigureError(
-            "Workspace not ready after configure — complete https://hydracept.com/start",
+            "Workspace not ready after configure — run python -m hydracept init --apply --yes --json and follow its interaction contract.",
             exit_code=CONNECTIVITY,
         )
 

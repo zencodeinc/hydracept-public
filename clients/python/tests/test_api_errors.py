@@ -34,3 +34,22 @@ def test_decorate_job_tool_result_poll() -> None:
     payload = decorate_job_tool_result({"jobId": "job_1", "status": "queued"})
     assert payload["nextAction"] == "poll"
     assert payload["statusView"]["pollAfterSeconds"] == 4
+
+
+def test_decorate_job_tool_result_surfaces_route_recovery() -> None:
+    payload = decorate_job_tool_result(
+        {
+            "jobId": "fex_1",
+            "status": "failed",
+            "error": {
+                "code": "ROUTE_UNAVAILABLE",
+                "message": "Sealed route openai-text:gpt-5.6-luna:text.translate.v1 is not routable",
+                "recovery": {
+                    "nextAction": "do_not_retry_same_route",
+                    "retrySameRoute": False,
+                },
+            },
+        }
+    )
+    assert payload["nextAction"] == "stop"
+    assert payload["recovery"]["retrySameRoute"] is False

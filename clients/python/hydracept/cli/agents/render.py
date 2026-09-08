@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from hydracept.cli.agent_status import AGENT_PACK_VERSION, MANIFEST_NAME
+from hydracept.cli.mcp_bind import stdio_args, stdio_command
 
 HOSTS = ("cursor", "claude", "antigravity")
 SKILL_NAMES = (
@@ -33,8 +34,8 @@ def _public_template_root(repo_root: Path | None) -> Path:
     return _package_data_root() / "templates"
 
 
-def _mcp_command() -> list[str]:
-    return [sys.executable, "-m", "hydracept", "mcp", "serve"]
+def _mcp_command(*, cursor: bool = False, project_root: Path | None = None) -> tuple[str, list[str]]:
+    return stdio_command(), stdio_args(project_root, cursor_placeholder=cursor)
 
 
 def _session_start_hook() -> dict[str, Any]:
@@ -83,13 +84,14 @@ def render_cursor(project_root: Path, repo_root: Path | None = None) -> list[str
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(src, dest)
             written.append(str(dest))
+    command, args = _mcp_command(cursor=True, project_root=root)
     _write_json(
         plugin_root / "mcp.json",
         {
             "mcpServers": {
                 "hydracept": {
-                    "command": _mcp_command()[0],
-                    "args": _mcp_command()[1:],
+                    "command": command,
+                    "args": args,
                 }
             }
         },
@@ -113,13 +115,14 @@ def render_claude(project_root: Path, repo_root: Path | None = None) -> list[str
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(src, dest)
             written.append(str(dest))
+    command, args = _mcp_command(cursor=False, project_root=root)
     _write_json(
         plugin_root / ".mcp.json",
         {
             "mcpServers": {
                 "hydracept": {
-                    "command": _mcp_command()[0],
-                    "args": _mcp_command()[1:],
+                    "command": command,
+                    "args": args,
                 }
             }
         },
@@ -140,13 +143,14 @@ def render_antigravity(project_root: Path, repo_root: Path | None = None) -> lis
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(src, dest)
             written.append(str(dest))
+    command, args = _mcp_command(cursor=False, project_root=root)
     _write_json(
         plugin_root / "mcp_config.json",
         {
             "servers": {
                 "hydracept": {
-                    "command": _mcp_command()[0],
-                    "args": _mcp_command()[1:],
+                    "command": command,
+                    "args": args,
                 }
             }
         },

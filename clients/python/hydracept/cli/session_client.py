@@ -72,6 +72,15 @@ def fetch_session_context() -> dict[str, Any]:
     return payload
 
 
+def organization_id_from_session_context(context: dict[str, Any] | None) -> str | None:
+    payload = context if isinstance(context, dict) else {}
+    organization = payload.get("organization")
+    if not isinstance(organization, dict):
+        return None
+    org_id = str(organization.get("id") or "").strip()
+    return org_id or None
+
+
 def project_from_session_context(context: dict[str, Any]) -> str:
     if context.get("needsOnboarding"):
         return ""
@@ -142,3 +151,97 @@ def revoke_key(key_id: str) -> dict[str, Any]:
             headers=_session_headers(session),
         )
     return _handle_response(response)
+
+
+def identity_from_session_context(context: dict[str, Any] | None) -> dict[str, Any]:
+    payload = context if isinstance(context, dict) else {}
+    identity = payload.get("identity")
+    if isinstance(identity, dict) and identity:
+        provider = str(identity.get("provider") or "").strip() or None
+        account = str(identity.get("account") or identity.get("displayName") or "").strip() or None
+        authenticated = bool(identity.get("authenticated", True))
+        return {
+            "provider": provider,
+            "account": account,
+            "authenticated": authenticated,
+        }
+    return {"provider": None, "account": None, "authenticated": False}
+
+
+def list_organizations() -> list[dict[str, Any]]:
+    session = load_session()
+    if session is None:
+        raise SessionClientError(SESSION_EXPIRED_MESSAGE, status_code=401)
+    with httpx.Client(timeout=30.0) as client:
+        response = client.get(
+            f"{session.app_base_url}/v1/organizations",
+            headers=_session_cookie_headers(session),
+        )
+    payload = _handle_response(response)
+    items = payload.get("items") if isinstance(payload, dict) else payload
+    return [item for item in items or [] if isinstance(item, dict)]
+
+
+def list_organization_projects(organization_id: str) -> list[dict[str, Any]]:
+    session = load_session()
+    if session is None:
+        raise SessionClientError(SESSION_EXPIRED_MESSAGE, status_code=401)
+    with httpx.Client(timeout=30.0) as client:
+        response = client.get(
+            f"{session.app_base_url}/v1/organizations/{organization_id}/projects",
+            headers=_session_cookie_headers(session),
+        )
+    payload = _handle_response(response)
+    items = payload.get("items") if isinstance(payload, dict) else payload
+    return [item for item in items or [] if isinstance(item, dict)]
+
+
+def create_organization_project(
+    organization_id: str,
+    *,
+    display_name: str,
+    environment: str = "development",
+    repository: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    session = load_session()
+    if session is None:
+        raise SessionClientError(SESSION_EXPIRED_MESSAGE, status_code=401)
+    body: dict[str, Any] = {
+        "displayName": display_name,
+        "environment": environment,
+    }
+    if repository:
+        body["repository"] = repository
+    with httpx.Client(timeout=30.0) as client:
+        response = client.post(
+            f"{session.app_base_url}/v1/organizations/{organization_id}/projects",
+            headers=_session_headers(session),
+            json=body,
+        )
+    payload = _handle_response(response)
+    return payload if isinstance(payload, dict) else {}
+
+
+def bootstrap_onboarding_project(
+    *,
+    display_name: str,
+    repository: dict[str, str] | None = None,
+    environment: str = "development",
+) -> dict[str, Any]:
+    session = load_session()
+    if session is None:
+        raise SessionClientError(SESSION_EXPIRED_MESSAGE, status_code=401)
+    body: dict[str, Any] = {"projectName": display_name}
+    if repository:
+        body["repository"] = repository
+    env = (environment or "").strip()
+    if env and env != "development":
+        body["environment"] = env
+    with httpx.Client(timeout=30.0) as client:
+        response = client.post(
+            f"{session.app_base_url}/v1/onboarding/bootstrap",
+            headers=_session_headers(session),
+            json=body,
+        )
+    payload = _handle_response(response)
+    return payload if isinstance(payload, dict) else {}

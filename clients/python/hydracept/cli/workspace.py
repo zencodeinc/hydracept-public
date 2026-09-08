@@ -68,7 +68,17 @@ def local_env_path(project_root: Path) -> Path:
 def read_json(path: Path) -> dict[str, Any]:
     if not path.is_file():
         return {}
-    return json.loads(path.read_text(encoding="utf-8"))
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    if not raw.strip():
+        return {}
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 def auth_headers(token: str) -> dict[str, str]:
@@ -256,13 +266,12 @@ def require_ready_workspace(
     except WorkspaceIdentityError as exc:
         raise WorkspaceNotReadyError(str(exc)) from exc
     if resolved is None:
-        raise WorkspaceNotReadyError(
-            "No workspace API key — run: python -m hydracept login "
-            "then python -m hydracept keys create --configure"
-        )
+        from hydracept.cli.onboarding_next import no_credential_detail
+
+        raise WorkspaceNotReadyError(no_credential_detail(project_root))
     if workspace_state(resolved) != WorkspaceState.READY:
         raise WorkspaceNotReadyError(
-            "Workspace not ready — run python -m hydracept configure or quickstart"
+            "Workspace not ready — run python -m hydracept doctor --fix"
         )
     return resolved
 

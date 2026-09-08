@@ -25,7 +25,10 @@ Sign in on the connect page, choose workspace and project, then approve. Use **U
 
 ```bash
 pip install -U hydracept
-python -m hydracept quickstart --token "$HYDRACEPT_API_KEY" --json --smoke
+```bash
+python -m hydracept init --apply --yes --json
+python -m hydracept smoke
+```
 ```
 
 Legacy path (still supported): `login --token` → `init --apply --yes` → `doctor` → `smoke`.  

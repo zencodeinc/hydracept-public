@@ -25,7 +25,10 @@ from hydracept.cli.project_service import (
     install_project_up,
 )
 from hydracept.cli.project_up_lock import ProjectUpLock, ProjectUpLockError
+from hydracept.cli.project import write_project_binding
+from hydracept.cli.project_resolution import find_explicit_project, load_accessible_catalog
 from hydracept.cli.session_client import SessionClientError
+from hydracept.cli.session_store import load_session
 from hydracept.cli.surface_cmd import apply_project_surfaces, project_tools_fingerprint
 from hydracept.cli.surface_definition import SurfaceDefinitionError
 from hydracept.cli.workspace import DEFAULT_API, resolve_token
@@ -162,6 +165,57 @@ def _post_heartbeat(client: Any, *, base: str, headers: dict[str, str], project_
         )
     except Exception:  # noqa: BLE001 — presence is best-effort; watch must keep running
         return
+
+
+@project_app.command("use")
+def project_use_cmd(
+    project: str = typer.Argument(..., help="Project id, slug, or display name"),
+    environment: str = typer.Option("development", "--environment"),
+    project_root: Path = typer.Option(Path.cwd(), "--project-root"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    """Bind this checkout to an existing Hydracept project."""
+    out = cli_console()
+    if load_session() is None:
+        out.print("[red]Not signed in. Run python -m hydracept login, then retry.[/red]")
+        raise typer.Exit(AUTH)
+    try:
+        _orgs, projects = load_accessible_catalog()
+    except SessionClientError as exc:
+        out.print(f"[red]{exc}[/red]")
+        raise typer.Exit(AUTH if exc.status_code == 401 else USAGE) from exc
+    resolution = find_explicit_project(project, projects)
+    if resolution.state != "resolved" or not resolution.project_id:
+        if resolution.candidates:
+            out.print("[red]Multiple projects matched. Pass a project id.[/red]")
+            for row in resolution.candidates:
+                out.print(
+                    f"  {row.get('id')}  {row.get('displayName')}  {row.get('organizationName')}"
+                )
+        else:
+            out.print("[red]Project not found. Run python -m hydracept init --apply --yes to create one.[/red]")
+        raise typer.Exit(USAGE)
+    binding = {
+        "projectId": resolution.project_id,
+        "environment": environment.strip() or "development",
+        "projectName": resolution.display_name,
+        "resolution": "explicit_selection",
+    }
+    path = write_project_binding(project_root, binding)
+    payload = {
+        "projectId": resolution.project_id,
+        "displayName": resolution.display_name,
+        "environment": binding["environment"],
+        "resolution": "explicit_selection",
+        "path": str(path),
+    }
+    if json_output:
+        out.print_json(data=payload)
+        return
+    out.print(
+        f"[green]Bound[/green] {resolution.display_name or resolution.project_id} "
+        f"({binding['environment']})"
+    )
 
 
 @project_app.command("sync")

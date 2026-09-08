@@ -50,6 +50,18 @@ class HydraceptApiError(httpx.HTTPStatusError):
         }
 
 
+class RunAdmissionError(Exception):
+    """Pre-admission `run` failure — no execution occurred."""
+
+    def __init__(self, payload: dict[str, Any]) -> None:
+        self.payload = payload
+        self.code = str(payload.get("code") or "RunAdmissionError")
+        super().__init__(str(payload.get("message") or self.code))
+
+    def as_tool_result(self) -> dict[str, Any]:
+        return dict(self.payload)
+
+
 def raise_api_status(response: httpx.Response) -> None:
     if response.is_success:
         return

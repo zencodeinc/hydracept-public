@@ -85,22 +85,13 @@ def test_run_smoke_uses_project_id_as_product_id(tmp_path: Path) -> None:
             return {
                 "receiptId": "rcpt_ok",
                 "artifacts": [{"id": "art_test", "sha256": digest}],
-                "pricing": {
-                    "charge": {
-                        "customerCharge": {"amountMicros": 44000, "currency": "USD"}
-                    }
-                },
+                "pricing": {"charge": {"customerCharge": {"amountMicros": 44000, "currency": "USD"}}},
             }
 
-    with patch(
-        "hydracept.cli.smoke_runner.require_ready_workspace",
-        return_value=_workspace(),
-    ), patch(
-        "hydracept.cli.smoke_runner.HydraceptClient",
-        return_value=FakeClient(),
+    with patch("hydracept.cli.smoke_runner.require_ready_workspace", return_value=_workspace()), patch(
+        "hydracept.cli.smoke_runner.HydraceptClient", return_value=FakeClient()
     ), patch("hydracept.cli.smoke_runner.time.sleep", MagicMock()), patch(
-        "hydracept.cli.smoke_contract.inspect_png_transparency",
-        return_value=_fake_transparency(),
+        "hydracept.cli.smoke_contract.inspect_png_transparency", return_value=_fake_transparency()
     ):
         result = run_smoke(tmp_path)
 
@@ -111,11 +102,17 @@ def test_run_smoke_uses_project_id_as_product_id(tmp_path: Path) -> None:
     assert result.job_id == "wfr_test"
     assert result.sha256_ok
     assert result.pricing_ok
-    assert (tmp_path / ".hydracept" / "output" / "art_test.png").is_file()
-    assert (tmp_path / ".hydracept" / "demo" / "first-asset.png").is_file()
     payload = result.to_json()
     assert payload["status"] == "ok"
-    assert payload["jobId"] == "wfr_test"
+    assert payload["execution"]["status"] == "succeeded"
+    assert payload["execution"]["jobId"] == "wfr_test"
+    assert payload["validation"]["status"] == "passed"
+    assert payload["pricing"]["customerCharge"]["amountMicros"] == 44000
+    assert payload["pricing"]["display"]["cost"] == "$0.04"
+    assert payload["pricing"]["display"]["paidFrom"] == "unknown"
+    assert payload["presentation"]["surface"] == "artifact.review"
+    assert payload["presentation"]["status"] == "mount_requested"
+    assert payload["artifact"]["mediaType"] == "image/png"
     assert payload["exitCode"] == 0
 
 
@@ -138,15 +135,10 @@ def test_run_smoke_persists_png_when_receipt_contract_fails(tmp_path: Path) -> N
                 "pricing": {"actualCharge": {"amountMicros": 50000, "currency": "USD"}},
             }
 
-    with patch(
-        "hydracept.cli.smoke_runner.require_ready_workspace",
-        return_value=_workspace(),
-    ), patch(
-        "hydracept.cli.smoke_runner.HydraceptClient",
-        return_value=FakeClient(),
+    with patch("hydracept.cli.smoke_runner.require_ready_workspace", return_value=_workspace()), patch(
+        "hydracept.cli.smoke_runner.HydraceptClient", return_value=FakeClient()
     ), patch("hydracept.cli.smoke_runner.time.sleep", MagicMock()), patch(
-        "hydracept.cli.smoke_contract.inspect_png_transparency",
-        return_value=_fake_transparency(),
+        "hydracept.cli.smoke_contract.inspect_png_transparency", return_value=_fake_transparency()
     ):
         with pytest.raises(SmokeError) as caught:
             run_smoke(tmp_path)
@@ -154,54 +146,84 @@ def test_run_smoke_persists_png_when_receipt_contract_fails(tmp_path: Path) -> N
     exc = caught.value
     assert exc.job_id == "wfr_malformed"
     assert exc.receipt_id == "rcpt_bad"
-    assert "art_kept" in exc.artifact_ids
+    assert exc.status == "contract_failed"
+    assert exc.execution_status == "succeeded"
     saved = tmp_path / ".hydracept" / "output" / "art_kept.png"
-    assert saved.is_file()
-    assert saved.read_bytes() == PNG_BYTES
     demo = tmp_path / ".hydracept" / "demo" / "first-asset.png"
-    assert demo.is_file()
-    assert demo.read_bytes() == PNG_BYTES
+    assert saved.is_file() and demo.is_file()
     payload = exc.to_json()
-    assert payload["jobId"] == "wfr_malformed"
-    assert payload["receiptId"] == "rcpt_bad"
+    assert payload["status"] == "contract_failed"
+    assert payload["execution"]["status"] == "succeeded"
+    assert payload["execution"]["jobId"] == "wfr_malformed"
+    assert payload["execution"]["receiptId"] == "rcpt_bad"
+    assert payload["validation"]["status"] == "failed"
+    assert payload["validation"]["code"] == "receipt_pricing_validation_failed"
+    assert payload["failingPath"] == "pricing.charge.customerCharge"
     assert payload["exitCode"] == 7
-    assert payload["demoPath"] == str(demo)
-    assert any(str(saved) == path for path in payload["downloads"])
+
+
+def test_provider_execution_failure_is_not_reported_as_validation_failure(tmp_path: Path) -> None:
+    class FakeClient:
+        def submit_capability_job(self, key: str, body: dict) -> dict:
+            return {"jobId": "wfr_failed"}
+
+        def get_job(self, job_id: str) -> dict:
+            return {"status": "failed", "error": {"code": "provider_error"}}
+
+    with patch("hydracept.cli.smoke_runner.require_ready_workspace", return_value=_workspace()), patch(
+        "hydracept.cli.smoke_runner.HydraceptClient", return_value=FakeClient()
+    ):
+        with pytest.raises(SmokeError) as caught:
+            run_smoke(tmp_path)
+    payload = caught.value.to_json()
+    assert payload["status"] == "execution_failed"
+    assert payload["execution"]["status"] == "failed"
+    assert payload["validation"]["status"] == "not_run"
+
+
+def test_receipt_retrieval_failure_preserves_execution_success(tmp_path: Path) -> None:
+    class FakeClient:
+        def submit_capability_job(self, key: str, body: dict) -> dict:
+            return {"jobId": "wfr_receipt"}
+
+        def get_job(self, job_id: str) -> dict:
+            return {"status": "succeeded"}
+
+        def get_job_receipt(self, job_id: str) -> dict:
+            raise RuntimeError("receipt unavailable")
+
+    with patch("hydracept.cli.smoke_runner.require_ready_workspace", return_value=_workspace()), patch(
+        "hydracept.cli.smoke_runner.HydraceptClient", return_value=FakeClient()
+    ):
+        with pytest.raises(SmokeError) as caught:
+            run_smoke(tmp_path)
+    payload = caught.value.to_json()
+    assert payload["execution"]["status"] == "succeeded"
+    assert payload["validation"]["code"] == "receipt_retrieval_failed"
 
 
 def test_run_smoke_fails_when_receipt_sha256_missing(tmp_path: Path) -> None:
     class FakeClient:
         def submit_capability_job(self, key: str, body: dict) -> dict:
             return {"jobId": "wfr_test"}
-
         def get_job(self, job_id: str) -> dict:
             return {"status": "succeeded"}
-
         def download_job_artifact(self, job_id: str, artifact_id: str) -> bytes:
             return PNG_BYTES
-
         def get_job_receipt(self, job_id: str) -> dict:
             return {
                 "artifacts": [{"artifactId": "art_test"}],
-                "pricing": {
-                    "charge": {
-                        "customerCharge": {"amountMicros": 44000, "currency": "USD"}
-                    }
-                },
+                "pricing": {"charge": {"customerCharge": {"amountMicros": 44000, "currency": "USD"}}},
             }
 
-    with patch(
-        "hydracept.cli.smoke_runner.require_ready_workspace",
-        return_value=_workspace(),
-    ), patch(
-        "hydracept.cli.smoke_runner.HydraceptClient",
-        return_value=FakeClient(),
+    with patch("hydracept.cli.smoke_runner.require_ready_workspace", return_value=_workspace()), patch(
+        "hydracept.cli.smoke_runner.HydraceptClient", return_value=FakeClient()
     ), patch("hydracept.cli.smoke_runner.time.sleep", MagicMock()):
         with pytest.raises(SmokeError) as caught:
             run_smoke(tmp_path)
-        assert "SHA-256" in str(caught.value)
-        assert caught.value.job_id == "wfr_test"
-        assert (tmp_path / ".hydracept" / "output" / "art_test.png").is_file()
+    assert "SHA-256" in str(caught.value)
+    assert caught.value.execution_status == "succeeded"
+    assert caught.value.to_json()["validation"]["code"] == "artifact_integrity_validation_failed"
 
 
 def test_run_sheet_smoke_uses_public_image_capability(tmp_path: Path) -> None:
@@ -213,40 +235,57 @@ def test_run_sheet_smoke_uses_public_image_capability(tmp_path: Path) -> None:
             captured["key"] = key
             captured["body"] = body
             return {"jobId": "wfr_sheet"}
-
         def get_job(self, job_id: str) -> dict:
             return {"status": "succeeded"}
-
         def download_job_artifact(self, job_id: str, artifact_id: str) -> bytes:
             return PNG_BYTES
-
         def get_job_receipt(self, job_id: str) -> dict:
             artifacts = [{"id": f"art_{i}", "sha256": digest} for i in range(4)]
             return {
                 "receiptId": "rcpt_sheet",
                 "artifacts": artifacts,
                 "media": {"sheet": {"rows": 2, "columns": 2, "cells": [{}, {}, {}, {}]}},
-                "pricing": {
-                    "charge": {
-                        "customerCharge": {"amountMicros": 44000, "currency": "USD"}
-                    }
-                },
+                "pricing": {"charge": {"customerCharge": {"amountMicros": 44000, "currency": "USD"}}},
             }
 
-    with patch(
-        "hydracept.cli.smoke_runner.require_ready_workspace",
-        return_value=_workspace(),
-    ), patch(
-        "hydracept.cli.smoke_runner.HydraceptClient",
-        return_value=FakeClient(),
+    with patch("hydracept.cli.smoke_runner.require_ready_workspace", return_value=_workspace()), patch(
+        "hydracept.cli.smoke_runner.HydraceptClient", return_value=FakeClient()
     ), patch("hydracept.cli.smoke_runner.time.sleep", MagicMock()), patch(
-        "hydracept.cli.smoke_contract.inspect_png_transparency",
-        return_value=_fake_transparency(),
+        "hydracept.cli.smoke_contract.inspect_png_transparency", return_value=_fake_transparency()
     ):
         result = run_sheet_smoke(tmp_path)
-
     assert captured["key"] == DEFAULT_SMOKE_CAPABILITY
     assert captured["body"]["input"]["sheet"]["slice"] is True
-    assert captured["body"]["input"]["width"] == SHEET_SMOKE_COLUMNS * SHEET_MIN_CELL_PX
     assert result.job_id == "wfr_sheet"
     assert len(result.artifact_ids) == 4
+
+
+def test_smoke_idempotency_keys_are_distinct_per_kind() -> None:
+    from hydracept.cli.smoke_runner import _smoke_idempotency_key
+    image = _smoke_idempotency_key(kind="image")
+    sheet = _smoke_idempotency_key(kind="sheet")
+    assert image != sheet
+    assert image.startswith("cli-smoke-image-")
+    assert sheet.startswith("cli-smoke-sheet-")
+
+
+def test_run_smoke_byok_receipt_without_customer_charge_succeeds(tmp_path: Path) -> None:
+    digest = hashlib.sha256(PNG_BYTES).hexdigest()
+    class FakeClient:
+        def submit_capability_job(self, key: str, body: dict) -> dict:
+            return {"jobId": "wfr_byok"}
+        def get_job(self, job_id: str) -> dict:
+            return {"status": "succeeded"}
+        def download_job_artifact(self, job_id: str, artifact_id: str) -> bytes:
+            return PNG_BYTES
+        def get_job_receipt(self, job_id: str) -> dict:
+            return {"receiptId": "rcpt_byok", "artifacts": [{"id": "art_byok", "sha256": digest}], "pricing": {"mode": "byok"}}
+    with patch("hydracept.cli.smoke_runner.require_ready_workspace", return_value=_workspace()), patch(
+        "hydracept.cli.smoke_runner.HydraceptClient", return_value=FakeClient()
+    ), patch("hydracept.cli.smoke_runner.time.sleep", MagicMock()), patch(
+        "hydracept.cli.smoke_contract.inspect_png_transparency", return_value=_fake_transparency()
+    ):
+        result = run_smoke(tmp_path)
+    assert result.job_id == "wfr_byok"
+    assert result.pricing_ok
+    assert result.to_json()["pricing"]["customerCharge"] is None

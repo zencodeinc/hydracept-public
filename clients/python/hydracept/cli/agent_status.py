@@ -21,7 +21,7 @@ from hydracept.cli.workspace import (
     workspace_state,
 )
 
-AGENT_PACK_VERSION = "0.1.0"
+AGENT_PACK_VERSION = "0.1.1"
 STATUS_CACHE_NAME = "agent-status.json"
 MANIFEST_NAME = "agent-pack.manifest.json"
 
@@ -146,6 +146,7 @@ def build_agent_status(
         "configured": state != WorkspaceState.UNCONFIGURED,
         "ready": state == WorkspaceState.READY,
         "workspaceState": state.value,
+        "workspaceRoot": str(Path(project_root).resolve()),
         "credentialPresent": _credential_present(project_root),
         "sessionPresent": load_session() is not None,
         "projectId": (resolved.project_id if resolved else "") or str(config.get("projectId") or ""),
@@ -157,12 +158,12 @@ def build_agent_status(
         "lastVerifiedAt": cache.get("lastVerifiedAt"),
     }
     api_url = str(payload.get("apiUrl") or "https://api.hydracept.com").rstrip("/")
-    from hydracept.cli.mcp_bind import bind_workspace_mcp
+    from hydracept.cli.mcp_bind import inspect_workspace_mcp
 
-    bind = bind_workspace_mcp(project_root)
+    bind = inspect_workspace_mcp(project_root)
     payload["mcp"] = {
         "hostedUrl": f"{api_url}/mcp",
-        "stdioCommand": "python -m hydracept mcp serve",
+        "stdioCommand": "python -m hydracept mcp serve --workspace ${workspaceFolder}",
         "bindCommand": "python -m hydracept mcp bind",
         "note": (
             "In a project checkout, stdio MCP is the default after init/doctor/mcp bind. "

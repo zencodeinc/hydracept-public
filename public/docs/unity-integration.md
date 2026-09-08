@@ -1,4 +1,4 @@
-﻿# Hydracept Unity integration
+# Hydracept Unity integration
 
 Generate and import production assets directly from the Unity 6 Editor. Player builds stay independent of Hydracept.
 

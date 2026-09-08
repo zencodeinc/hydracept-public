@@ -45,6 +45,7 @@ def test_workspace_invoke_is_client_facade() -> None:
     jobs = MagicMock()
     workspace = HydraceptWorkspace(client, jobs, Path("."))
     body = {"input": {"prompt": "hi"}}
-    workspace.invoke("text.general.fast.v1", body)
+    with patch("hydracept.context.require_execution_context", return_value=(MagicMock(), MagicMock())):
+        workspace.invoke("text.general.fast.v1", body)
     client.invoke_capability.assert_called_once_with("text.general.fast.v1", body)
     jobs.submit.assert_not_called()

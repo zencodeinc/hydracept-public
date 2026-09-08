@@ -183,7 +183,7 @@ class ProjectMcpService:
         token = resolve_token(self.project_root, None)
         if not token:
             raise SessionClientError(
-                "No API credential. Run python -m hydracept login.",
+                "No API credential. Run python -m hydracept doctor --fix.",
                 status_code=401,
             )
         api = (workspace.api_url if workspace else DEFAULT_API).rstrip("/")

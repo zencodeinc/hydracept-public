@@ -35,24 +35,50 @@ def test_doctor_report_passed_with_warnings() -> None:
     assert report.passed
 
 
+def test_doctor_report_includes_identity_and_binding() -> None:
+    report = DoctorReport()
+    report.add(DoctorCheck("ok", True, "good"))
+    report.identity = {
+        "status": "ready",
+        "provider": "github",
+        "account": "jklappstein",
+        "authenticated": True,
+    }
+    report.project_binding = {
+        "status": "ready",
+        "source": "repository match",
+        "environment": "development",
+    }
+    payload = report.to_json_dict()
+    assert payload["identity"]["account"] == "jklappstein"
+    assert payload["projectBinding"]["source"] == "repository match"
+
+
 def test_doctor_report_fails_on_fatal() -> None:
     report = DoctorReport()
     report.add(DoctorCheck("bad", False, "broken"))
     assert not report.passed
 
 
-def test_project_alignment_home_mismatch_is_warning() -> None:
+def test_project_alignment_home_mismatch_is_informational() -> None:
     checks = project_alignment_checks(
         "cpr_checkout",
         token_project="cpr_checkout",
         home_project="cpr_home",
     )
-    assert len(checks) == 1
-    assert checks[0].passed is False
-    assert checks[0].fatal is False
+    names = {check.name: check for check in checks}
+    assert names["local.config_project"].passed is True
+    assert names["local.home_project"].passed is True
+    assert names["local.home_project"].fatal is False
+    assert "Checkout project is authoritative" in names["local.home_project"].detail
+    assert "no action required" in names["local.home_project"].detail
     report = DoctorReport()
-    report.add(checks[0])
+    for check in checks:
+        report.add(check)
     assert report.passed
+    payload = report.to_json_dict()
+    assert payload["failedChecks"] == []
+    assert payload["warnings"] == []
 
 
 def test_project_alignment_token_mismatch_is_fatal() -> None:
@@ -68,18 +94,51 @@ def test_project_alignment_token_mismatch_is_fatal() -> None:
     assert not report.passed
 
 
-def test_project_alignment_home_echoed_as_token_is_warning() -> None:
+def test_project_alignment_home_echoed_as_token_is_informational() -> None:
     checks = project_alignment_checks(
         "cpr_checkout",
         token_project="cpr_home",
         home_project="cpr_home",
     )
-    assert len(checks) == 1
-    assert checks[0].passed is False
-    assert checks[0].fatal is False
+    names = {check.name: check for check in checks}
+    assert names["local.config_project"].passed is True
+    assert names["local.home_project"].passed is True
+    assert names["local.home_project"].fatal is False
     report = DoctorReport()
-    report.add(checks[0])
+    for check in checks:
+        report.add(check)
     assert report.passed
     payload = report.to_json_dict()
     assert payload["failedChecks"] == []
-    assert payload["warnings"][0]["name"] == "local.config_project"
+    assert payload["warnings"] == []
+
+
+def test_project_alignment_matching_home_checkout_is_not_fatal() -> None:
+    checks = project_alignment_checks(
+        "cpr_home",
+        token_project="cpr_home",
+        home_project="cpr_home",
+    )
+    names = {check.name: check for check in checks}
+    assert names["local.config_project"].passed is True
+    report = DoctorReport()
+    for check in checks:
+        report.add(check)
+    assert report.passed
+
+
+def test_doctor_sections_expose_semantic_status() -> None:
+    report = DoctorReport()
+    report.add(DoctorCheck("local.credential", True, "GitHub example-user", bucket="workspace"))
+    report.add(
+        DoctorCheck(
+            "api.managed_trial",
+            True,
+            "Managed trial remaining $1.00",
+            bucket="managedTrial",
+        )
+    )
+    sections = report.sections()
+    assert sections["identity"]["status"] == "ready"
+    assert sections["managedInference"]["status"] == "ready"
+    assert report.to_json_dict()["sections"]["identity"]["detail"] == "GitHub example-user"

@@ -6,7 +6,14 @@ import json
 import sys
 from pathlib import Path
 
-from hydracept.cli.mcp_bind import bind_workspace_mcp, inspect_workspace_mcp, stdio_args
+from hydracept.cli.mcp_bind import bind_workspace_mcp, inspect_workspace_mcp, stdio_args, stdio_server_entry
+
+
+def test_stdio_args_always_include_workspace() -> None:
+    args = stdio_args(None)
+    assert args[:4] == ["-m", "hydracept", "mcp", "serve"]
+    assert "--workspace" in args
+    assert "${workspaceFolder}" in args
 
 
 def test_stdio_args_include_absolute_workspace(tmp_path: Path) -> None:
@@ -16,6 +23,13 @@ def test_stdio_args_include_absolute_workspace(tmp_path: Path) -> None:
     assert str(tmp_path.resolve()) in args
 
 
+def test_stdio_server_entry_sets_workspace_env(tmp_path: Path) -> None:
+    cursor = stdio_server_entry(cursor_placeholder=True)
+    assert cursor["env"]["HYDRACEPT_WORKSPACE"] == "${workspaceFolder}"
+    absolute = stdio_server_entry(project_root=tmp_path)
+    assert absolute["env"]["HYDRACEPT_WORKSPACE"] == str(tmp_path.resolve())
+
+
 def test_bind_writes_cursor_and_claude_stdio(tmp_path: Path) -> None:
     result = bind_workspace_mcp(tmp_path)
     assert result.bound
@@ -23,12 +37,17 @@ def test_bind_writes_cursor_and_claude_stdio(tmp_path: Path) -> None:
     assert result.reload_required
     cursor = json.loads((tmp_path / ".cursor" / "mcp.json").read_text(encoding="utf-8"))
     claude = json.loads((tmp_path / ".mcp.json").read_text(encoding="utf-8"))
-    for payload in (cursor, claude):
-        hydra = payload["mcpServers"]["hydracept"]
-        assert hydra["command"] in {"python", sys.executable}
-        assert hydra["args"] == stdio_args(tmp_path)
-        assert "url" not in hydra
-        assert "headers" not in hydra
+    cursor_hydra = cursor["mcpServers"]["hydracept"]
+    claude_hydra = claude["mcpServers"]["hydracept"]
+    assert cursor_hydra["command"] in {"python", sys.executable}
+    assert cursor_hydra["args"] == stdio_args(tmp_path, cursor_placeholder=True)
+    assert "${workspaceFolder}" in cursor_hydra["args"]
+    assert claude_hydra["args"] == stdio_args(tmp_path)
+    assert str(tmp_path.resolve()) in claude_hydra["args"]
+    assert cursor_hydra["env"]["HYDRACEPT_MCP_GENERATION"]
+    assert cursor_hydra["env"]["HYDRACEPT_WORKSPACE"] == "${workspaceFolder}"
+    assert claude_hydra["env"]["HYDRACEPT_WORKSPACE"] == str(tmp_path.resolve())
+    assert "url" not in cursor_hydra
     assert ".cursor/mcp.json" in result.project_config
     assert ".mcp.json" in result.project_config
 
@@ -66,9 +85,69 @@ def test_bind_is_idempotent(tmp_path: Path) -> None:
     second = bind_workspace_mcp(tmp_path)
     assert first.reload_required
     assert not second.reload_required
+    assert first.generation == second.generation
     inspected = inspect_workspace_mcp(tmp_path)
     assert inspected.bound
     assert not inspected.reload_required
+
+
+def test_bind_bumps_generation_when_credential_identity_changes(tmp_path: Path) -> None:
+    secrets = tmp_path / ".hydracept" / "secrets.json"
+    secrets.parent.mkdir(parents=True)
+    secrets.write_text('{"apiKey": "hapt_aaaa1111"}', encoding="utf-8")
+    first = bind_workspace_mcp(tmp_path)
+    secrets.write_text('{"apiKey": "hapt_bbbb2222"}', encoding="utf-8")
+    second = bind_workspace_mcp(tmp_path)
+    assert second.reload_required
+    assert first.generation != second.generation
+
+
+def test_bind_skips_custom_host_hydracept_entry(tmp_path: Path, monkeypatch) -> None:
+    host = tmp_path / "host-mcp.json"
+    host.write_text(
+        json.dumps(
+            {
+                "mcpServers": {
+                    "hydracept": {"command": "node", "args": ["custom-hydracept.js"]},
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "hydracept.cli.mcp_bind.cursor_host_mcp_targets",
+        lambda: [(host, "mcpServers")],
+    )
+    bind_workspace_mcp(tmp_path)
+    payload = json.loads(host.read_text(encoding="utf-8"))
+    assert payload["mcpServers"]["hydracept"]["command"] == "node"
+
+
+def test_bind_rewrites_owned_host_stdio_with_workspace(tmp_path: Path, monkeypatch) -> None:
+    host = tmp_path / "host-mcp.json"
+    host.write_text(
+        json.dumps(
+            {
+                "mcpServers": {
+                    "hydracept": {
+                        "command": "python",
+                        "args": ["-m", "hydracept", "mcp", "serve"],
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "hydracept.cli.mcp_bind.cursor_host_mcp_targets",
+        lambda: [(host, "mcpServers")],
+    )
+    bind_workspace_mcp(tmp_path)
+    payload = json.loads(host.read_text(encoding="utf-8"))
+    args = payload["mcpServers"]["hydracept"]["args"]
+    assert "--workspace" in args
+    assert "${workspaceFolder}" in args
+    assert payload["mcpServers"]["hydracept"]["env"]["HYDRACEPT_WORKSPACE"] == "${workspaceFolder}"
 
 
 def test_bind_writes_vscode_only_when_vscode_exists(tmp_path: Path) -> None:
@@ -81,3 +160,48 @@ def test_bind_writes_vscode_only_when_vscode_exists(tmp_path: Path) -> None:
     assert hydra["type"] == "stdio"
     assert hydra["command"] in {"python", sys.executable}
     assert ".vscode/mcp.json" in result.project_config
+
+
+def test_user_apps_workaround_is_explicit_and_removable(tmp_path: Path, monkeypatch) -> None:
+    from hydracept.cli.mcp_bind import bind_user_apps_workaround, remove_user_apps_workaround
+
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setattr("hydracept.cli.mcp_bind.Path.home", classmethod(lambda cls: home))
+    workspace = tmp_path / "repo"
+    workspace.mkdir()
+    project_mcp = workspace / ".cursor" / "mcp.json"
+    project_mcp.parent.mkdir(parents=True)
+    project_mcp.write_text(
+        json.dumps({"mcpServers": {"hydracept": {"command": "python", "args": ["-m", "hydracept", "mcp", "serve"]}}}),
+        encoding="utf-8",
+    )
+    record = bind_user_apps_workaround(workspace)
+    shadowed = json.loads(project_mcp.read_text(encoding="utf-8"))
+    assert "hydracept" not in shadowed["mcpServers"]
+    assert "hydracept-project" in shadowed["mcpServers"]
+    assert record["projectMcpRenamed"] is True
+    cursor = json.loads((home / ".cursor" / "mcp.json").read_text(encoding="utf-8"))
+    entry = cursor["mcpServers"]["hydracept"]
+    assert str(workspace.resolve()) in entry["args"]
+    assert "${workspaceFolder}" not in entry["args"]
+    assert record["workspace"] == str(workspace.resolve())
+    assert entry["command"] == sys.executable
+    assert str(workspace.resolve() / "clients" / "python") == entry["env"]["PYTHONPATH"]
+    plugin = json.loads(
+        (home / ".cursor" / "plugins" / "local" / "hydracept" / "mcp.json").read_text(encoding="utf-8")
+    )
+    assert plugin["mcpServers"]["hydracept"]["args"] == entry["args"]
+    assert "${workspaceFolder}" not in plugin["mcpServers"]["hydracept"]["args"]
+    removed = remove_user_apps_workaround()
+    assert removed["removed"] is True
+    leftover = json.loads((home / ".cursor" / "mcp.json").read_text(encoding="utf-8"))
+    assert "hydracept" not in leftover.get("mcpServers", {})
+    restored_plugin = json.loads(
+        (home / ".cursor" / "plugins" / "local" / "hydracept" / "mcp.json").read_text(encoding="utf-8")
+    )
+    assert restored_plugin["mcpServers"]["hydracept"]["env"]["HYDRACEPT_WORKSPACE"] == "${workspaceFolder}"
+    restored_project = json.loads(project_mcp.read_text(encoding="utf-8"))
+    assert "hydracept" in restored_project["mcpServers"]
+    assert "hydracept-project" not in restored_project["mcpServers"]
+    assert not (home / ".cursor" / "hydracept-user-apps.json").exists()

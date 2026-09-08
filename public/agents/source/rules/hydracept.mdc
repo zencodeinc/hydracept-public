@@ -1,13 +1,21 @@
 ---
-description: Keep Hydracept API keys out of chat. In a repo, use stdio MCP after init.
+description: Keep Hydracept API keys out of chat. In a repo, use canonical init and stdio MCP.
 alwaysApply: true
 ---
 
 # Hydracept
 
 - Never ask the user to paste `HYDRACEPT_API_KEY` (or any bearer token) into chat.
-- In a project checkout, run `python -m hydracept init --apply --yes --json`. Init writes workspace secrets and binds project MCP to stdio (`python -m hydracept mcp serve`). Reload MCP once.
-- Do not copy the workspace key into **Plugins → Configure**. That store cannot see `.hydracept/secrets.json`.
+- In a project checkout, start with `python -m hydracept init --apply --yes --json`. Do **not** invent a `login -> init -> doctor` sequence first.
+- If init returns `status: interaction_required`, stop automation at that boundary. Follow `presentation.agentAction`: `present_and_yield` means present the Hydracept surface and stop the turn. Preserve `bootstrapSessionId`, `expiresAt`, and `action.url` as the universal fallback — never construct, shorten, replace, or guess an activation URL. After the user completes the action, run the exact `afterCompletion.command` (normally `python -m hydracept init --apply --yes --json --wait`).
+- If `--wait` times out, that is recoverable interaction state, not a failed activation. Reuse the returned session/URL until expiry; do not create a new session just because local polling ended.
+- Init writes workspace secrets and binds project MCP to stdio (`python -m hydracept mcp serve --workspace ${workspaceFolder}`). Reload MCP once when init says it is required.
+- Do not copy the workspace key into **Plugins -> Configure**. That store cannot see `.hydracept/secrets.json`.
 - Hosted MCP (`https://api.hydracept.com/mcp`) is for clients with no checkout (ChatGPT, MCP Registry).
-- Prefer Hydracept MCP tools when they are present in **this** session (`hydracept_capabilities`, `hydracept_invoke`, `hydracept_submit_job`, `hydracept_job_status`, `hydracept_get_receipt`). If they are missing, use the CLI — do not retry hosted discovery.
+- Prefer Hydracept MCP tools when they are present in **this** session (`hydracept_capabilities`, `hydracept_invoke`, `hydracept_submit_job`, `hydracept_job_status`, `hydracept_get_receipt`, `hydracept_interaction_surface`). If they are missing, use the canonical CLI primitives: `capabilities find`, `capabilities describe`, `capabilities quote`, `run`, `jobs get`, `jobs receipt`. Do not retry hosted discovery.
+- When Hydracept returns `presentation.agentAction=present_and_yield`, present that surface and perform no subsequent unrelated tool calls or prose in the same turn. Defer long assessments until after the interaction completes.
+- If `presentation.status` is `mount_requested`, present the Hydracept App. If it is `mounted` or `already_mounted`, do not replace the Hydracept App with a text fallback. If `presentation.status` is `fallback` or `unsupported`, use the supplied fallback.
+- When `hydracept_interaction_surface` is present, use it for human decisions and structured input (`project.connect`, `capability.launch`, `connection.resolve`, `authorization.preflight`, `job.progress`, `artifact.review`, `change.promote`) instead of synthesizing a browser/CLI coordination flow. The interaction does not execute, charge, or write the repository.
+- Treat provider execution and Hydracept contract validation as separate states. A generated artifact can exist even if transparency, receipt, or pricing validation fails; preserve the job/receipt/artifact identifiers and report the validation code.
+- For managed execution, the authoritative terminal customer charge is `pricing.charge.customerCharge`. Never synthesize it from `estimatedCharge`, `actualCharge`, or `actualCost`. BYOK may legitimately omit a Hydracept customer charge.
 - Do not run paid smoke jobs unless the user explicitly asks (`/hydracept-smoke`).

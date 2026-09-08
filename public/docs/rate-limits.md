@@ -4,7 +4,7 @@ Every request is checked against your plan limits and the budget you configure.
 
 ## What is limited
 
-Plans are **Free / Team / Enterprise**. Limits cover:
+Plans are **Free / Builder / Team / Enterprise**. Limits are YAML-tunable in the launch catalog:
 
 - short requests (in progress, per hour, and per month) — includes pinned execution
 - active generation jobs

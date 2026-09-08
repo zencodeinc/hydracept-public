@@ -2,6 +2,8 @@
 
 Use jobs for generation that may take longer than one HTTP request. Submit once, check progress when you need to, and download the result when it is ready.
 
+Eligible **text** jobs also use [deferred processing](../deferred-processing/): Hydracept waits for the cheaper latency-tolerant provider tier and prices those calls at 50% of standard token rates. Eligible OpenAI Responses [pins](../pinned-execution/) keep the exactness path (standard processing, one logical model execution) unless you set `processing: "deferred"`. Check `features.deferredProcessing` on the capability descriptor. Invoke and stream stay on standard processing.
+
 ## Submit
 
 ```http
@@ -48,7 +50,7 @@ Managed inference (wallet-funded) can omit `quoteId` — the API seals a retail 
 }
 ```
 
-See [Billing](../billing/) for wallet top-up and [Capabilities](../capabilities/) for `billingModes` discovery.
+See [Billing](../billing/) for wallet top-up, [Deferred processing](../deferred-processing/) for the 50% durable-text discount, and [Capabilities](../capabilities/) for `billingModes` discovery (omitted on domain and CPU capabilities).
 
 ## List (principal project)
 
@@ -135,7 +137,7 @@ GET /v1/jobs/{jobId}/receipt
 Authorization: Bearer <HYDRACEPT_API_KEY>
 ```
 
-Receipts include the request, provider, model, cost, retries, and resulting artifacts. Use them to review a result, debug a failed run, or keep a record for your team. Related receipts can be grouped into a [run manifest](../provenance/); a stable pin can be emitted as an [AI lockfile](../provenance/).
+Receipts include the request, provider, model, cost, retries, and resulting artifacts. Funding and billing mode on the receipt come from admission evidence. Missing evidence stays `unknown` — do not display that as BYOK or managed trial. Use receipts to review a result, debug a failed run, or keep a record for your team. Related receipts can be grouped into a [run manifest](../provenance/); a stable pin can be emitted as an [AI lockfile](../provenance/).
 
 ## Sheet & Slice (image.generate.v1)
 

@@ -40,3 +40,46 @@ def test_cli_version_flag() -> None:
     )
     assert result.returncode == 0, result.stderr or result.stdout
     assert result.stdout.strip() == hydracept.__version__
+
+
+def test_cli_version_json_flag() -> None:
+    import json
+
+    result = subprocess.run(
+        [sys.executable, "-m", "hydracept", "--version", "--json"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(CLIENTS_PYTHON),
+        },
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+    payload = json.loads(result.stdout)
+    assert payload["version"] == hydracept.__version__
+    assert payload["packagePath"]
+    assert payload["distribution"]["source"] in {
+        "installed-package",
+        "editable-install",
+        "source-checkout",
+        "unknown",
+    }
+
+
+def test_cli_version_command_json() -> None:
+    import json
+
+    result = subprocess.run(
+        [sys.executable, "-m", "hydracept", "version", "--json"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(CLIENTS_PYTHON),
+        },
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+    payload = json.loads(result.stdout)
+    assert payload["version"] == hydracept.__version__

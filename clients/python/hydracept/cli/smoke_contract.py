@@ -5,7 +5,13 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
-from hydracept.png_alpha import PngTransparencyError, inspect_png_transparency
+from hydracept.cli.receipt_validation import terminal_customer_charge_valid
+from hydracept.chroma_key_from_receipt import chroma_key_from_receipt
+from hydracept.png_alpha import (
+    PngTransparencyError,
+    inspect_png_transparency,
+    png_transparency_report,
+)
 
 
 class SmokeContractError(ValueError):
@@ -25,12 +31,7 @@ def artifact_sha256(item: dict[str, Any]) -> str:
 
 
 def pricing_charge_present(receipt: dict[str, Any] | None) -> bool:
-    if not receipt:
-        return False
-    pricing = receipt.get("pricing") or {}
-    charge = pricing.get("charge") or {}
-    customer = charge.get("customerCharge") or {}
-    return customer.get("amountMicros") is not None or customer.get("amountMinor") is not None
+    return terminal_customer_charge_valid(receipt)
 
 
 def receipt_artifact_item(receipt: dict[str, Any], artifact_id: str) -> dict[str, Any] | None:
@@ -52,11 +53,13 @@ def evaluate_image_smoke_contract(
     artifact_id: str,
     data: bytes,
     verify_transparency: bool = True,
-) -> dict[str, bool]:
+) -> dict[str, Any]:
     """Prove download integrity, pricing.charge, and PNG transparency.
 
     Receipt artifact identity, receipt SHA-256, and SHA-256(downloaded bytes)
-    must all agree. A missing receipt hash is a failure.
+    must all agree. A missing receipt hash is a failure. When transparency is
+    verified, preserve the inspector's structured evidence instead of collapsing
+    it to a boolean.
     """
     if not receipt:
         raise SmokeContractError("missing receipt")
@@ -76,9 +79,11 @@ def evaluate_image_smoke_contract(
     if not pricing_charge_present(receipt):
         raise SmokeContractError("Receipt missing pricing.charge.customerCharge")
     transparency_ok = False
+    transparency_report: dict[str, Any] | None = None
     if verify_transparency:
         try:
-            inspect_png_transparency(data)
+            inspection = inspect_png_transparency(data, key_color=chroma_key_from_receipt(receipt))
+            transparency_report = png_transparency_report(inspection)
             transparency_ok = True
         except PngTransparencyError as exc:
             raise SmokeContractError(f"Transparency contract failed: {exc}") from exc
@@ -86,4 +91,5 @@ def evaluate_image_smoke_contract(
         "sha256_ok": True,
         "pricing_ok": True,
         "transparency_ok": transparency_ok or (not verify_transparency),
+        "transparency_report": transparency_report,
     }

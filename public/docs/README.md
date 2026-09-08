@@ -2,21 +2,23 @@
 
 <!-- docs:marker:quick-start -->
 
-Hydracept gives game tools one API for production-ready assets.
+Hydracept is an execution control plane for software and agents that need external capabilities. Games and media are important examples.
 
-Production-ready game assets, with a receipt for every run. BYOK is free; managed inference adds a 10% service fee.
+Discovery, quoting, durable jobs, artifacts, and receipts. BYOK is free; managed inference adds a 6% service fee. Eligible durable text jobs use deferred processing at 50% of standard token rates.
 
 ## 5-minute path
 
-Follow [5-minute game asset](./five-minute-game-asset/) for activate → doctor → `smoke` / first job → BYOK.
+For one asset: `python -m hydracept run image.generate.v1 --prompt "..." --json` (composes init). For a full walkthrough, see [5-minute game asset](./five-minute-game-asset/). One-off tasks are supported — see [Cold one-shot benchmark](./one-shot-capability-benchmark/).
 
 ## Activate
 
 Pick one:
 
-1. **CLI bootstrap (recommended):** `pip install -U hydracept` then `python -m hydracept init`. When sign-in is required, open the connect URL printed by `init` (or returned as `interaction_required` in `--json` mode).
+1. **CLI bootstrap (recommended):** `pip install -U hydracept` then `python -m hydracept init --apply --yes --json`. Init infers the current git/workspace project when you are already signed in. Browser project selection is only required when that inference is ambiguous.
 2. **Studio (browser):** [app.hydracept.com/login](https://app.hydracept.com/login) — sign in with GitHub or Google, complete onboarding, then generate in Studio. Manage plans at [Studio Billing](https://app.hydracept.com/studio/billing).
-3. **Agents / headless:** `python -m hydracept init --apply --yes --json` (or paste an existing key with `python -m hydracept init --token <HYDRACEPT_API_KEY> --apply --yes --json`).
+3. **Agents / headless:** `python -m hydracept init --apply --yes --json` (or use an existing key out of band with `HYDRACEPT_API_KEY`).
+
+For coding agents, `interaction_required` is a hard human boundary. If `presentation.agentAction` is `present_and_yield` and stdio MCP exposes `hydracept_interaction_surface`, invoke that surface once with the supplied context and stop the turn. Otherwise present `action.url` verbatim. In either case, stop until the human completes activation; only then run `afterCompletion.command` / `--wait`.
 
 See [Authentication](./authentication/) for workspace files (`.hydracept/project.json`, secrets, lazy BYOK) and CI mode (`init --ci`).
 
@@ -141,9 +143,11 @@ See [Durable Jobs & Receipts](./jobs/) for artifacts and outputs.
 - [Execution provenance](./provenance/)
 - [Research Inference Protocol](./research/)
 - [Billing & plans](./billing/)
+- [Deferred processing](./deferred-processing/)
 - [Connections / BYOK](./connections/)
 - [Errors](./errors/)
 - [Rate limits & quotas](./rate-limits/)
 - [Coding Agents](./agents/)
 - Plugin homepage: [https://hydracept.com/plugin](https://hydracept.com/plugin)
+- [Cold one-shot benchmark](./one-shot-capability-benchmark/)
 - Public OpenAPI: [https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)

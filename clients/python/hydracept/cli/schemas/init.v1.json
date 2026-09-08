@@ -10,17 +10,84 @@
       "type": "string",
       "enum": ["ready", "interaction_required", "configuration_required"]
     },
+    "type": { "type": "string", "enum": ["interaction_required"] },
+    "kind": { "type": "string" },
+    "blocking": { "type": "boolean" },
+    "code": { "type": "string" },
     "reason": { "type": "string" },
+    "detail": { "type": "string" },
+    "instruction": { "type": "string" },
+    "agentInstruction": { "type": "string" },
+    "recommendedAction": { "type": "string" },
     "bootstrapSessionId": { "type": "string" },
+    "expiresAt": { "type": ["string", "null"] },
+    "agentControl": {
+      "type": "object",
+      "properties": {
+        "mustStop": { "type": "boolean" },
+        "resumeAfter": { "type": "string" },
+        "doNotPollBeforeResume": { "type": "boolean" }
+      }
+    },
+    "interaction": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "const": "hydracept.interaction.v1" },
+        "surface": { "const": "project.connect" },
+        "tool": { "const": "hydracept_interaction_surface" },
+        "appUri": { "const": "ui://hydracept/app.html" },
+        "preferredWhenAvailable": { "type": "boolean" },
+        "context": {
+          "type": "object",
+          "properties": {
+            "status": { "type": "string" },
+            "actionUrl": { "type": "string", "format": "uri" },
+            "bootstrapSessionId": { "type": "string" },
+            "expiresAt": { "type": ["string", "null"] }
+          }
+        }
+      }
+    },
     "action": {
       "type": "object",
       "properties": {
         "type": { "type": "string", "enum": ["open_url"] },
-        "url": { "type": "string", "format": "uri" },
+        "kind": { "type": "string", "enum": ["open_url"] },
+        "label": { "type": "string" },
+        "url": {
+          "anyOf": [
+            { "type": "string", "format": "uri", "minLength": 1 },
+            { "const": "" }
+          ]
+        },
+        "instruction": { "type": "string" },
+        "sessionId": { "type": "string" },
         "waitCommand": { "type": "string" },
         "waitCommandJson": { "type": "string" }
       },
-      "required": ["type", "url"]
+      "required": ["url"]
+    },
+    "bootstrapSession": {
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "activationUrl": {
+          "anyOf": [
+            { "type": "string", "format": "uri", "minLength": 1 },
+            { "const": "" }
+          ]
+        },
+        "expiresAt": { "type": ["string", "null"] }
+      },
+      "required": ["activationUrl"]
+    },
+    "afterCompletion": {
+      "type": "object",
+      "properties": {
+        "kind": { "type": "string", "enum": ["run_command"] },
+        "command": { "type": "string" }
+      },
+      "required": ["kind", "command"]
     },
     "account": {
       "type": "object",
@@ -51,7 +118,26 @@
         "status": { "type": "string", "enum": ["passed", "failed"] }
       }
     },
-    "provider": { "type": "string" },
-    "detail": { "type": "string" }
-  }
+    "provider": { "type": "string" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "const": "interaction_required" } },
+        "required": ["status"]
+      },
+      "then": {
+        "required": [
+          "type",
+          "blocking",
+          "code",
+          "reason",
+          "agentInstruction",
+          "recommendedAction",
+          "action",
+          "afterCompletion"
+        ]
+      }
+    }
+  ]
 }

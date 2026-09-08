@@ -153,8 +153,14 @@ def test_malformed_receipt_keeps_png_and_job_id_exit_7(tmp_path: Path) -> None:
 
     exc = caught.value
     assert exc.exit_code == SMOKE_FAILED
+    assert exc.status == "contract_failed"
+    assert exc.execution_status == "succeeded"
     payload = exc.to_json()
     assert payload["jobId"] == "wfr_malformed"
+    assert payload["status"] == "contract_failed"
+    assert payload["execution"]["status"] == "succeeded"
+    assert payload["validation"]["status"] == "failed"
+    assert payload["validation"]["code"] == "receipt_pricing_validation_failed"
     assert payload["exitCode"] == 7
     saved = tmp_path / ".hydracept" / "output" / "art_kept.png"
     assert saved.is_file()

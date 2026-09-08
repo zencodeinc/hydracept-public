@@ -13,5 +13,6 @@ def hydracept_mcp_icons() -> list[Icon]:
         Icon(
             src=HYDRACEPT_LOGO_URL,
             mime_type="image/png",
+            sizes=["any"],
         )
     ]

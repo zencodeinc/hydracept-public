@@ -19,6 +19,7 @@ from hydracept.cli.onboarding_next import (
     credential_setup_next_steps,
     no_credential_detail,
 )
+from hydracept.cli.project import load_project_binding
 from hydracept.cli.workspace import (
     CliOverrides,
     ResolvedWorkspace,
@@ -51,7 +52,10 @@ class DoctorCheck:
 class DoctorReport:
     checks: list[DoctorCheck] = field(default_factory=list)
     workspace: ResolvedWorkspace | None = None
+    identity: dict[str, Any] = field(default_factory=dict)
+    project_binding: dict[str, Any] = field(default_factory=dict)
     mcp: dict[str, Any] | None = None
+    project_root: Path | None = None
 
     @property
     def passed(self) -> bool:
@@ -68,6 +72,48 @@ class DoctorReport:
             if check.next_action not in actions:
                 actions.append(check.next_action)
         return actions
+
+    def _section_status(self, names: tuple[str, ...]) -> dict[str, Any]:
+        matches = [check for check in self.checks if check.name in names]
+        if not matches:
+            return {"status": "unknown", "detail": "not checked"}
+        failed = [check for check in matches if not check.passed]
+        if failed:
+            fatal = any(check.fatal for check in failed)
+            return {
+                "status": "failed" if fatal else "warning",
+                "detail": failed[0].detail,
+            }
+        return {"status": "ready", "detail": matches[-1].detail}
+
+    def sections(self) -> dict[str, Any]:
+        ws = self.workspace
+        identity = self._section_status(("local.credential", "api.diagnostics_session"))
+        workspace = self._section_status(("workspace.state", "local.config", "local.api_url"))
+        project = self._section_status(("api.session_context", "local.config_project"))
+        managed = self._section_status(("api.managed_trial",))
+        byok = self._section_status(("api.image_generation", "api.diagnostics_providers"))
+        mcp_status = "ready" if isinstance(self.mcp, dict) and self.mcp else "unknown"
+        mcp_detail = "configured" if mcp_status == "ready" else "not checked"
+        if isinstance(self.mcp, dict):
+            if self.mcp.get("reloadRequired"):
+                mcp_status = "warning"
+                mcp_detail = "configured; reload MCP once"
+        environment = {
+            "status": "ready" if ws and ws.environment else "unknown",
+            "detail": (ws.environment if ws and ws.environment else "not bound"),
+        }
+        if ws and ws.project_id and project["status"] == "unknown":
+            project = {"status": "ready", "detail": ws.project_id}
+        return {
+            "identity": identity,
+            "workspace": workspace,
+            "project": project,
+            "environment": environment,
+            "managedInference": managed,
+            "byok": byok,
+            "mcp": {"status": mcp_status, "detail": mcp_detail},
+        }
 
     def to_json_dict(self) -> dict[str, Any]:
         ws = self.workspace
@@ -92,10 +138,13 @@ class DoctorReport:
         payload = {
             "passed": self.passed,
             "workspace": {"state": state.value, "ready": ready},
+            "identity": self.identity,
+            "projectBinding": self.project_binding,
             "platform": platform,
             "capabilities": capabilities,
             "providers": providers,
             "managedTrial": managed_trial,
+            "sections": self.sections(),
             "failedChecks": [
                 {
                     "name": check.name,
@@ -125,6 +174,16 @@ class DoctorReport:
         }
         if self.mcp is not None:
             payload["mcp"] = self.mcp
+        if self.project_root is not None:
+            try:
+                from hydracept.context import resolve_hydracept_context
+
+                payload["context"] = resolve_hydracept_context(
+                    self.project_root,
+                    refresh=False,
+                ).to_dict()
+            except Exception:  # noqa: BLE001
+                pass
         return payload
 
 
@@ -142,48 +201,61 @@ def project_alignment_checks(
     token_project: str = "",
     home_project: str = "",
 ) -> list[DoctorCheck]:
-    """Checkout must match the bearer token project when that id is distinct from home.
+    """Execution requires checkout == credential. Home mismatch is informational.
 
-    Live GET /v1/diagnostics/session currently returns the account home as
-    ``projectId``. That is not the API key's project. A home mismatch is a
-    warning so a new checkout can become ready. Fatal only when the session
-    exposes a token project that is different from both home and checkout.
+    ``tokenProjectId`` (or a principal project distinct from session home) is the
+    credential project. Session home is never used as the execution project.
     """
+    from hydracept.context import PROJECT_CREDENTIAL_MISMATCH, build_resolved_context
+
     checkout = str(checkout_project or "").strip()
     token = str(token_project or "").strip()
     home = str(home_project or "").strip()
-    token_is_authoritative = bool(token) and (not home or token != home)
-    if token_is_authoritative and checkout != token:
-        return [
-            DoctorCheck(
-                "local.config_project",
-                False,
-                f"resolved project={checkout} != token project={token}",
-                next_action="python -m hydracept init --apply --yes --wait",
-            )
-        ]
-    if home and checkout and checkout != home:
-        return [
+    credential = token
+    if token and home and token == home and checkout and token != checkout:
+        credential = ""
+    ctx = build_resolved_context(
+        checkout_project_id=checkout,
+        credential_project_id=credential,
+        home_project_id=home,
+        workspace_ready=True,
+    )
+    checks: list[DoctorCheck] = []
+    if ctx.mismatch == PROJECT_CREDENTIAL_MISMATCH:
+        checks.append(
             DoctorCheck(
                 "local.config_project",
                 False,
                 (
-                    f"checkout project={checkout} != session home project={home}; "
-                    "jobs use the checkout/token project"
+                    f"checkout project={checkout} != credential project={token}; "
+                    "no execution project"
                 ),
-                fatal=False,
+                next_action="python -m hydracept init --apply --yes --wait",
             )
-        ]
-    if checkout:
-        return [
+        )
+    elif checkout:
+        checks.append(
             DoctorCheck(
                 "local.config_project",
                 True,
                 f"project aligned ({checkout})",
                 fatal=False,
             )
-        ]
-    return []
+        )
+    if ctx.home_project_differs:
+        checks.append(
+            DoctorCheck(
+                "local.home_project",
+                True,
+                (
+                    "Checkout project is authoritative for project-scoped commands. "
+                    f"Session home project={home} differs from checkout={checkout}; "
+                    "no action required."
+                ),
+                fatal=False,
+            )
+        )
+    return checks
 
 
 def _project_id_from_context(context: dict[str, Any]) -> str | None:
@@ -202,6 +274,64 @@ def _environment_from_context(context: dict[str, Any]) -> str | None:
     if isinstance(environment, str):
         return environment
     return None
+
+
+def _scripts_path_check() -> DoctorCheck:
+    """Canonical invocation is `python -m hydracept`. Diagnose user-site Scripts on Windows."""
+    import os
+    import sys
+    from pathlib import Path as PathLib
+
+    if os.name != "nt":
+        return DoctorCheck(
+            "cli.path",
+            True,
+            "Use python -m hydracept (canonical)",
+            fatal=False,
+        )
+    scripts_dirs: list[PathLib] = []
+    for candidate in (PathLib(sys.prefix) / "Scripts", PathLib(sys.base_prefix) / "Scripts"):
+        if candidate.is_dir():
+            scripts_dirs.append(candidate)
+    try:
+        import site
+
+        user_site = PathLib(site.getusersitepackages())
+        user_scripts = user_site.parent / "Scripts"
+        if user_scripts.is_dir():
+            scripts_dirs.append(user_scripts)
+    except Exception:
+        user_scripts = None
+    path_entries = [PathLib(part) for part in os.environ.get("PATH", "").split(os.pathsep) if part]
+    resolved_path = []
+    for entry in path_entries:
+        try:
+            resolved_path.append(entry.resolve())
+        except OSError:
+            continue
+    missing = [
+        directory
+        for directory in scripts_dirs
+        if directory.resolve() not in resolved_path
+    ]
+    if not missing:
+        return DoctorCheck(
+            "cli.path",
+            True,
+            "Python Scripts directories are on PATH; still prefer python -m hydracept",
+            fatal=False,
+        )
+    return DoctorCheck(
+        "cli.path",
+        True,
+        (
+            "User-site Scripts not on PATH. Hydracept.exe may be missing; "
+            "use python -m hydracept. Missing: "
+            + ", ".join(str(item) for item in missing)
+        ),
+        fatal=False,
+        next_action="python -m hydracept",
+    )
 
 
 def _capability_keys(payload: Any) -> set[str]:
@@ -229,9 +359,11 @@ def build_doctor_report(
     smoke_capability: str = DEFAULT_SMOKE_CAPABILITY,
 ) -> DoctorReport:
     report = DoctorReport()
+    report.project_root = project_root
     api_base = api.rstrip("/")
     bind = bind_workspace_mcp(project_root)
     report.mcp = bind.to_dict()
+    report.add(_scripts_path_check())
     report.add(
         DoctorCheck(
             "local.mcp_bind",
@@ -300,7 +432,7 @@ def build_doctor_report(
             fatal=False,
             bucket="workspace",
             next_action=(
-                "python -m hydracept configure"
+                "python -m hydracept init --apply --yes"
                 if state != WorkspaceState.READY
                 else None
             ),
@@ -325,9 +457,9 @@ def build_doctor_report(
             DoctorCheck(
                 "local.config",
                 False,
-                f"Missing {config_path(project_root)} — run python -m hydracept configure",
+                f"Missing {config_path(project_root)} — run python -m hydracept init --apply --yes",
                 fatal=False,
-                next_action="python -m hydracept configure",
+                next_action="python -m hydracept init --apply --yes",
             )
         )
 
@@ -437,7 +569,7 @@ def build_doctor_report(
                         "api.session_context",
                         False,
                         f"Account needs onboarding — complete {START_URL}",
-                        next_action=f"Open {START_URL} then python -m hydracept login",
+                        next_action=f"Open {START_URL} then python -m hydracept doctor --fix",
                     )
                 )
             else:
@@ -469,7 +601,48 @@ def build_doctor_report(
             )
         )
 
-    if resolved.project_id and context_payload and not context_payload.get("needsOnboarding"):
+    identity_block = context_payload.get("identity") if isinstance(context_payload.get("identity"), dict) else {}
+    report.identity = {
+        "status": "ready" if session_payload or identity_block or resolved.token else "action_required",
+        "provider": identity_block.get("provider"),
+        "account": identity_block.get("account") or identity_block.get("displayName"),
+        "authenticated": bool(identity_block.get("authenticated") or session_payload or resolved.token),
+    }
+    binding = load_project_binding(project_root)
+    bound_id = str(binding.get("projectId") or resolved.project_id or "").strip()
+    resolution = str(binding.get("resolution") or "").strip()
+    if bound_id:
+        source = {
+            "existing_binding": "existing binding",
+            "repository_match": "repository match",
+            "workspace_match": "workspace match",
+            "created_from_repository": "created from repository",
+            "created_from_workspace": "created from workspace",
+            "explicit_selection": "explicit selection",
+        }.get(resolution, resolution.replace("_", " ") or "existing binding")
+        report.project_binding = {
+            "status": "ready",
+            "projectId": bound_id,
+            "displayName": binding.get("projectName"),
+            "environment": binding.get("environment") or resolved.environment or "development",
+            "source": source,
+            "resolution": resolution or "existing_binding",
+        }
+    else:
+        report.project_binding = {
+            "status": "action_required",
+            "reason": "project not bound",
+            "environment": resolved.environment or "development",
+        }
+
+    # Session "current project" is Studio state, not this checkout. Skip when
+    # .hydracept/project.json already bound the workspace explicitly.
+    if (
+        not str(binding.get("projectId") or "").strip()
+        and resolved.project_id
+        and context_payload
+        and not context_payload.get("needsOnboarding")
+    ):
         session_project = _project_id_from_context(context_payload) or ""
         token_project = str(session_payload.get("tokenProjectId") or "").strip()
         principal_project = str(session_payload.get("projectId") or "").strip()
@@ -636,7 +809,7 @@ def build_doctor_report(
                     (
                         f"CLI {cli_version} is below the 0.3 public contract. "
                         "In this checkout, use the repo CLI (`python -m hydracept`). "
-                        "Outside it, `pip install -U hydracept` (0.3.2+ recommended)."
+                        "Outside it, `pip install -U hydracept` (0.3.12+ required for current init, receipts, and funding display)."
                     ),
                     fatal=False,
                     next_action="python -m hydracept --version",
@@ -691,9 +864,34 @@ def run_doctor(
     json_output: bool = False,
     console: Console | None = None,
     repair: bool = False,
+    fix: bool = False,
 ) -> int:
     """Run integration readiness checks. Returns process exit code."""
     out = console or cli_console()
+    if fix:
+        from hydracept.cli.doctor_fix import apply_doctor_fix
+        from hydracept.cli.exit_codes import DOCTOR_FAILED, SUCCESS
+
+        fix_result = apply_doctor_fix(project_root)
+        report = build_doctor_report(
+            api,
+            project_root,
+            token,
+            smoke_capability=smoke_capability,
+        )
+        payload = report.to_json_dict()
+        payload["fix"] = fix_result.to_dict()
+        if json_output:
+            out.print_json(data=payload)
+        else:
+            _finish(report, out, False)
+            if fix_result.blocked:
+                out.print("[yellow]repair_blocked — Hydracept will not overwrite user-owned MCP bytes[/yellow]")
+            if fix_result.reload_required:
+                out.print("[yellow]Reload MCP once (humanActionRequired=reload_cursor)[/yellow]")
+        if fix_result.blocked or fix_result.reload_required or not report.passed:
+            return DOCTOR_FAILED
+        return SUCCESS
     if repair:
         from hydracept.cli.project import repair_workspace_identity
         from hydracept.cli.workspace import WorkspaceIdentityError
@@ -733,11 +931,54 @@ def _finish(report: DoctorReport, console: Console, json_output: bool) -> int:
         console.print_json(data=report.to_json_dict())
     else:
         payload = report.to_json_dict()
+        identity = payload.get("identity") or {}
+        binding = payload.get("projectBinding") or {}
         console.print("[bold]Hydracept doctor[/bold]")
+        identity_status = str(identity.get("status") or "unknown")
+        identity_label = identity_status.replace("_", " ")
+        provider = identity.get("provider")
+        account = identity.get("account")
+        identity_bits = " / ".join(part for part in (provider, account) if part)
+        if identity_bits:
+            console.print(f"Identity: {identity_label} ({identity_bits})")
+        else:
+            console.print(f"Identity: {identity_label}")
+        binding_status = str(binding.get("status") or "unknown").replace("_", " ")
+        console.print(f"Project binding: {binding_status}")
+        if binding.get("source"):
+            console.print(f"Project source: {binding.get('source')}")
+        if binding.get("reason") and binding.get("status") != "ready":
+            console.print(f"Reason: {binding.get('reason')}")
+        if binding.get("environment"):
+            console.print(f"Environment: {binding.get('environment')}")
         ws = payload.get("workspace") or {}
         console.print(
             f"workspace: state={ws.get('state')} ready={ws.get('ready')}"
         )
+        labels = (
+            ("identity", "Identity"),
+            ("workspace", "Workspace"),
+            ("project", "Hydracept project"),
+            ("environment", "Environment"),
+            ("managedInference", "Managed inference"),
+            ("byok", "BYOK"),
+            ("mcp", "MCP"),
+        )
+        sections = payload.get("sections") or {}
+        for key, title in labels:
+            section = sections.get(key) or {}
+            status = str(section.get("status") or "unknown")
+            detail = str(section.get("detail") or "")
+            if status == "ready":
+                icon = "[green]✓[/green]"
+            elif status == "warning":
+                icon = "[yellow]○[/yellow]"
+            elif status == "unknown":
+                icon = "[dim]○[/dim]"
+            else:
+                icon = "[red]✗[/red]"
+            console.print(f"[bold]{title}[/bold]")
+            console.print(f"  {icon} {detail}")
         for check in report.checks:
             icon = "[green]PASS[/green]" if check.passed else (
                 "[red]FAIL[/red]" if check.fatal else "[yellow]WARN[/yellow]"

@@ -45,6 +45,14 @@ LEGACY_STALE_PATTERNS = [
 ]
 
 SCAN_EXTENSIONS = {".cs", ".ts", ".tsx", ".js", ".mjs", ".py", ".json", ".csproj"}
+STRICT_SCAN_EXTENSIONS = SCAN_EXTENSIONS | {
+    ".toml",
+    ".yaml",
+    ".yml",
+    ".xml",
+    ".props",
+    ".targets",
+}
 
 
 def _load_exceptions() -> list[dict]:
@@ -74,10 +82,11 @@ def _expired_exceptions(exceptions: list[dict]) -> list[str]:
     return expired
 
 
-def scan(root: Path) -> list[str]:
+def scan(root: Path, *, strict: bool = False) -> list[str]:
     violations: list[str] = []
+    extensions = STRICT_SCAN_EXTENSIONS if strict else SCAN_EXTENSIONS
     for path in root.rglob("*"):
-        if not path.is_file() or path.suffix.lower() not in SCAN_EXTENSIONS:
+        if not path.is_file() or path.suffix.lower() not in extensions:
             continue
         if "node_modules" in path.parts or ".git" in path.parts or "dist" in path.parts:
             continue
@@ -123,12 +132,13 @@ def scan_tracked_secrets(root: Path) -> list[str]:
     return violations
 
 
-def scan_path(target: Path) -> tuple[int, str]:
+def scan_path(target: Path, *, strict: bool = False) -> tuple[int, str]:
     expired = _expired_exceptions(_load_exceptions())
     if expired:
         return 1, "Expired hydracept-consumer-exceptions:\n" + "\n".join(f"  - {e}" for e in expired)
-    violations = scan(target) + scan_tracked_secrets(target)
+    violations = scan(target, strict=strict) + scan_tracked_secrets(target)
     if violations:
         detail = "Consumer boundary violations:\n" + "\n".join(f"  - {v}" for v in violations)
         return 1, detail
-    return 0, f"Consumer boundary OK ({target})"
+    mode = "strict" if strict else "standard"
+    return 0, f"Consumer boundary OK ({target}) [{mode}]"

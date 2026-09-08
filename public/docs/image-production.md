@@ -103,7 +103,67 @@ For a single asset:
 }
 ```
 
-Hydracept treats transparency as an **output contract**: native alpha when the provider supports it, matte normalization and validation otherwise.
+Hydracept treats transparency as an **output contract**. The catalog model record decides the default path:
+
+- **Native alpha** when `nativeTransparentBackground` is true (gpt-image-2, gpt-image-1). Hydracept sends `background: "transparent"` and does **not** chroma-key or run matte v9.
+- **Chroma-key matte** when the model has no native alpha, or when the client sets advanced `transparencyMethod: "matte-v9"`.
+
+Optional `keyColor` and `transparentRegions` apply only to the matte path.
+
+Optional `transparentRegions` selects which pixels go to alpha when `requestTransparentOutput` is true:
+
+| Value | Use when |
+|------|----------|
+| `borderConnected` (default) | Isolated sprites, icons, props. Unused canvas connected to the frame edge becomes transparent. Interior subject pixels stay opaque. |
+| `borderConnectedAndEnclosed` | Full-bleed plates with interior openings (windows, cutouts, apertures that do not touch the canvas edge). Those enclosed chroma islands are also keyed. |
+
+```json
+{
+  "input": {
+    "prompt": "full-bleed interior, window openings punched",
+    "requestTransparentOutput": true,
+    "transparentRegions": "borderConnectedAndEnclosed",
+    "keyColor": "#00ffff"
+  }
+}
+```
+
+Opaque jobs (`requestTransparentOutput: false`) fill the canvas. Clients should not re-key the returned PNG.
+
+### Verify transparency from bytes, not previews
+
+Image viewers, chat clients, IDE previews, and vision tools may composite a transparent PNG onto a black or white matte. That matte is a viewer choice; it is not background color stored in the PNG. **Do not judge Hydracept PNG transparency from a thumbnail, generic image `Read`, or vision description.**
+
+Smoke validation now returns both `transparencyOk` and a structured `transparencyReport`. A passing report includes decoded alpha and isolation evidence such as `hasAlphaChannel`, `transparentPixelRatio`, `opaqueCornerCount`, and `chromaPlateRatio`, plus `verdict: "valid_transparent_sprite"`.
+
+For a downloaded artifact, inspect the file bytes directly:
+
+```bash
+python -m hydracept verify .hydracept/demo/first-asset.png --json
+```
+
+Example shape:
+
+```json
+{
+  "schemaVersion": "hydracept.cli.png-transparency.v1",
+  "kind": "png_transparency",
+  "passed": true,
+  "transparencyOk": true,
+  "transparencyReport": {
+    "schemaVersion": "hydracept.png-transparency.v1",
+    "verdict": "valid_transparent_sprite",
+    "hasAlphaChannel": true,
+    "transparentPixelRatio": 0.7883,
+    "opaqueCornerCount": 0,
+    "chromaPlateRatio": 0.0
+  }
+}
+```
+
+The **inspector verdict is authoritative**. Do not substitute a shortcut based only on transparent-pixel ratio or corner count: Hydracept also checks for connected leftover chroma plate and other invalid alpha states. A passing report should not be overridden merely because a host preview appears black or white.
+
+When MCP Apps are available, prefer `hydracept_interaction_surface` with `artifact.review` for human visual review. The Hydracept review surface presents transparent assets appropriately; use it to judge composition and aesthetics. Use `transparencyReport` / local byte verification to judge alpha correctness.
 
 ## Variants
 

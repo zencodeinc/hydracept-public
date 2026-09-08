@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from hydracept.cli.secure_store import write_json_atomic
 from hydracept.cli.workspace import WorkspaceIdentityError, config_dir, config_path, read_json
 
 PROJECT_SCHEMA_VERSION = "hydracept.workspace.v1"
@@ -79,10 +80,18 @@ def persist_config_without_identity(project_root: Path) -> None:
 
 def load_project_binding(project_root: Path) -> dict[str, Any]:
     path = project_path(project_root)
-    if path.is_file():
-        data = read_json(path)
-        if data and str(data.get("projectId") or "").strip():
-            return data
+    if not path.is_file():
+        return {}
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return {}
+    data = read_json(path)
+    if data and str(data.get("projectId") or "").strip():
+        return data
+    if size > 0 and not data:
+        # Non-empty unreadable binding: do not treat as unbound and auto-create.
+        return {"corruptLocalBinding": True}
     return {}
 
 
@@ -171,6 +180,10 @@ def write_project_binding(project_root: Path, binding: dict[str, Any]) -> Path:
     }
     if binding.get("projectName"):
         payload["projectName"] = str(binding["projectName"])
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    if binding.get("resolution"):
+        payload["resolution"] = str(binding["resolution"])
+    if isinstance(binding.get("repository"), dict):
+        payload["repository"] = dict(binding["repository"])
+    write_json_atomic(path, payload)
     persist_config_without_identity(project_root)
     return path

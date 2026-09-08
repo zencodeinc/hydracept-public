@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hydracept panel</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: var(--color-background-primary, #101114);
+      --panel: var(--color-background-secondary, #17181c);
+      --ink: var(--color-text-primary, #f4f1ea);
+      --muted: var(--color-text-secondary, #9a958c);
+      --line: var(--color-border-primary, #2a2c31);
+      --accent: var(--color-ring-primary, #c4a574);
+      --accent-ink: var(--color-text-inverse, #16140f);
+      --ok: var(--color-text-success, #7dba8a);
+      --danger: var(--color-text-danger, #e08a8a);
+      --font: var(--font-sans, "Segoe UI", system-ui, sans-serif);
+    }
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        color-scheme: light;
+        --bg: var(--color-background-primary, #f4f1ea);
+        --panel: var(--color-background-secondary, #ffffff);
+        --ink: var(--color-text-primary, #1c1916);
+        --muted: var(--color-text-secondary, #6b6560);
+        --line: var(--color-border-primary, #d9d2c8);
+        --accent: var(--color-ring-primary, #8a6a3d);
+        --accent-ink: var(--color-text-inverse, #ffffff);
+        --ok: var(--color-text-success, #2f7a45);
+        --danger: var(--color-text-danger, #b42318);
+      }
+    }
+    [data-theme="light"] {
+      color-scheme: light;
+      --bg: var(--color-background-primary, #f4f1ea);
+      --panel: var(--color-background-secondary, #ffffff);
+      --ink: var(--color-text-primary, #1c1916);
+      --muted: var(--color-text-secondary, #6b6560);
+      --line: var(--color-border-primary, #d9d2c8);
+      --accent: var(--color-ring-primary, #8a6a3d);
+      --accent-ink: var(--color-text-inverse, #ffffff);
+      --ok: var(--color-text-success, #2f7a45);
+      --danger: var(--color-text-danger, #b42318);
+    }
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: var(--color-background-primary, #101114);
+      --panel: var(--color-background-secondary, #17181c);
+      --ink: var(--color-text-primary, #f4f1ea);
+      --muted: var(--color-text-secondary, #9a958c);
+      --line: var(--color-border-primary, #2a2c31);
+      --accent: var(--color-ring-primary, #c4a574);
+      --accent-ink: var(--color-text-inverse, #16140f);
+      --ok: var(--color-text-success, #7dba8a);
+      --danger: var(--color-text-danger, #e08a8a);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 720px;
+      background: var(--bg);
+      background-color: var(--bg);
+    }
+    body {
+      font: 14px/1.45 var(--font);
+      color: var(--ink);
+    }
+    main { padding: 10px 16px 20px; min-height: 640px; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    header .tools { display: flex; align-items: center; gap: 8px; }
+    .brand { display: flex; align-items: center; gap: 8px; }
+    .brand img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      border-radius: 6px;
+      padding: 3px;
+      background: #f4f7fb;
+      border: 1px solid rgba(12, 21, 34, 0.08);
+    }
+    .brand img[src=""] { display: none; }
+    .brand strong { letter-spacing: 0.04em; font-size: 13px; font-weight: 650; }
+    .chip {
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid var(--line);
+      border-radius: 99px;
+      padding: 3px 8px;
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 17px;
+      font-weight: 650;
+    }
+    .lede { color: var(--muted); font-size: 12px; margin: 0 0 12px; }
+    label { display: block; color: var(--muted); font-size: 11px; margin: 10px 0 4px; }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+    .dropzone {
+      position: relative;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      padding: 14px 12px;
+      background: var(--panel);
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .dropzone.drag { border-color: var(--accent); color: var(--ink); }
+    .dropzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border: 0;
+    }
+    .seg {
+      display: flex;
+      gap: 6px;
+    }
+    .seg button {
+      flex: 1;
+      background: var(--panel);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      padding: 7px 0;
+      font-weight: 600;
+    }
+    .seg button[aria-pressed="true"] {
+      background: var(--accent);
+      color: var(--accent-ink);
+      border-color: transparent;
+    }
+    .generate-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      margin-top: 16px;
+    }
+    .generate-bar button { width: 100%; padding: 11px 14px; font-size: 15px; }
+    #constraint-hint button {
+      margin-left: 8px;
+      padding: 4px 10px;
+      font-size: 11px;
+    }
+    textarea, input, select {
+      width: 100%;
+      background: var(--panel);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    textarea, input, select, button { font: inherit; }
+    textarea:focus, input:focus, select:focus, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+    textarea { min-height: 96px; resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .toggles { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+    .toggles label {
+      margin: 0;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 99px;
+      padding: 6px 10px;
+      background: var(--panel);
+    }
+    .sheet {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px 10px;
+      margin-top: 12px;
+      background: var(--panel);
+    }
+    .sheet h2 { margin: 0 0 6px; font-size: 12px; font-weight: 600; }
+    .actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .quiet-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 16px;
+      margin-top: 12px;
+    }
+    .quiet-link, button.quiet-link, a.quiet-link {
+      background: none;
+      border: 0;
+      padding: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .quiet-link:hover, button.quiet-link:hover, a.quiet-link:hover {
+      color: var(--ink);
+      filter: none;
+    }
+    .connect-wait {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px;
+      background: var(--panel);
+      margin-top: 4px;
+    }
+    .connect-wait .progress { margin: 0 0 12px; }
+    .connect-wait .progress > i {
+      width: 42%;
+      animation: connect-pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes connect-pulse {
+      0% { width: 18%; margin-left: 0; }
+      50% { width: 62%; margin-left: 12%; }
+      100% { width: 18%; margin-left: 0; }
+    }
+    a.button-link {
+      display: inline-flex;
+      align-items: center;
+      background: var(--accent);
+      color: var(--accent-ink);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    button {
+      background: var(--accent);
+      color: var(--accent-ink);
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover:not(:disabled) { filter: brightness(1.06); }
+    button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+    button:disabled { opacity: 0.55; cursor: default; }
+    .meta { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+    .ok { color: var(--ok); }
+    .progress-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px;
+      background: var(--panel);
+    }
+    .progress { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 4px 0 12px; }
+    .progress > i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.4s linear;
+    }
+    img.preview {
+      max-width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      margin-top: 4px;
+      cursor: zoom-in;
+      background: repeating-conic-gradient(#80808022 0% 25%, transparent 0% 50%) 0 0 / 16px 16px;
+    }
+    .preview-stage {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 4px;
+      background: repeating-conic-gradient(#80808022 0% 25%, transparent 0% 50%) 0 0 / 16px 16px;
+    }
+    .preview-stage[data-bg="light"] { background: #f4f1ea; }
+    .preview-stage[data-bg="dark"] { background: #101114; }
+    .preview-stage[data-bg="alpha"] img.preview {
+      filter: grayscale(1) contrast(1.4);
+    }
+    .preview-stage.actual-size img.preview {
+      max-width: none;
+      image-rendering: pixelated;
+    }
+    .preview-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0;
+    }
+    .preview-tools button[aria-pressed="true"] {
+      outline: 2px solid var(--accent);
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .gallery button {
+      display: block;
+      width: 100%;
+      padding: 0;
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .gallery button.selected { outline: 2px solid var(--accent); }
+    .gallery img { display: block; width: 100%; cursor: zoom-in; }
+    .gallery span { display: block; padding: 6px 8px; font-size: 11px; color: var(--muted); }
+    .error { color: var(--danger); font-size: 12px; margin-top: 8px; white-space: pre-wrap; }
+    .action-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .action-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: var(--panel);
+    }
+    .action-card p { margin: 0 0 10px; color: var(--muted); font-size: 12px; }
+    .action-card strong { color: var(--ink); display: block; margin-bottom: 4px; font-size: 13px; }
+    .action-card button { width: 100%; }
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(8, 9, 12, 0.88);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px 16px;
+    }
+    .lightbox[hidden] { display: none !important; }
+    .lightbox img { max-width: 100%; max-height: 100%; border-radius: 8px; }
+    .lightbox-close { position: absolute; top: 10px; right: 10px; }
+    .lightbox-hint { position: absolute; bottom: 10px; color: #ddd; font-size: 11px; }
+    [hidden] { display: none !important; }
+    .risk-block, .result-pane, .contract-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      background: var(--panel);
+      margin: 10px 0;
+    }
+    .risk-block strong { display: block; margin-bottom: 6px; }
+    .id-secondary { color: var(--muted); font-size: 11px; font-family: ui-monospace, monospace; }
+    textarea.json-editor { min-height: 160px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; }
+    .env-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .env-chips button { flex: 0 1 auto; padding: 6px 12px; }
+    .field-error { color: var(--danger); font-size: 11px; margin: 4px 0 0; }
+    .unsupported { color: var(--danger); }
+    .promote-note { color: var(--muted); font-size: 12px; }
+    @media (max-width: 420px) {
+      .row, .action-split { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img id="brand-logo" src="<!--LOGO_SRC-->" width="22" height="22" alt="Hydracept" />
+      <strong>Hydracept</strong>
+    </div>
+    <div class="tools">
+      <button type="button" class="secondary" id="expand-btn" title="Show this panel at full size">Full size</button>
+      <span id="family-label" class="chip">Hydracept</span>
+    </div>
+  </header>
+  <main>
+    <h1 id="stage-title">Hydracept</h1>
+    <p class="lede" id="stage-lede">Choose an action. This panel does not collect provider secrets.</p>
+    <div id="surface-root" aria-live="polite"></div>
+    <section id="launch-view" hidden>
+      <label for="prompt">Prompt</label>
+      <textarea id="prompt" name="prompt" placeholder="A flat 2D game icon of a bronze key, centered, transparent background"></textarea>
+      <p class="meta" id="shortcut-hint">Ctrl or ⌘ Enter generates. Add a prompt first.</p>
+      <label for="references">Reference images</label>
+      <div class="dropzone" id="reference-drop">
+        <input id="references" name="referenceImages" type="file" accept="image/*" multiple />
+        <span id="reference-drop-label">Drop images or click to choose · optional · up to 4 · 2 MB each</span>
+      </div>
+      <p class="meta" id="reference-list"></p>
+      <label for="size-preset">Size</label>
+      <select id="size-preset">
+        <option value="512x512">512 × 512 · Tiny square</option>
+        <option value="768x768">768 × 768 · Small square</option>
+        <option value="1024x1024" selected>1024 × 1024 · Standard</option>
+        <option value="1536x1536">1536 × 1536 · Large square</option>
+        <option value="2048x2048">2048 × 2048 · Extra large</option>
+        <option value="1024x1536">1024 × 1536 · Portrait</option>
+        <option value="1536x1024">1536 × 1024 · Landscape</option>
+        <option value="1920x1088">1920 × 1088 · Widescreen</option>
+        <option value="1088x1920">1088 × 1920 · Tall phone</option>
+        <option value="1280x720">1280 × 720 · HD</option>
+        <option value="1344x768">1344 × 768 · Wide</option>
+        <option value="832x1216">832 × 1216 · Tall</option>
+        <option value="custom">Custom size…</option>
+      </select>
+      <div class="row" id="custom-size" hidden>
+        <div>
+          <label for="width">Width</label>
+          <input id="width" name="width" type="number" min="256" max="3840" step="16" value="1024" />
+        </div>
+        <div>
+          <label for="height">Height</label>
+          <input id="height" name="height" type="number" min="256" max="3840" step="16" value="1024" />
+        </div>
+      </div>
+      <p class="meta">1024 square fits most game work. Custom snaps to multiples of 16.</p>
+      <div class="row">
+        <div>
+          <label for="quality">Quality</label>
+          <select id="quality" name="quality">
+            <option value="low">Low · faster, cheaper</option>
+            <option value="medium" selected>Medium · balanced</option>
+            <option value="high">High · slower, sharper</option>
+            <option value="auto">Auto · Hydracept picks</option>
+          </select>
+        </div>
+        <div>
+          <label for="variantCount">How many images</label>
+          <div class="seg" id="variant-seg" role="group" aria-label="How many images">
+            <button type="button" data-count="1" aria-pressed="true">1</button>
+            <button type="button" data-count="2" aria-pressed="false">2</button>
+            <button type="button" data-count="3" aria-pressed="false">3</button>
+            <button type="button" data-count="4" aria-pressed="false">4</button>
+          </div>
+          <input class="sr-only" id="variantCount" name="variantCount" type="number" min="1" max="4" value="1" />
+        </div>
+      </div>
+      <div class="toggles">
+        <label><input id="transparent" name="requestTransparentOutput" type="checkbox" /> Transparent background</label>
+        <label><input id="sheet-enabled" type="checkbox" /> Sprite sheet</label>
+      </div>
+      <div class="sheet" id="sheet-controls" hidden>
+        <h2>Sprite sheet</h2>
+        <p class="meta">One image with a grid of frames, then sliced into separate PNGs.</p>
+        <div class="row">
+          <div>
+            <label for="sheet-rows">Rows</label>
+            <input id="sheet-rows" name="sheetRows" type="number" min="1" max="8" value="1" />
+          </div>
+          <div>
+            <label for="sheet-cols">Columns</label>
+            <input id="sheet-cols" name="sheetColumns" type="number" min="1" max="8" value="2" />
+          </div>
+        </div>
+        <label for="sheet-labels">Frame labels</label>
+        <input id="sheet-labels" name="sheetLabels" type="text" placeholder="idle, walk, jump" />
+        <p class="meta" id="constraint-hint"></p>
+      </div>
+      <label for="output-dir">Save downloads to</label>
+      <input id="output-dir" name="outputDir" type="text" value=".hydracept/artifacts" />
+      <p class="meta">Workspace folder. Use in chat never writes here — only Download does.</p>
+      <div class="generate-bar">
+        <button type="button" id="run-btn">Generate</button>
+        <p class="meta" id="cost-line">Starts a billed Hydracept job. Quote appears after you add a prompt.</p>
+      </div>
+      <p class="error" id="launch-error" hidden aria-live="polite"></p>
+    </section>
+    <section id="progress-view" hidden>
+      <div class="progress-card">
+        <div class="progress"><i id="progress-fill"></i></div>
+        <p class="meta" id="progress-meta" aria-live="polite">Starting…</p>
+        <p class="meta" id="progress-eta"></p>
+        <div class="actions">
+          <button type="button" class="secondary" id="stop-watch-btn">Stop watching</button>
+          <button type="button" class="secondary" id="cancel-job-btn">Cancel job</button>
+        </div>
+      </div>
+    </section>
+    <section id="complete-view" hidden>
+      <div class="preview-stage" id="preview-stage" data-bg="checker">
+        <div id="preview-gallery" class="gallery" hidden></div>
+        <img class="preview" id="preview-image" alt="Generated image preview" hidden />
+      </div>
+      <div class="preview-tools" id="preview-tools">
+        <button type="button" class="secondary" data-bg="checker" aria-pressed="true">Checkerboard</button>
+        <button type="button" class="secondary" data-bg="light">Light</button>
+        <button type="button" class="secondary" data-bg="dark">Dark</button>
+        <button type="button" class="secondary" data-bg="alpha">Alpha</button>
+        <button type="button" class="secondary" id="actual-size-btn">Actual size</button>
+      </div>
+      <p class="meta" id="provenance-line"></p>
+      <p class="meta" id="receipt-line" aria-live="polite"></p>
+      <div class="action-split">
+        <div class="action-card">
+          <strong>Use in chat</strong>
+          <p>Hands this image to the agent. Does not save a file.</p>
+          <button type="button" class="secondary" id="use-btn">Use in chat</button>
+        </div>
+        <div class="action-card">
+          <strong>Download</strong>
+          <p id="download-hint">Writes a PNG to your save folder.</p>
+          <button type="button" id="download-btn">Download to folder</button>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" class="secondary" id="again-btn">Generate another</button>
+      </div>
+    </section>
+  </main>
+  <div id="lightbox" class="lightbox" hidden>
+    <button type="button" class="secondary lightbox-close" id="lightbox-close">Close</button>
+    <img id="lightbox-image" alt="Full-size preview" />
+    <p class="lightbox-hint">Click outside or press Esc to close</p>
+  </div>
+  <!--EXT_APPS_VENDOR-->
+  <script><!--PANEL_JS--></script>
+</body>
+</html>

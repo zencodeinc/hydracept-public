@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -40,4 +41,23 @@ def test_bootstrap_session_expired(tmp_path: Path) -> None:
     stored = load_bootstrap_session(tmp_path)
     assert bootstrap_session_expired(stored)
     clear_bootstrap_session(tmp_path)
+    assert not bootstrap_session_path(tmp_path).is_file()
+
+
+def test_concurrent_clear_does_not_raise_when_file_already_gone(tmp_path: Path) -> None:
+    save_bootstrap_session(
+        tmp_path,
+        session_id="bs_race",
+        connect_url="https://api.hydracept.com/connect/bs_race",
+        api_url="https://api.hydracept.com",
+    )
+
+    def clear() -> None:
+        clear_bootstrap_session(tmp_path)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [pool.submit(clear), pool.submit(clear)]
+        for future in futures:
+            future.result()
+
     assert not bootstrap_session_path(tmp_path).is_file()

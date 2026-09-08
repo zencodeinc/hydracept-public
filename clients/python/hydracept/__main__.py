@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from hydracept.cli.main import main
+from hydracept.cli.entrypoint import app
 
 if __name__ == "__main__":
-    main()
+    app()

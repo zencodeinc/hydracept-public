@@ -3,11 +3,15 @@ capabilities:
   - key: image.generate.v1
     summary: Generate transparent PNGs, sprite sheets, icon variants, and production game assets.
   - key: image.edit.v1
-    summary: Edit images with durable jobs and receipts.
+    summary: In-place edit of a source PNG via images.edit (source, optional mask, insert graphics).
   - key: text.general.fast.v1
     summary: Fast text generation through the public capability surface.
   - key: text.reasoning.high.v1
     summary: High-reasoning text generation.
+  - key: text.reasoning.maximum.v1
+    summary: Maximum-reasoning long-context text generation, including multi-document jobs.
+  - key: text.vision.structured.v1
+    summary: Read attached image pixels and return structured JSON.
   - key: audio.sfx.generate.v1
     summary: Sound effect generation.
   - key: audio.voice.generate.v1

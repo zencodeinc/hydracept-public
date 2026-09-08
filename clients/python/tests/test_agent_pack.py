@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from unittest.mock import patch
+import json
 
 import pytest
 
@@ -46,3 +47,8 @@ def test_install_agent_pack_auto_is_idempotent(tmp_path: Path, monkeypatch: pyte
     assert first.hosts
     assert second.hosts == first.hosts
     assert second.files
+    plugin_mcp = tmp_path / ".cursor" / "plugins" / "hydracept" / "mcp.json"
+    payload = json.loads(plugin_mcp.read_text(encoding="utf-8"))
+    args = payload["mcpServers"]["hydracept"]["args"]
+    assert "--workspace" in args
+    assert "${workspaceFolder}" in args

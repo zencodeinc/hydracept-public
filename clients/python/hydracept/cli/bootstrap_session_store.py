@@ -47,8 +47,11 @@ def save_bootstrap_session(
 
 def clear_bootstrap_session(project_root: Path) -> None:
     path = bootstrap_session_path(project_root)
-    if path.is_file():
-        path.unlink()
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        # Concurrent waiters may race unlink against save/replace.
+        return
 
 
 def bootstrap_session_expired(stored: dict[str, Any]) -> bool:

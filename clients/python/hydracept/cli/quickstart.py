@@ -188,7 +188,18 @@ def run_quickstart(
             console.print(f"[green]Smoke succeeded[/green] jobId={smoke.job_id}")
         return QuickstartResult(exit_code=SUCCESS, payload=payload)
     except SmokeError as exc:
-        steps["smoke"] = {"status": "failed", "detail": str(exc)}
+        smoke_step: dict[str, Any] = {
+            "status": exc.status or "failed",
+            "detail": str(exc),
+            "jobId": exc.job_id or None,
+            "receiptId": exc.receipt_id or None,
+            "artifactIds": exc.artifact_ids,
+        }
+        if exc.validation_error:
+            smoke_step["validationError"] = exc.validation_error
+        if exc.failing_path:
+            smoke_step["failingPath"] = exc.failing_path
+        steps["smoke"] = smoke_step
         payload["steps"] = steps
         payload["error"] = str(exc)
         return QuickstartResult(exit_code=SMOKE_FAILED, payload=payload)

@@ -25,7 +25,6 @@ If the API returns `total pixels must be >= 655360`, the message includes this s
 
 - `sheet.slice`: true when individual frames are needed
 - `sheet.rows` and `sheet.columns` for contact-sheet layout
-- `sheet.labels`: one name per cell (row-major). Job artifacts expose these as `label`, `filename` (for example `anvil.png`), and `sliceCellId`
 - `sheet.animation` when frame order matters
 - `requestTransparentOutput: true` for game-ready PNG frames
 

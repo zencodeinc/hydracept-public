@@ -8,6 +8,7 @@ from typing import Any
 
 from mcp.server.mcpserver.server import MCPServer
 
+from hydracept.mcp.interactions import register_interaction_tools
 from hydracept.mcp.project_mcp import ProjectMcpService
 
 ProjectRootFn = Callable[[], Path]
@@ -17,6 +18,7 @@ def register_project_tools(
     server: MCPServer,
     *,
     project_root_fn: ProjectRootFn,
+    apps: Any | None = None,
 ) -> None:
     def service() -> ProjectMcpService:
         return ProjectMcpService(project_root_fn())
@@ -34,12 +36,12 @@ def register_project_tools(
 
     @server.tool()
     def hydracept_project_up_install() -> dict[str, Any]:
-        """Same as `python -m hydracept project up --install`. Credentials from workspace, not args."""
+        """Same as project up --install; credentials come from workspace, not arguments."""
         return invoke(service().install_up)
 
     @server.tool()
     def hydracept_surface_apply(path: str = "") -> dict[str, Any]:
-        """Apply one surface JSON or all tools/hydracept/surfaces/*.json. Does not grant the allowlist."""
+        """Apply one surface JSON or all project surfaces. Does not grant the allowlist."""
         return invoke(lambda: service().apply_surfaces(path))
 
     @server.tool()
@@ -49,7 +51,7 @@ def register_project_tools(
 
     @server.tool()
     def hydracept_project_watch_once() -> dict[str, Any]:
-        """Execute requested operations once. Defers if login-persistent project up is already running."""
+        """Execute requested operations once unless login-persistent project up is running."""
         return invoke(service().watch_once)
 
     @server.tool()
@@ -59,7 +61,7 @@ def register_project_tools(
         input: dict[str, Any] | None = None,
         context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """POST /v1/projects/{id}/operations. Does not run argv; watcher or watch_once executes."""
+        """Request an allowlisted project operation; watcher or watch_once executes it."""
         return invoke(
             lambda: service().request_operation(
                 command,
@@ -73,3 +75,5 @@ def register_project_tools(
     def hydracept_project_get_operation(operation_id: str) -> dict[str, Any]:
         """GET a project operation by id. Poll until reported when a watcher is running."""
         return invoke(lambda: service().get_operation(operation_id))
+
+    register_interaction_tools(server, apps=apps)

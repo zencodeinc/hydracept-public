@@ -6,6 +6,7 @@ import json
 import os
 import stat
 import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
@@ -25,7 +26,17 @@ def write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         _restrict_permissions(tmp_path)
-        tmp_path.replace(path)
+        last_error: OSError | None = None
+        for attempt in range(8):
+            try:
+                tmp_path.replace(path)
+                last_error = None
+                break
+            except OSError as exc:
+                last_error = exc
+                time.sleep(0.02 * (attempt + 1))
+        if last_error is not None:
+            raise last_error
         _restrict_permissions(path)
     except Exception:
         tmp_path.unlink(missing_ok=True)
@@ -49,6 +60,14 @@ def _restrict_permissions(path: Path) -> None:
 
 
 def read_json(path: Path) -> dict[str, Any]:
-    if not path.is_file():
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError:
         return {}
-    return json.loads(path.read_text(encoding="utf-8"))
+    if not raw.strip():
+        return {}
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}

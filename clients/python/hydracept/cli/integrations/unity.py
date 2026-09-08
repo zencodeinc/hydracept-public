@@ -1,4 +1,4 @@
-﻿"""Unity UPM install helper."""
+"""Unity UPM install helper."""
 
 from __future__ import annotations
 
