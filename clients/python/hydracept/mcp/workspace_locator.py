@@ -133,6 +133,15 @@ def _acceptable_fallback(root: Path) -> bool:
     return (root / ".git").is_dir()
 
 
+def _maybe_attest(root: Path, *, source: str, env: dict[str, str]) -> Path:
+    """Publish a lease only for configured MCP launches, not locator library calls."""
+    if str(env.get("HYDRACEPT_MCP_GENERATION") or "").strip():
+        from hydracept.mcp.runtime_binding import attest_runtime_binding
+
+        attest_runtime_binding(root, source=source, env=env)
+    return root
+
+
 def resolve_mcp_workspace(
     explicit: Path | str | None = None,
     *,
@@ -142,23 +151,25 @@ def resolve_mcp_workspace(
     """Return the checkout MCP should read secrets from.
 
     Precedence: --workspace (expanded) → env → walk-up from cwd. Never latches
-    onto the user home session store.
+    onto the user home session store. Configured MCP launches also publish a
+    non-secret runtime lease so CLI status can attest the live checkout rather
+    than infer it from files on disk.
     """
+    environ = env if env is not None else dict(os.environ)
     if explicit is not None and not is_unexpanded_placeholder(explicit):
         path = Path(explicit)
         if path.is_dir():
-            return path.resolve()
-    environ = env if env is not None else dict(os.environ)
+            return _maybe_attest(path.resolve(), source="explicit", env=environ)
     from_env = _from_env(environ)
     if from_env is not None:
-        return from_env
+        return _maybe_attest(from_env, source="environment", env=environ)
     start = Path(cwd) if cwd is not None else Path.cwd()
     found = _bounded_walk_up(start)
     if found is not None:
-        return found
+        return _maybe_attest(found, source="walk_up", env=environ)
     fallback = start.resolve()
     if is_user_home(fallback) or is_cursor_plugin_dir(fallback):
         return fallback
     if is_unusable_mcp_cwd(fallback) or not _acceptable_fallback(fallback):
         raise _unresolved_workspace_error()
-    return fallback
+    return _maybe_attest(fallback, source="fallback", env=environ)

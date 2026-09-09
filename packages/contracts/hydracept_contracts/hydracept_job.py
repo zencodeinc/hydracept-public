@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_serializer, model_validator
 
 from hydracept_contracts.digests import normalize_sha256_digest
 from hydracept_contracts.job_wait import job_wait_hints
@@ -23,6 +23,24 @@ class HydraceptJobStatus(StrEnum):
     CANCELING = "canceling"
     CANCELED = "canceled"
     NEEDS_ATTENTION = "needs_attention"
+
+    @classmethod
+    def waiting_values(cls) -> tuple[str, ...]:
+        return (cls.QUEUED.value, cls.RUNNING.value, cls.CANCELING.value)
+
+    @classmethod
+    def terminal_values(cls) -> tuple[str, ...]:
+        return (
+            cls.SUCCEEDED.value,
+            cls.FAILED.value,
+            cls.CANCELED.value,
+            cls.AWAITING_APPROVAL.value,
+            cls.NEEDS_ATTENTION.value,
+        )
+
+    @classmethod
+    def human_gate_values(cls) -> tuple[str, ...]:
+        return (cls.AWAITING_APPROVAL.value, cls.NEEDS_ATTENTION.value)
 
 
 class HydraceptJobDiagnostics(BaseModel):
@@ -68,11 +86,20 @@ class HydraceptJobArtifactRef(BaseModel):
         digest = normalize_sha256_digest(str(value))
         return digest or None
 
+    @model_serializer(mode="wrap")
+    def _omit_unselected_flag(self, serializer):
+        data = serializer(self)
+        if data.get("selected") is None:
+            data.pop("selected", None)
+        return data
+
 
 class HydraceptJob(BaseModel):
     job_id: str = Field(alias="jobId")
     capability_key: str = Field(alias="capabilityKey")
     status: HydraceptJobStatus
+    project_id: str | None = Field(default=None, alias="projectId")
+    product_id: str | None = Field(default=None, alias="productId")
     created_at: datetime | None = Field(default=None, alias="createdAt")
     completed_at: datetime | None = Field(default=None, alias="completedAt")
     estimated_cost: float | None = Field(default=None, alias="estimatedCost")
@@ -81,6 +108,7 @@ class HydraceptJob(BaseModel):
     artifacts: list[HydraceptJobArtifactRef] = Field(default_factory=list)
     variant_set: HydraceptVariantSet | None = Field(default=None, alias="variantSet")
     receipt_id: str | None = Field(default=None, alias="receiptId")
+    primary_artifact_id: str | None = Field(default=None, alias="primaryArtifactId")
     typed_output: Any | None = Field(default=None, alias="typedOutput")
     error: dict[str, Any] | None = None
     diagnostics: HydraceptJobDiagnostics | None = None
@@ -91,6 +119,10 @@ class HydraceptJob(BaseModel):
     )
     next_action: str | None = Field(default=None, alias="nextAction")
     poll_after_seconds: int | None = Field(default=None, alias="pollAfterSeconds")
+    approval: dict[str, Any] | None = Field(
+        default=None,
+        description="Sanitized human-gate payload. Present only while the job awaits approval.",
+    )
 
     model_config = {"populate_by_name": True}
 
@@ -103,6 +135,20 @@ class HydraceptJob(BaseModel):
         poll_after = hints.get("pollAfterSeconds")
         self.poll_after_seconds = int(poll_after) if poll_after is not None else None
         return self
+
+
+class HydraceptJobResult(BaseModel):
+    """First-class job result projection — typed output plus payload identity."""
+
+    job_id: str = Field(alias="jobId")
+    status: HydraceptJobStatus
+    typed_output: Any | None = Field(default=None, alias="typedOutput")
+    output_payload_ref: str | None = Field(default=None, alias="outputPayloadRef")
+    payload_state: str | None = Field(default=None, alias="payloadState")
+    artifacts: list[HydraceptJobArtifactRef] = Field(default_factory=list)
+    error: dict[str, Any] | None = None
+
+    model_config = {"populate_by_name": True}
 
 
 class HydraceptReceiptAdmission(BaseModel):
@@ -145,16 +191,17 @@ class HydraceptReceipt(BaseModel):
     capability_key: str = Field(alias="capabilityKey")
     principal_id: str | None = Field(default=None, alias="principalId")
     project_id: str | None = Field(default=None, alias="projectId")
+    product_id: str | None = Field(default=None, alias="productId")
     environment: str | None = None
     admission: HydraceptReceiptAdmission | None = None
     route: HydraceptReceiptRoute | None = None
-    estimated_cost: float = Field(
-        default=0.0,
+    estimated_cost: float | None = Field(
+        default=None,
         alias="estimatedCost",
         description="Deprecated 0.2 shim of pricing.quote.customerTotal. Do not use internally.",
     )
-    actual_cost: float = Field(
-        default=0.0,
+    actual_cost: float | None = Field(
+        default=None,
         alias="actualCost",
         description="Deprecated 0.2 shim of pricing.charge.customerCharge. Do not use internally.",
     )
@@ -178,9 +225,80 @@ class HydraceptReceipt(BaseModel):
             return self
         quote_total = pricing.quote.customer_total if pricing.quote else None
         charge_total = pricing.charge.customer_charge if pricing.charge else None
-        self.estimated_cost = quote_total.as_usd_float() if quote_total is not None else 0.0
-        self.actual_cost = charge_total.as_usd_float() if charge_total is not None else 0.0
+        self.estimated_cost = quote_total.as_usd_float() if quote_total is not None else None
+        self.actual_cost = charge_total.as_usd_float() if charge_total is not None else None
         return self
+
+    @model_serializer(mode="wrap")
+    def _omit_duplicate_estimate_id(self, serializer):
+        data = serializer(self)
+        pricing = data.get("pricing")
+        if (
+            isinstance(pricing, dict)
+            and pricing.get("quoteId")
+            and pricing.get("estimateId") == pricing.get("quoteId")
+        ):
+            pricing = dict(pricing)
+            pricing.pop("estimateId", None)
+            data["pricing"] = pricing
+        return data
+
+
+_SHEET_PRIMARY_KINDS = frozenset(
+    {
+        "composite-sheet",
+        "contact-preview",
+        "sheet",
+        "contact-sheet",
+    }
+)
+
+
+def resolve_primary_artifact_id(
+    artifacts: list[HydraceptJobArtifactRef],
+    variant_set: HydraceptVariantSet | None = None,
+) -> str | None:
+    """Default usable output without choosing among peers.
+
+    Genuine variant/user selection remains ``variantSet.selectedArtifactId`` /
+    ``artifacts[].selected``. A single ordinary output is primary and does not
+    set ``selected``.
+    """
+    if variant_set is not None and variant_set.selected_artifact_id:
+        return variant_set.selected_artifact_id
+    chosen = [item for item in artifacts if item.selected is True]
+    if len(chosen) == 1:
+        return chosen[0].artifact_id
+    if variant_set is not None and variant_set.requested_count > 1 and not chosen:
+        return None
+    sheet_primaries = [
+        item for item in artifacts if str(item.kind or "") in _SHEET_PRIMARY_KINDS
+    ]
+    if len(sheet_primaries) == 1:
+        return sheet_primaries[0].artifact_id
+    sliced = [item for item in artifacts if item.slice_cell_id]
+    if len(sliced) > 1 and not sheet_primaries:
+        return None
+    outputs = [item for item in artifacts if item.artifact_id]
+    if len(outputs) == 1:
+        return outputs[0].artifact_id
+    return None
+
+
+_SEALED_RECEIPT_STATUSES = frozenset(
+    {
+        HydraceptJobStatus.SUCCEEDED.value,
+        HydraceptJobStatus.FAILED.value,
+        HydraceptJobStatus.CANCELED.value,
+    }
+)
+
+
+def workflow_receipt_id_for_status(run_id: str, status: HydraceptJobStatus) -> str | None:
+    """``rcpt_{run.id}`` only when a sealed receipt exists — not human-gate states."""
+    if str(status) not in _SEALED_RECEIPT_STATUSES:
+        return None
+    return f"rcpt_{run_id}"
 
 
 # Preferred public names (internal Forge* names retained for implementation modules).

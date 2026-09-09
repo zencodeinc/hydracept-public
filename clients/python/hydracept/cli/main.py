@@ -20,6 +20,7 @@ from hydracept.cli.agents.install import install_agent_pack
 from hydracept.cli.agents.uninstall import uninstall_agent_pack
 from hydracept.cli.bootstrap import ConfigureError, run_configure
 from hydracept.cli.console_io import cli_console
+from hydracept.cli.json_file import read_json_file
 from hydracept.cli.doctor import DEFAULT_SMOKE_CAPABILITY, run_doctor
 from hydracept.cli.exit_codes import NOT_READY, SMOKE_FAILED, SUCCESS, USAGE
 from hydracept.cli.keys_cmd import keys_app
@@ -116,14 +117,27 @@ def _print_init_ready(payload: dict[str, Any]) -> None:
     console.print("[green]✓[/green] ready")
 
 
-def _load_json_payload(positional: str | None, input_json: str = "") -> dict[str, Any]:
+def _load_json_payload(
+    positional: str | None,
+    input_json: str = "",
+    body_file: Path | None = None,
+) -> dict[str, Any]:
     from hydracept.cli.run_facade import parse_json_body
 
     try:
-        return parse_json_body(positional, input_json=input_json)
+        return parse_json_body(positional, input_json=input_json, body_file=body_file)
     except (ValueError, json.JSONDecodeError) as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(USAGE) from exc
+
+
+def _input_file_option() -> Any:
+    return typer.Option(
+        None,
+        "--body",
+        "--input-file",
+        help="JSON file with capability input (PowerShell-safe). Avoid inline --input quoting.",
+    )
 
 
 def _cli_json(response: httpx.Response) -> Any:
@@ -661,7 +675,7 @@ def context_cmd(
 def run_cmd(
     capability: str = typer.Argument(..., help="Capability key"),
     input_json: str = typer.Option("", "--input", help="JSON object or prompt string"),
-    body: Path | None = typer.Option(None, "--body", help="JSON file CapabilityJobRequest or input"),
+    body: Path | None = _input_file_option(),
     wait: bool = typer.Option(True, "--wait/--no-wait"),
     timeout: float | None = typer.Option(None, "--timeout", help="Stop local waiting; never cancel remote"),
     max_cost: float | None = typer.Option(None, "--max-cost", help="Admission ceiling (server-enforced)"),
@@ -984,6 +998,7 @@ def capabilities_quote(
         help="JSON file path, inline JSON object, or - for stdin",
     ),
     input_json: str = typer.Option("", "--input", help="Inline JSON object"),
+    body_file: Path | None = _input_file_option(),
     api: str = typer.Option(DEFAULT_API, "--api"),
     project_root: Path = typer.Option(Path.cwd(), "--project-root"),
     token: str = typer.Option("", "--token"),
@@ -991,7 +1006,7 @@ def capabilities_quote(
 ) -> None:
     del json_output
     workspace = _execution_workspace(project_root, token=token, api=api)
-    payload = _load_json_payload(body, input_json)
+    payload = _load_json_payload(body, input_json, body_file)
     payload = merge_workspace_job_context(payload, workspace)
     client = HydraceptClient(workspace.api_url, workspace.token, workspace=workspace)
     console.print_json(data=client.quote_capability(key, payload))
@@ -1005,12 +1020,21 @@ def capabilities_estimate(
         help="JSON file path, inline JSON object, or - for stdin",
     ),
     input_json: str = typer.Option("", "--input", help="Inline JSON object"),
+    body_file: Path | None = _input_file_option(),
     api: str = typer.Option(DEFAULT_API, "--api"),
     project_root: Path = typer.Option(Path.cwd(), "--project-root"),
     token: str = typer.Option("", "--token"),
 ) -> None:
     """HTTP alias of `capabilities quote` (same 0.3 response)."""
-    capabilities_quote(key, body, input_json, api, project_root, token)
+    capabilities_quote(
+        key,
+        body,
+        input_json=input_json,
+        body_file=body_file,
+        api=api,
+        project_root=project_root,
+        token=token,
+    )
 
 
 @capabilities_app.command("find")
@@ -1036,12 +1060,13 @@ def capabilities_invoke(
         help="JSON file path, inline JSON object, or - for stdin",
     ),
     input_json: str = typer.Option("", "--input", help="Inline JSON object"),
+    body_file: Path | None = _input_file_option(),
     api: str = typer.Option(DEFAULT_API, "--api"),
     project_root: Path = typer.Option(Path.cwd(), "--project-root"),
     token: str = typer.Option("", "--token"),
 ) -> None:
     workspace = _execution_workspace(project_root, token=token, api=api)
-    payload = _load_json_payload(body, input_json)
+    payload = _load_json_payload(body, input_json, body_file)
     config = read_json(config_path(project_root))
     payload = merge_workspace_job_context(payload, workspace, config=config)
     client = HydraceptClient(workspace.api_url, workspace.token, workspace=workspace)
@@ -1056,7 +1081,7 @@ def capability_request_create(
     token: str = typer.Option("", "--token"),
 ) -> None:
     resolved = _resolve_token(project_root, token or None)
-    payload = json.loads(body.read_text(encoding="utf-8"))
+    payload = read_json_file(body)
     client = HydraceptClient(api, resolved)
     console.print_json(data=client.create_capability_request(payload))
 
@@ -1136,12 +1161,13 @@ def jobs_submit(
         help="JSON file path, inline JSON object, or - for stdin",
     ),
     input_json: str = typer.Option("", "--input", help="Inline JSON object"),
+    body_file: Path | None = _input_file_option(),
     api: str = typer.Option(DEFAULT_API, "--api"),
     project_root: Path = typer.Option(Path.cwd(), "--project-root"),
     token: str = typer.Option("", "--token"),
     watch: bool = typer.Option(False, "--watch"),
 ) -> None:
-    payload = _load_json_payload(body, input_json)
+    payload = _load_json_payload(body, input_json, body_file)
     workspace = _execution_workspace(project_root, token=token, api=api)
     config = read_json(config_path(project_root))
     payload = merge_workspace_job_context(payload, workspace, config=config)
@@ -1275,7 +1301,7 @@ def pinned_run(
 ) -> None:
     """POST /v1/inference/pinned — exact pin, scientific receipt."""
     resolved = _resolve_token(project_root, token or None)
-    payload = json.loads(body.read_text(encoding="utf-8"))
+    payload = read_json_file(body)
     client = HydraceptClient(api, resolved)
     console.print_json(data=client.create_pinned_inference(payload))
 
@@ -1301,7 +1327,7 @@ def pinned_bulk(
 ) -> None:
     """POST /v1/inference/pinned/bulk — concurrent pinned items, one logical execution each."""
     resolved = _resolve_token(project_root, token or None)
-    payload = json.loads(body.read_text(encoding="utf-8"))
+    payload = read_json_file(body)
     client = HydraceptClient(api, resolved)
     submitted = client.create_pinned_inference_bulk(payload)
     if not wait:

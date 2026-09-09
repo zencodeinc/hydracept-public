@@ -1,6 +1,6 @@
-﻿{
+{
   "name": "@hydracept/elements",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Embed Hydracept generation panels in web apps — iframe host SDK with hydracept.panel.v1 postMessage protocol.",
   "license": "MIT",
   "type": "module",

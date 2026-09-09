@@ -398,9 +398,13 @@ def execute_run(
 
 
 def parse_input_argument(value: str | None, file: Path | None) -> dict[str, Any]:
+    from hydracept.cli.json_file import read_json_file
+
     if file is not None:
-        text = file.read_text(encoding="utf-8")
-        return json.loads(text)
+        payload = read_json_file(file)
+        if not isinstance(payload, dict):
+            raise ValueError("JSON file must contain an object")
+        return payload
     if value:
         stripped = value.strip()
         if stripped.startswith("{"):
@@ -416,8 +420,13 @@ def parse_json_body(
     body_file: Path | None = None,
 ) -> dict[str, Any]:
     """File path, inline JSON object, --input, or '-' for stdin. No prompt coercion."""
+    from hydracept.cli.json_file import read_json_file
+
     if body_file is not None:
-        return json.loads(body_file.read_text(encoding="utf-8"))
+        payload = read_json_file(body_file)
+        if not isinstance(payload, dict):
+            raise ValueError("JSON file must contain an object")
+        return payload
     raw = (input_json or positional or "").strip()
     if not raw:
         raise ValueError("JSON body required (file path, inline object, --input, or -)")
@@ -429,5 +438,8 @@ def parse_json_body(
         return json.loads(raw)
     path = Path(raw)
     if path.is_file():
-        return json.loads(path.read_text(encoding="utf-8"))
+        payload = read_json_file(path)
+        if not isinstance(payload, dict):
+            raise ValueError("JSON file must contain an object")
+        return payload
     raise ValueError(f"Not a JSON object or file: {raw[:80]}")

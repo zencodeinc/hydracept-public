@@ -12,7 +12,10 @@ from hydracept.cli.secure_store import write_json_atomic
 from hydracept.cli.workspace import WorkspaceIdentityError, config_dir, config_path, read_json
 
 PROJECT_SCHEMA_VERSION = "hydracept.workspace.v1"
-DEFAULT_CAPABILITY_PROFILE = ["image.generate.v1"]
+DEFAULT_VERIFICATION_CAPABILITIES = ["image.generate.v1"]
+# Backward-compatible import for older client modules. This is a verification/smoke
+# selector, never an entitlement or workspace-access authority.
+DEFAULT_CAPABILITY_PROFILE = DEFAULT_VERIFICATION_CAPABILITIES
 IDENTITY_CONFIG_KEYS = ("projectId", "environment", "apiBaseUrl")
 
 
@@ -95,6 +98,26 @@ def load_project_binding(project_root: Path) -> dict[str, Any]:
     return {}
 
 
+def verification_capabilities(binding: dict[str, Any]) -> list[str]:
+    """Return smoke/verification targets without implying capability entitlement.
+
+    `capabilityProfile` was the original field name. It sounded authoritative to
+    consumers even though it only selected capabilities used by doctor/smoke. Read
+    it for compatibility, but all new writes use `verificationCapabilities`.
+    """
+    selected = binding.get("verificationCapabilities")
+    if not isinstance(selected, list) or not selected:
+        selected = binding.get("capabilityProfile")
+    if isinstance(selected, list) and selected:
+        return [str(item) for item in selected if str(item).strip()]
+    return list(DEFAULT_VERIFICATION_CAPABILITIES)
+
+
+def capability_profile(binding: dict[str, Any]) -> list[str]:
+    """Compatibility alias for clients that still import the old helper name."""
+    return verification_capabilities(binding)
+
+
 def legacy_identity_from_config(project_root: Path) -> dict[str, Any]:
     legacy = read_json(config_path(project_root))
     project_id = str(legacy.get("projectId") or "").strip()
@@ -106,20 +129,13 @@ def legacy_identity_from_config(project_root: Path) -> dict[str, Any]:
         "schemaVersion": PROJECT_SCHEMA_VERSION,
         "projectId": project_id,
         "environment": environment,
-        "capabilityProfile": list(legacy.get("capabilityProfile") or DEFAULT_CAPABILITY_PROFILE),
+        "verificationCapabilities": verification_capabilities(legacy),
     }
     if api_origin:
         payload["apiOrigin"] = api_origin
     if legacy.get("projectName"):
         payload["projectName"] = str(legacy["projectName"])
     return payload
-
-
-def capability_profile(binding: dict[str, Any]) -> list[str]:
-    profile = binding.get("capabilityProfile")
-    if isinstance(profile, list) and profile:
-        return [str(item) for item in profile if str(item).strip()]
-    return list(DEFAULT_CAPABILITY_PROFILE)
 
 
 def repair_workspace_identity(
@@ -176,7 +192,7 @@ def write_project_binding(project_root: Path, binding: dict[str, Any]) -> Path:
         "environment": str(binding.get("environment") or "development").strip() or "development",
         "apiOrigin": str(binding.get("apiOrigin") or binding.get("apiBaseUrl") or "https://api.hydracept.com").strip()
         or "https://api.hydracept.com",
-        "capabilityProfile": capability_profile(binding),
+        "verificationCapabilities": verification_capabilities(binding),
     }
     if binding.get("projectName"):
         payload["projectName"] = str(binding["projectName"])

@@ -55,6 +55,7 @@ class DoctorReport:
     identity: dict[str, Any] = field(default_factory=dict)
     project_binding: dict[str, Any] = field(default_factory=dict)
     mcp: dict[str, Any] | None = None
+    funding: dict[str, Any] | None = None
     project_root: Path | None = None
 
     @property
@@ -90,7 +91,10 @@ class DoctorReport:
         ws = self.workspace
         identity = self._section_status(("local.credential", "api.diagnostics_session"))
         workspace = self._section_status(("workspace.state", "local.config", "local.api_url"))
-        project = self._section_status(("api.session_context", "local.config_project"))
+        # Checkout binding is execution truth. Account home context is informational
+        # and must never replace the project section just because Studio remembers a
+        # different home project.
+        project = self._section_status(("local.config_project",))
         managed = self._section_status(("api.managed_trial",))
         byok = self._section_status(("api.image_generation", "api.diagnostics_providers"))
         mcp_status = "ready" if isinstance(self.mcp, dict) and self.mcp else "unknown"
@@ -174,6 +178,8 @@ class DoctorReport:
         }
         if self.mcp is not None:
             payload["mcp"] = self.mcp
+        if self.funding is not None:
+            payload["funding"] = self.funding
         if self.project_root is not None:
             try:
                 from hydracept.context import resolve_hydracept_context
@@ -238,19 +244,19 @@ def project_alignment_checks(
             DoctorCheck(
                 "local.config_project",
                 True,
-                f"project aligned ({checkout})",
+                f"execution project aligned to checkout ({checkout})",
                 fatal=False,
             )
         )
     if ctx.home_project_differs:
         checks.append(
             DoctorCheck(
-                "local.home_project",
+                "api.account_home_context",
                 True,
                 (
-                    "Checkout project is authoritative for project-scoped commands. "
-                    f"Session home project={home} differs from checkout={checkout}; "
-                    "no action required."
+                    "Account home context is informational. "
+                    f"home project={home} differs from checkout={checkout}; "
+                    "checkout binding remains authoritative for execution."
                 ),
                 fatal=False,
             )
@@ -442,6 +448,7 @@ def build_doctor_report(
     headers = auth_headers(resolved.token)
     local_config = read_json(config_path(project_root))
     local_secrets = read_json(secrets_path(project_root))
+    binding = load_project_binding(project_root)
 
     if local_config:
         report.add(
@@ -566,7 +573,7 @@ def build_doctor_report(
             if context_payload.get("needsOnboarding"):
                 report.add(
                     DoctorCheck(
-                        "api.session_context",
+                        "api.account_home_context",
                         False,
                         f"Account needs onboarding — complete {START_URL}",
                         next_action=f"Open {START_URL} then python -m hydracept doctor --fix",
@@ -574,18 +581,25 @@ def build_doctor_report(
                 )
             else:
                 org = (context_payload.get("organization") or {}).get("displayName")
-                project = (context_payload.get("project") or {}).get("displayName")
+                home_project = (context_payload.get("project") or {}).get("displayName")
+                checkout_name = str(
+                    binding.get("projectName") or resolved.project_id or ""
+                ).strip()
                 report.add(
                     DoctorCheck(
-                        "api.session_context",
+                        "api.account_home_context",
                         True,
-                        f"org={org!r} project={project!r}",
+                        (
+                            f"account home org={org!r} project={home_project!r}; "
+                            f"checkout project={checkout_name!r} is authoritative for project-scoped execution"
+                        ),
+                        fatal=False,
                     )
                 )
         else:
             report.add(
                 DoctorCheck(
-                    "api.session_context",
+                    "api.account_home_context",
                     False,
                     f"GET /v1/session/context returned {context_resp.status_code}",
                     fatal=False,
@@ -594,7 +608,7 @@ def build_doctor_report(
     except httpx.HTTPError as exc:
         report.add(
             DoctorCheck(
-                "api.session_context",
+                "api.account_home_context",
                 False,
                 f"GET /v1/session/context failed: {exc}",
                 fatal=False,
@@ -608,7 +622,6 @@ def build_doctor_report(
         "account": identity_block.get("account") or identity_block.get("displayName"),
         "authenticated": bool(identity_block.get("authenticated") or session_payload or resolved.token),
     }
-    binding = load_project_binding(project_root)
     bound_id = str(binding.get("projectId") or resolved.project_id or "").strip()
     resolution = str(binding.get("resolution") or "").strip()
     if bound_id:
@@ -628,6 +641,17 @@ def build_doctor_report(
             "source": source,
             "resolution": resolution or "existing_binding",
         }
+        report.add(
+            DoctorCheck(
+                "local.config_project",
+                True,
+                (
+                    f"execution project={binding.get('projectName') or bound_id!r} "
+                    f"({bound_id}) from {source}"
+                ),
+                fatal=False,
+            )
+        )
     else:
         report.project_binding = {
             "status": "action_required",
@@ -635,8 +659,7 @@ def build_doctor_report(
             "environment": resolved.environment or "development",
         }
 
-    # Session "current project" is Studio state, not this checkout. Skip when
-    # .hydracept/project.json already bound the workspace explicitly.
+    # Session "current project" is Studio/account-home state, not this checkout.
     if (
         not str(binding.get("projectId") or "").strip()
         and resolved.project_id
@@ -666,16 +689,36 @@ def build_doctor_report(
         if providers_resp.status_code == 200:
             providers_payload = providers_resp.json()
             ready = bool(providers_payload.get("imageGenerationReady"))
+            provider_ready = bool(
+                providers_payload.get("imageProviderReady", providers_payload.get("imageGenerationReady"))
+            )
             byok_bound = bool(providers_payload.get("byokBound"))
             trial_remaining = float(providers_payload.get("managedTrialRemaining") or 0.0)
+            customer_credit = float(providers_payload.get("managedCreditRemaining") or 0.0)
             smoke_available = bool(providers_payload.get("managedSmokeAvailable"))
+            execution_available = bool(providers_payload.get("managedExecutionFundingAvailable"))
+            funding_source = str(providers_payload.get("managedExecutionFundingSource") or "unknown")
+            coverage = str(providers_payload.get("managedExecutionCoverage") or "").strip()
             providers = providers_payload.get("generationProviders") or []
+            from hydracept.cli.funding import funding_payload_from_diagnostics
+
+            report.funding = funding_payload_from_diagnostics(
+                providers_payload if isinstance(providers_payload, dict) else {},
+                project_id=str(resolved.project_id or ""),
+                environment=str(resolved.environment or ""),
+            )
             detail = (
-                f"imageGenerationReady={ready} byokBound={byok_bound} "
+                f"imageGenerationReady={ready} imageProviderReady={provider_ready} "
+                f"byokBound={byok_bound} managedCreditRemaining={customer_credit:.2f} "
+                f"managedExecutionFundingAvailable={execution_available or smoke_available} "
+                f"managedExecutionFundingSource={funding_source!r} "
                 f"managedTrialRemaining={trial_remaining:.2f} providers={providers!r}"
             )
+            if coverage:
+                detail += f" — {coverage}"
+
             if smoke_capability in _IMAGE_SMOKE_CAPABILITIES:
-                if ready and (byok_bound or smoke_available or trial_remaining > 0):
+                if ready:
                     report.add(
                         DoctorCheck(
                             "api.image_generation",
@@ -683,36 +726,24 @@ def build_doctor_report(
                             detail,
                             bucket="providers",
                             fatal=False,
-                        )
-                    )
-                elif ready and not byok_bound and trial_remaining <= 0:
-                    report.add(
-                        DoctorCheck(
-                            "api.image_generation",
-                            False,
-                            detail + " — connect BYOK before image jobs",
-                            bucket="providers",
-                            next_action="Open /v1/onboarding/byok from activation",
-                        )
-                    )
-                elif not ready:
-                    report.add(
-                        DoctorCheck(
-                            "api.image_generation",
-                            False,
-                            detail,
-                            bucket="providers",
-                            next_action="Platform image providers unavailable — connect OpenAI BYOK or retry later",
                         )
                     )
                 else:
+                    access = (
+                        providers_payload.get("imageGenerationAccess")
+                        if isinstance(providers_payload.get("imageGenerationAccess"), dict)
+                        else {}
+                    )
+                    action = access.get("requiredAction") if isinstance(access.get("requiredAction"), dict) else {}
+                    next_action = str(action.get("url") or "").strip() or None
+                    reason = str(access.get("reason") or "not_runnable")
                     report.add(
                         DoctorCheck(
                             "api.image_generation",
-                            True,
-                            detail,
+                            False,
+                            detail + f" — workspace reason={reason}",
                             bucket="providers",
-                            fatal=False,
+                            next_action=next_action,
                         )
                     )
             else:
@@ -809,7 +840,7 @@ def build_doctor_report(
                     (
                         f"CLI {cli_version} is below the 0.3 public contract. "
                         "In this checkout, use the repo CLI (`python -m hydracept`). "
-                        "Outside it, `pip install -U hydracept` (0.3.12+ required for current init, receipts, and funding display)."
+                        "Outside it, `pip install -U hydracept` (0.3.15+ required for current init, receipts, funding display, and PowerShell --input-file)."
                     ),
                     fatal=False,
                     next_action="python -m hydracept --version",
@@ -945,12 +976,27 @@ def _finish(report: DoctorReport, console: Console, json_output: bool) -> int:
             console.print(f"Identity: {identity_label}")
         binding_status = str(binding.get("status") or "unknown").replace("_", " ")
         console.print(f"Project binding: {binding_status}")
+        if binding.get("displayName") or binding.get("projectId"):
+            console.print(
+                f"Execution project: {binding.get('displayName') or binding.get('projectId')} "
+                f"({binding.get('projectId') or 'unbound'})"
+            )
         if binding.get("source"):
             console.print(f"Project source: {binding.get('source')}")
         if binding.get("reason") and binding.get("status") != "ready":
             console.print(f"Reason: {binding.get('reason')}")
         if binding.get("environment"):
             console.print(f"Environment: {binding.get('environment')}")
+        funding = payload.get("funding") if isinstance(payload.get("funding"), dict) else {}
+        if funding:
+            console.print(
+                "Funding: customer credit="
+                f"{funding.get('managedCreditRemainingUsd')} "
+                f"executionFunding={funding.get('managedExecutionFundingAvailable')} "
+                f"source={funding.get('managedExecutionFundingSource')}"
+            )
+            if funding.get("managedExecutionCoverage"):
+                console.print(f"  {funding.get('managedExecutionCoverage')}")
         ws = payload.get("workspace") or {}
         console.print(
             f"workspace: state={ws.get('state')} ready={ws.get('ready')}"

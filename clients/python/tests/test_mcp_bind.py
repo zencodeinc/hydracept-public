@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from hydracept.cli.mcp_bind import bind_workspace_mcp, inspect_workspace_mcp, stdio_args, stdio_server_entry
+from hydracept.mcp.runtime_binding import attest_runtime_binding
 
 
 def test_stdio_args_always_include_workspace() -> None:
@@ -35,6 +36,8 @@ def test_bind_writes_cursor_and_claude_stdio(tmp_path: Path) -> None:
     assert result.bound
     assert result.transport == "stdio"
     assert result.reload_required
+    assert result.runtime is not None
+    assert result.runtime.status == "missing"
     cursor = json.loads((tmp_path / ".cursor" / "mcp.json").read_text(encoding="utf-8"))
     claude = json.loads((tmp_path / ".mcp.json").read_text(encoding="utf-8"))
     cursor_hydra = cursor["mcpServers"]["hydracept"]
@@ -80,15 +83,29 @@ def test_bind_replaces_hosted_and_preserves_other_servers(tmp_path: Path) -> Non
     assert "url" not in servers["hydracept"]
 
 
-def test_bind_is_idempotent(tmp_path: Path) -> None:
+def test_bind_requires_live_runtime_even_when_config_is_idempotent(tmp_path: Path) -> None:
     first = bind_workspace_mcp(tmp_path)
     second = bind_workspace_mcp(tmp_path)
     assert first.reload_required
-    assert not second.reload_required
+    assert second.reload_required
     assert first.generation == second.generation
     inspected = inspect_workspace_mcp(tmp_path)
     assert inspected.bound
-    assert not inspected.reload_required
+    assert inspected.reload_required
+    assert inspected.runtime is not None
+    assert inspected.runtime.status == "missing"
+
+    attest_runtime_binding(
+        tmp_path,
+        source="test",
+        env={"HYDRACEPT_MCP_GENERATION": first.generation},
+    )
+    live = inspect_workspace_mcp(tmp_path)
+    assert live.bound
+    assert not live.reload_required
+    assert live.runtime is not None
+    assert live.runtime.verified
+    assert live.runtime.status == "verified"
 
 
 def test_bind_bumps_generation_when_credential_identity_changes(tmp_path: Path) -> None:
@@ -96,10 +113,18 @@ def test_bind_bumps_generation_when_credential_identity_changes(tmp_path: Path) 
     secrets.parent.mkdir(parents=True)
     secrets.write_text('{"apiKey": "hapt_aaaa1111"}', encoding="utf-8")
     first = bind_workspace_mcp(tmp_path)
+    attest_runtime_binding(
+        tmp_path,
+        source="test",
+        env={"HYDRACEPT_MCP_GENERATION": first.generation},
+    )
+    assert not inspect_workspace_mcp(tmp_path).reload_required
     secrets.write_text('{"apiKey": "hapt_bbbb2222"}', encoding="utf-8")
     second = bind_workspace_mcp(tmp_path)
     assert second.reload_required
     assert first.generation != second.generation
+    assert second.runtime is not None
+    assert second.runtime.status == "generation_mismatch"
 
 
 def test_bind_skips_custom_host_hydracept_entry(tmp_path: Path, monkeypatch) -> None:

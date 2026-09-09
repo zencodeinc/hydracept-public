@@ -1,8 +1,8 @@
-"""Bind project MCP configs to stdio `hydracept mcp serve` (ADR-021).
+"""Bind project MCP configs to stdio ``hydracept mcp serve`` (ADR-021).
 
-Coding agents in a checkout authenticate via `.hydracept/secrets.json`.
-Hosted HTTP MCP is for clients with no project checkout. This module never
-copies API keys into plugin userConfig.
+Configuration on disk and a live MCP process are deliberately separate facts.
+A checkout is not reported reload-free until the running stdio server has
+attested the same workspace, customer project and binding generation.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from hydracept.mcp.runtime_binding import RuntimeBindingStatus, inspect_runtime_binding
 from hydracept.mcp.workspace_locator import is_user_home
 
 HOSTED_MCP_URL = "https://api.hydracept.com/mcp"
@@ -24,6 +25,8 @@ USE_HOSTED_WHEN = (
     "In a git repo, use stdio after `python -m hydracept init` — do not copy "
     "the workspace key into Plugins → Configure."
 )
+CURSOR_WORKSPACE_PLACEHOLDER = "${workspaceFolder}"
+PROJECT_SCOPE_APPS_SHADOW = "hydracept-project"
 
 
 @dataclass(frozen=True)
@@ -36,9 +39,10 @@ class McpBindResult:
     use_hosted_when: str = USE_HOSTED_WHEN
     written: tuple[str, ...] = ()
     generation: str = ""
+    runtime: RuntimeBindingStatus | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "bound": self.bound,
             "transport": self.transport,
             "projectConfig": list(self.project_config),
@@ -47,20 +51,38 @@ class McpBindResult:
             "useHostedWhen": self.use_hosted_when,
             "generation": self.generation,
         }
+        if self.runtime is not None:
+            payload.update(self.runtime.to_dict())
+        return payload
 
 
 def stdio_command() -> str:
-    """Prefer `python` on PATH so project mcp.json stays portable across machines."""
     if shutil.which("python"):
         return "python"
     return sys.executable
 
 
-CURSOR_WORKSPACE_PLACEHOLDER = "${workspaceFolder}"
+def _read_json(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _write_json(path: Path, payload: dict[str, Any]) -> bool:
+    text = json.dumps(payload, indent=2) + "\n"
+    if path.is_file() and path.read_text(encoding="utf-8") == text:
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return True
 
 
 def credential_fingerprint(project_root: Path | str | None) -> str:
-    """Non-secret binding identity. Never writes secret bytes into mcp.json."""
+    """Non-secret identity used only to invalidate an MCP binding generation."""
     if project_root is None:
         return "none"
     secrets = _read_json(Path(project_root) / ".hydracept" / "secrets.json")
@@ -96,10 +118,6 @@ def stdio_args(
 
 
 def cursor_host_mcp_targets() -> list[tuple[Path, str]]:
-    """Configs Cursor actually launches (plugin + user-global), not project bind files.
-
-    Skipped under pytest so unit tests do not rewrite the developer machine.
-    """
     if os.environ.get("PYTEST_CURRENT_TEST"):
         return []
     home = Path.home()
@@ -124,14 +142,14 @@ def stdio_server_entry(
         env["HYDRACEPT_WORKSPACE"] = CURSOR_WORKSPACE_PLACEHOLDER
     else:
         env["HYDRACEPT_WORKSPACE"] = str(Path(project_root).resolve())
-    entry: dict[str, Any] = {
-        "command": stdio_command(),
-        "args": args,
-        "env": env,
-    }
+    entry: dict[str, Any] = {"command": stdio_command(), "args": args, "env": env}
     if vscode:
         entry["type"] = "stdio"
     return entry
+
+
+def _root(project_root: Path | str) -> Path:
+    return Path(project_root).resolve()
 
 
 def _rel(project_root: Path, path: Path) -> str:
@@ -141,29 +159,8 @@ def _rel(project_root: Path, path: Path) -> str:
         return str(path)
 
 
-def _read_json(path: Path) -> dict[str, Any]:
-    if not path.is_file():
-        return {}
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return {}
-    return data if isinstance(data, dict) else {}
-
-
-def _write_json(path: Path, payload: dict[str, Any]) -> bool:
-    text = json.dumps(payload, indent=2) + "\n"
-    if path.is_file() and path.read_text(encoding="utf-8") == text:
-        return False
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
-    return True
-
-
 def _is_stdio_hydracept(entry: Any) -> bool:
-    if not isinstance(entry, dict):
-        return False
-    if str(entry.get("url") or "").strip():
+    if not isinstance(entry, dict) or str(entry.get("url") or "").strip():
         return False
     args = [str(part) for part in (entry.get("args") or [])]
     command = str(entry.get("command") or "")
@@ -174,9 +171,16 @@ def _is_stdio_hydracept(entry: Any) -> bool:
 def _is_hydracept_owned_entry(entry: Any) -> bool:
     if not isinstance(entry, dict):
         return False
-    if _is_stdio_hydracept(entry):
-        return True
-    return "api.hydracept.com/mcp" in str(entry.get("url") or "")
+    return _is_stdio_hydracept(entry) or "api.hydracept.com/mcp" in str(entry.get("url") or "")
+
+
+def _entry_generation(entry: Any) -> str:
+    if not isinstance(entry, dict):
+        return ""
+    env = entry.get("env")
+    if not isinstance(env, dict):
+        return ""
+    return str(env.get("HYDRACEPT_MCP_GENERATION") or "").strip()
 
 
 def _upsert_stdio(
@@ -207,61 +211,61 @@ def _merge_mcp_servers_file(
     payload = _read_json(path)
     existing = payload.get(servers_key)
     servers = dict(existing) if isinstance(existing, dict) else {}
-    updated = _upsert_stdio(
+    next_payload = dict(payload)
+    next_payload[servers_key] = _upsert_stdio(
         servers,
         vscode=vscode,
         project_root=project_root,
         cursor_placeholder=cursor_placeholder,
     )
-    next_payload = dict(payload)
-    next_payload[servers_key] = updated
     return _write_json(path, next_payload)
 
 
-def _root(project_root: Path | str) -> Path:
-    return Path(project_root).resolve()
+def _configured_binding(root: Path) -> tuple[list[str], set[str]]:
+    configs: list[str] = []
+    generations: set[str] = set()
+    candidates = (
+        (root / ".cursor" / "mcp.json", "mcpServers", ("hydracept", "hydracept-project")),
+        (root / ".mcp.json", "mcpServers", ("hydracept",)),
+        (root / ".vscode" / "mcp.json", "servers", ("hydracept",)),
+    )
+    for path, key, names in candidates:
+        if not path.is_file():
+            continue
+        servers = _read_json(path).get(key)
+        if not isinstance(servers, dict):
+            continue
+        entry = next((servers.get(name) for name in names if _is_stdio_hydracept(servers.get(name))), None)
+        if entry is None:
+            continue
+        configs.append(_rel(root, path))
+        generation = _entry_generation(entry)
+        if generation:
+            generations.add(generation)
+    return configs, generations
 
 
 def inspect_workspace_mcp(project_root: Path | str) -> McpBindResult:
-    """Report whether project MCP configs already point at stdio Hydracept."""
+    """Inspect configured state and separately attest the active runtime."""
     root = _root(project_root)
-    configs: list[str] = []
-    bound = False
-
-    cursor = root / ".cursor" / "mcp.json"
-    if cursor.is_file():
-        servers = (_read_json(cursor).get("mcpServers") or {})
-        if _is_stdio_hydracept(servers.get("hydracept") or servers.get("hydracept-project")):
-            configs.append(_rel(root, cursor))
-            bound = True
-
-    claude = root / ".mcp.json"
-    if claude.is_file():
-        servers = (_read_json(claude).get("mcpServers") or {})
-        if _is_stdio_hydracept(servers.get("hydracept")):
-            configs.append(_rel(root, claude))
-            bound = True
-
-    vscode = root / ".vscode" / "mcp.json"
-    if vscode.is_file():
-        servers = (_read_json(vscode).get("servers") or {})
-        if _is_stdio_hydracept(servers.get("hydracept")):
-            configs.append(_rel(root, vscode))
-            bound = True
-
+    configs, generations = _configured_binding(root)
+    runtime = inspect_runtime_binding(root, expected_generations=generations)
     return McpBindResult(
-        bound=bound,
+        bound=bool(configs),
         transport="stdio",
         project_config=tuple(configs),
-        reload_required=False,
+        reload_required=bool(configs) and not runtime.verified,
+        generation=next(iter(sorted(generations)), ""),
+        runtime=runtime,
     )
 
 
 def bind_workspace_mcp(project_root: Path | str) -> McpBindResult:
-    """Write/merge project MCP configs so `hydracept` is stdio. Idempotent."""
+    """Write MCP config, then require a matching live lease before reporting ready."""
     root = _root(project_root)
     written: list[str] = []
     configs: list[str] = []
+    generations: set[str] = set()
     home_root = is_user_home(root)
 
     targets: list[tuple[Path, str, bool, bool, bool]] = []
@@ -274,7 +278,6 @@ def bind_workspace_mcp(project_root: Path | str) -> McpBindResult:
         )
         if (root / ".vscode").is_dir():
             targets.append((root / ".vscode" / "mcp.json", "servers", True, True, False))
-
         plugin_targets: list[tuple[Path, str, bool, bool]] = [
             (root / ".cursor" / "plugins" / "hydracept" / "mcp.json", "mcpServers", False, True),
             (root / ".claude" / "plugins" / "hydracept" / ".mcp.json", "mcpServers", False, False),
@@ -294,7 +297,6 @@ def bind_workspace_mcp(project_root: Path | str) -> McpBindResult:
             continue
         targets.append((path, key, False, False, True))
 
-    generation = ""
     for path, key, vscode, always, cursor_placeholder in targets:
         if not always and not path.is_file() and not path.parent.is_dir():
             continue
@@ -309,19 +311,21 @@ def bind_workspace_mcp(project_root: Path | str) -> McpBindResult:
         configs.append(rel)
         if changed:
             written.append(rel)
-        if not generation:
-            payload = _read_json(path)
-            servers = payload.get(key) if isinstance(payload.get(key), dict) else {}
-            env = (servers.get("hydracept") or {}).get("env") if isinstance(servers.get("hydracept"), dict) else {}
-            generation = str((env or {}).get("HYDRACEPT_MCP_GENERATION") or "")
+        payload = _read_json(path)
+        servers = payload.get(key) if isinstance(payload.get(key), dict) else {}
+        generation = _entry_generation(servers.get("hydracept"))
+        if generation:
+            generations.add(generation)
 
+    runtime = inspect_runtime_binding(root, expected_generations=generations)
     return McpBindResult(
         bound=bool(configs),
         transport="stdio",
         project_config=tuple(configs),
-        reload_required=bool(written),
+        reload_required=bool(configs) and not runtime.verified,
         written=tuple(written),
-        generation=generation,
+        generation=next(iter(sorted(generations)), ""),
+        runtime=runtime,
     )
 
 
@@ -329,11 +333,7 @@ def user_apps_record_path() -> Path:
     return Path.home() / ".cursor" / "hydracept-user-apps.json"
 
 
-PROJECT_SCOPE_APPS_SHADOW = "hydracept-project"
-
-
 def user_apps_server_entry(project_root: Path | str) -> dict[str, Any]:
-    """User/plugin MCP entry: absolute workspace, this interpreter, checkout PYTHONPATH."""
     root = Path(project_root).resolve()
     entry = stdio_server_entry(project_root=root, cursor_placeholder=False)
     entry["command"] = sys.executable
@@ -371,7 +371,6 @@ def _write_hydracept_server(path: Path, key: str, entry: dict[str, Any]) -> bool
 
 
 def _sibling_primary_mcp(root: Path) -> Path | None:
-    """If root is a git worktree, Cursor may still have the primary checkout open."""
     for parent in [root, *root.parents]:
         if parent.name.endswith(".worktrees"):
             repo = parent.name[: -len(".worktrees")]
@@ -381,7 +380,6 @@ def _sibling_primary_mcp(root: Path) -> Path | None:
 
 
 def _shadow_project_hydracept(project_mcp: Path) -> bool:
-    """Rename project hydracept so Cursor can Apps-read the user-global server."""
     if not project_mcp.is_file():
         return False
     payload = _read_json(project_mcp)
@@ -413,7 +411,6 @@ def _restore_project_hydracept(project_mcp: Path) -> bool:
 
 
 def bind_user_apps_workaround(project_root: Path | str) -> dict[str, Any]:
-    """Explicit Cursor global MCP bind with an absolute workspace. Never called by init/doctor."""
     root = _root(project_root)
     entry = user_apps_server_entry(root)
     written: list[str] = []
@@ -423,9 +420,7 @@ def bind_user_apps_workaround(project_root: Path | str) -> dict[str, Any]:
     project_mcp = root / ".cursor" / "mcp.json"
     renamed_paths: list[str] = []
     for path in [project_mcp, _sibling_primary_mcp(root)]:
-        if path is None:
-            continue
-        if _shadow_project_hydracept(path):
+        if path is not None and _shadow_project_hydracept(path):
             renamed_paths.append(str(path))
     record = {
         "workspace": str(root.resolve()),
@@ -458,9 +453,7 @@ def remove_user_apps_workaround() -> dict[str, Any]:
             _write_json(user_mcp, payload)
             removed = True
     for path, key in _user_apps_config_targets():
-        if path == user_mcp:
-            continue
-        if not path.is_file():
+        if path == user_mcp or not path.is_file():
             continue
         plugin_payload = _read_json(path)
         plugin_servers = plugin_payload.get(key)

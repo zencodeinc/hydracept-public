@@ -5,7 +5,9 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
+
+from hydracept_contracts.input_constraints import FieldInputConstraint
 
 
 class CapabilityModality(StrEnum):
@@ -85,16 +87,57 @@ class CapabilityDescriptor(BaseModel):
     minimum_approval: MinimumApproval | None = Field(default=None, alias="minimumApproval")
     quote_ttl_seconds: int | None = Field(default=None, alias="quoteTtlSeconds")
     features: dict[str, Any] = Field(default_factory=dict)
+    input_media_types: list[str] = Field(default_factory=list, alias="inputMediaTypes")
     credential_sources: list[str] | None = Field(default=None, alias="credentialSources")
     default_credential_source: str | None = Field(default=None, alias="defaultCredentialSource")
+    family: str | None = None
+    category: str | None = None
+    constraints: dict[str, Any] | None = None
+    input_constraints: dict[str, FieldInputConstraint] = Field(
+        default_factory=dict,
+        alias="inputConstraints",
+    )
+    # Canonical natural-language discovery metadata. Runtime/readiness strings
+    # are deliberately excluded from intent ranking.
+    intent_examples: list[str] = Field(default_factory=list, alias="intentExamples")
+    task_tags: list[str] = Field(default_factory=list, alias="taskTags")
+    synonyms: list[str] = Field(default_factory=list)
 
     model_config = {"populate_by_name": True}
+
+
+def taxonomy_for_capability(key: str, modality: CapabilityModality) -> tuple[str, str]:
+    """Stable family/category so consumers do not reconstruct taxonomy from prefixes."""
+    normalized = str(key or "").strip().lower()
+    if normalized.startswith(("domain.", "dns.", "web.domain.")):
+        return "domain", "infrastructure"
+    if "translat" in normalized:
+        return "text", "translation"
+    if normalized.startswith("math.") or ".math." in normalized:
+        return "math", "analysis"
+    if normalized.startswith(("research.", "analysis.")):
+        return "research", "analysis"
+    if normalized.startswith(("convert.", "file.", "productivity.")):
+        return "productivity", "conversion"
+    by_modality = {
+        CapabilityModality.IMAGE: ("image", "generation"),
+        CapabilityModality.AUDIO: ("audio", "generation"),
+        CapabilityModality.VIDEO: ("video", "generation"),
+        CapabilityModality.MESH: ("geometry", "generation"),
+        CapabilityModality.TEXT: ("text", "generation"),
+        CapabilityModality.EMBEDDING: ("text", "analysis"),
+        CapabilityModality.MODERATION: ("text", "analysis"),
+        CapabilityModality.INFRASTRUCTURE: ("domain", "infrastructure"),
+    }
+    return by_modality.get(modality, ("productivity", "other"))
 
 
 class CapabilityListItem(BaseModel):
     key: str
     title: str
     modality: CapabilityModality
+    family: str | None = None
+    category: str | None = None
     execution_modes: list[CapabilityExecutionMode] = Field(alias="executionModes")
     descriptor_available: bool = Field(default=True, alias="descriptorAvailable")
 

@@ -65,13 +65,12 @@ AGENT_ACTIONS: tuple[AgentAction, ...] = (
     "none",
 )
 
-# Owns the human-facing interaction for each Hydracept execution state.
 STATE_OWNERS: dict[str, SurfaceId] = {
     "project_cannot_be_resolved": "project.connect",
     "provider_connection_required": "connection.resolve",
     "paid_execution_awaiting_visibility": "authorization.preflight",
     "job_queued_or_running": "job.progress",
-    "artifact_produced": "artifact.review",
+    "reviewable_artifact_produced": "artifact.review",
     "capability_input_needed": "capability.launch",
     "repository_change_requested": "change.promote",
 }
@@ -85,9 +84,9 @@ INTERACTION_SURFACES: dict[str, dict[str, Any]] = {
         "next": {"workspace_ready": "authorization.preflight"},
     },
     "capability.launch": {
-        "trigger": "capability_selected",
-        "blocking": True,
-        "agentAction": "present_and_yield",
+        "trigger": "capability_input_or_tuning_available",
+        "blocking": False,
+        "agentAction": "present",
         "owns": "capability_input_needed",
         "next": {"launch_submitted": "authorization.preflight"},
     },
@@ -110,13 +109,13 @@ INTERACTION_SURFACES: dict[str, dict[str, Any]] = {
         "blocking": False,
         "agentAction": "present",
         "owns": "job_queued_or_running",
-        "next": {"job_succeeded": "artifact.review"},
+        "next": {"visual_artifact_succeeded": "artifact.review"},
     },
     "artifact.review": {
-        "trigger": "reviewable_artifact_available",
+        "trigger": "reviewable_visual_artifact_available",
         "blocking": False,
         "agentAction": "present",
-        "owns": "artifact_produced",
+        "owns": "reviewable_artifact_produced",
         "next": {"promotion_requested": "change.promote"},
     },
     "change.promote": {
@@ -142,7 +141,6 @@ _RUNNING = frozenset({"queued", "submitted", "running", "processing", "canceling
 
 
 def surface_catalog(*, compact: bool = False) -> dict[str, Any]:
-    """Public agent-context projection of the seven-surface lifecycle."""
     if compact:
         return {
             "appUri": APP_URI,
@@ -193,15 +191,10 @@ def is_visual_media_type(media_type: str | None) -> bool:
 
 
 def surface_for_job_status(status: str | None, *, visual: bool = False) -> SurfaceId:
-    """Map a job status onto the App surface that owns it.
-
-    ``visual`` is reserved for callers that already classified the job. Succeeded
-    jobs own ``artifact.review`` for both visual artifacts and typed output.
-    """
-    _ = visual
+    """Return lifecycle ownership; presentation may still be explicitly no-op."""
     normalized = str(status or "").strip().lower()
     if normalized in _TERMINAL_SUCCESS:
-        return "artifact.review"
+        return "artifact.review" if visual else "job.progress"
     if normalized == "awaiting_approval":
         return "authorization.preflight"
     if normalized in _RUNNING or not normalized:
@@ -275,7 +268,6 @@ def presentation_contract(
     host_confirmation: str | None = None,
     requested: str | None = None,
 ) -> dict[str, Any]:
-    """Machine-readable presentation envelope. English text is supplemental only."""
     confirmation_required = None
     if authorization and "confirmationRequired" in authorization:
         confirmation_required = bool(authorization["confirmationRequired"])

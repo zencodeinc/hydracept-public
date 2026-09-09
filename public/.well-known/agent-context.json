@@ -187,8 +187,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -230,17 +229,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Low-latency general-purpose text generation.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -267,10 +263,8 @@
       },
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
@@ -320,7 +314,9 @@
             "type": "string"
           },
           "responseSchema": {
-            "type": "object"
+            "type": "object",
+            "description": "Optional JSON Schema for structured JSON output. Inline the schema object in the request body; this is not a file path.",
+            "additionalProperties": true
           }
         },
         "required": [
@@ -329,7 +325,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "text.general.fast.v1",
@@ -389,7 +384,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/text.general.fast.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "General fast text"
     },
     {
@@ -427,8 +422,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -470,17 +464,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Deeper reasoning for complex tasks.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -507,10 +498,8 @@
       },
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
@@ -560,7 +549,9 @@
             "type": "string"
           },
           "responseSchema": {
-            "type": "object"
+            "type": "object",
+            "description": "Optional JSON Schema for structured JSON output. Inline the schema object in the request body; this is not a file path.",
+            "additionalProperties": true
           }
         },
         "required": [
@@ -569,7 +560,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "text.reasoning.high.v1",
@@ -629,7 +619,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/text.reasoning.high.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "High reasoning text"
     },
     {
@@ -667,8 +657,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -710,17 +699,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Maximum-reasoning long-context text on GPT-6 Astra, including multi-document jobs.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -752,10 +738,8 @@
       },
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
@@ -805,7 +789,9 @@
             "type": "string"
           },
           "responseSchema": {
-            "type": "object"
+            "type": "object",
+            "description": "Optional JSON Schema for structured JSON output. Inline the schema object in the request body; this is not a file path.",
+            "additionalProperties": true
           }
         },
         "required": [
@@ -814,7 +800,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "text.reasoning.maximum.v1",
@@ -874,7 +859,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/text.reasoning.maximum.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "Maximum reasoning text"
     },
     {
@@ -906,8 +891,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -943,17 +927,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Extract structured data from documents.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -979,10 +960,8 @@
       },
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
@@ -1002,13 +981,17 @@
         "additionalProperties": false,
         "properties": {
           "document": {
-            "type": "string"
+            "type": "string",
+            "description": "Source document or text to extract fields from."
           },
           "instructions": {
-            "type": "string"
+            "type": "string",
+            "description": "Optional extra extraction instructions."
           },
           "schema": {
-            "type": "object"
+            "type": "object",
+            "description": "JSON Schema describing the extracted object. Inline this object in the request body; it is not a file path.",
+            "additionalProperties": true
           }
         },
         "required": [
@@ -1018,7 +1001,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "text.structured.extraction.v1",
@@ -1064,7 +1046,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/text.structured.extraction.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "Structured extraction"
     },
     {
@@ -1096,8 +1078,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -1133,17 +1114,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Generate JSON that conforms to a caller-supplied schema.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -1169,10 +1147,8 @@
       },
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
@@ -1222,7 +1198,9 @@
             "type": "string"
           },
           "responseSchema": {
-            "type": "object"
+            "type": "object",
+            "description": "Optional JSON Schema for structured JSON output. Inline the schema object in the request body; this is not a file path.",
+            "additionalProperties": true
           }
         },
         "required": [
@@ -1231,7 +1209,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "text.structured.generation.v1",
@@ -1277,7 +1254,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/text.structured.generation.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "Structured generation"
     },
     {
@@ -1309,8 +1286,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -1346,17 +1322,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Rank or score candidates as structured JSON.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -1382,10 +1355,8 @@
       },
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
@@ -1435,7 +1406,9 @@
             "type": "string"
           },
           "responseSchema": {
-            "type": "object"
+            "type": "object",
+            "description": "Optional JSON Schema for structured JSON output. Inline the schema object in the request body; this is not a file path.",
+            "additionalProperties": true
           }
         },
         "required": [
@@ -1444,7 +1417,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "text.structured.ranking.v1",
@@ -1490,7 +1462,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/text.structured.ranking.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "Structured ranking"
     },
     {
@@ -1522,8 +1494,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -1559,17 +1530,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Judge or score content as structured JSON.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -1595,10 +1563,8 @@
       },
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
@@ -1648,7 +1614,9 @@
             "type": "string"
           },
           "responseSchema": {
-            "type": "object"
+            "type": "object",
+            "description": "Optional JSON Schema for structured JSON output. Inline the schema object in the request body; this is not a file path.",
+            "additionalProperties": true
           }
         },
         "required": [
@@ -1657,7 +1625,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "text.structured.adjudication.v1",
@@ -1703,7 +1670,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/text.structured.adjudication.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "Structured adjudication"
     },
     {
@@ -1741,8 +1708,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -1784,17 +1750,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Long-form creative writing. Time-to-first-byte can exceed the public HTTP edge, so this capability is durable-job only.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -1819,10 +1782,8 @@
       },
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
@@ -1872,7 +1833,9 @@
             "type": "string"
           },
           "responseSchema": {
-            "type": "object"
+            "type": "object",
+            "description": "Optional JSON Schema for structured JSON output. Inline the schema object in the request body; this is not a file path.",
+            "additionalProperties": true
           }
         },
         "required": [
@@ -1881,7 +1844,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "text.creative.longform.v1",
@@ -1941,7 +1903,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/text.creative.longform.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "Creative longform text"
     },
     {
@@ -1979,8 +1941,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -2037,16 +1998,14 @@
           "derivedCellSize": "sheetWidth/columns \u00d7 sheetHeight/rows"
         }
       },
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Generate images from text prompts.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": true
       },
       "executionModes": [
@@ -2056,22 +2015,18 @@
       "features": {},
       "funding": {
         "eligible": true,
-        "fundingOptions": null,
         "mode": "managed_trial",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
         "prompt": {
           "byModel": {
             "gpt-image-1": {
-              "max": 32000,
-              "overflow": null
+              "max": 32000
             },
             "gpt-image-2": {
-              "max": 32000,
-              "overflow": null
+              "max": 32000
             }
           },
           "max": 32000,
@@ -2246,7 +2201,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "image.generate.v1",
@@ -2314,7 +2268,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/image.generate.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "Image generation"
     },
     {
@@ -2352,8 +2306,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -2410,16 +2363,14 @@
           "derivedCellSize": "sheetWidth/columns \u00d7 sheetHeight/rows"
         }
       },
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "In-place edit of a source PNG via the provider images.edit API. sourceImage is the canvas (image[0]); referenceImages are insert graphics (later image entries); optional mask uses alpha 0 as the editable region so unmasked pixels are preserved by the provider. Not a generate-from-brief alias.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": true
       },
       "executionModes": [
@@ -2435,22 +2386,18 @@
       },
       "funding": {
         "eligible": true,
-        "fundingOptions": null,
         "mode": "managed_trial",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
         "prompt": {
           "byModel": {
             "gpt-image-1": {
-              "max": 32000,
-              "overflow": null
+              "max": 32000
             },
             "gpt-image-2": {
-              "max": 32000,
-              "overflow": null
+              "max": 32000
             }
           },
           "max": 32000,
@@ -2573,7 +2520,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "image.edit.v1",
@@ -2641,7 +2587,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/image.edit.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "Image editing"
     },
     {
@@ -2673,8 +2619,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -2710,17 +2655,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Generate short videos from text and optional reference images.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -2744,10 +2686,8 @@
       },
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
@@ -2810,7 +2750,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "video.generate.v1",
@@ -2866,7 +2805,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/video.generate.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "Video generation"
     },
     {
@@ -2898,8 +2837,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -2935,17 +2873,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Generate sound effects. Output is Ogg (`audio/ogg`) with a `.ogg` filename, not WAV.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": true
       },
       "executionModes": [
@@ -2955,10 +2890,8 @@
       "features": {},
       "funding": {
         "eligible": true,
-        "fundingOptions": null,
         "mode": "managed_trial",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
@@ -3017,7 +2950,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "audio.sfx.generate.v1",
@@ -3082,7 +3014,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/audio.sfx.generate.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "Sound effect generation"
     },
     {
@@ -3114,8 +3046,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -3151,17 +3082,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Text-to-speech.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -3171,26 +3099,21 @@
       "features": {},
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
         "text": {
           "byModel": {
             "eleven_flash_v2_5": {
-              "max": 40000,
-              "overflow": null
+              "max": 40000
             },
             "eleven_multilingual_v2": {
-              "max": 10000,
-              "overflow": null
+              "max": 10000
             },
             "eleven_turbo_v2_5": {
-              "max": 40000,
-              "overflow": null
+              "max": 40000
             }
           },
           "max": 10000,
@@ -3279,7 +3202,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "audio.voice.generate.v1",
@@ -3346,7 +3268,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/audio.voice.generate.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "Voice / TTS generation"
     },
     {
@@ -3378,8 +3300,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -3415,17 +3336,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Generate music.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -3435,18 +3353,15 @@
       "features": {},
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
         "prompt": {
           "byModel": {
             "music_v1": {
-              "max": 4100,
-              "overflow": null
+              "max": 4100
             }
           },
           "max": 4100,
@@ -3495,7 +3410,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "audio.music.generate.v1",
@@ -3560,7 +3474,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/audio.music.generate.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "Music generation"
     },
     {
@@ -3592,8 +3506,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -3629,17 +3542,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Generate a GLB mesh from 1\u20134 reference view images.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -3649,10 +3559,8 @@
       "features": {},
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
@@ -3757,7 +3665,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "model.generate.3d.v1",
@@ -3822,7 +3729,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/model.generate.3d.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "3D mesh generation"
     },
     {
@@ -3854,8 +3761,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -3891,17 +3797,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Turn a concept image into turnaround views and a GLB mesh (image-to-mesh pipeline).",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -3911,10 +3814,8 @@
       "features": {},
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {
@@ -3933,12 +3834,10 @@
         "resolvedPrompt": {
           "byModel": {
             "gpt-image-1": {
-              "max": 32000,
-              "overflow": null
+              "max": 32000
             },
             "gpt-image-2": {
-              "max": 32000,
-              "overflow": null
+              "max": 32000
             }
           },
           "max": 32000,
@@ -4032,7 +3931,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "model.generate.3d.from-image.v1",
@@ -4097,39 +3995,22 @@
         },
         "quoteEndpoint": "/v1/capabilities/model.generate.3d.from-image.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "3D mesh from single image"
     },
     {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
       "category": "infrastructure",
-      "constraints": null,
       "credentialSources": [
-        "managed",
+        "platform",
         "customer"
       ],
-      "defaultCredentialSource": "managed",
+      "defaultCredentialSource": "platform",
       "description": "Look up domain availability and first-year/renewal pricing only. This cannot register a domain, create DNS records, or put a site live. Registration and DNS are separate registrar capabilities after lookup succeeds.",
       "estimateAvailable": false,
       "execution": {
         "estimateAvailable": false,
-        "managedAvailable": false,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": true,
         "trialEligible": false
       },
       "executionModes": [
@@ -4139,22 +4020,15 @@
       "features": {
         "purchaseRequiresHumanApproval": false
       },
-      "funding": {
-        "eligible": false,
-        "fundingOptions": null,
-        "mode": "byok",
-        "remainingMicros": null,
-        "status": "ready"
-      },
       "idempotencyRequired": false,
       "inputConstraints": {},
       "inputMediaTypes": [],
       "inputSchema": {
         "properties": {
           "credentialSource": {
-            "default": "managed",
+            "default": "platform",
             "enum": [
-              "managed",
+              "platform",
               "customer"
             ],
             "type": "string"
@@ -4170,7 +4044,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "domain.search.v1",
@@ -4218,39 +4091,22 @@
           "supported": false
         }
       },
-      "readySummary": "BYOK required",
+      "readySummary": "Execution available",
       "title": "Domain search"
     },
     {
-      "billingModes": {
-        "byok": {
-          "available": false,
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": false,
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": null
-        }
-      },
       "category": "infrastructure",
-      "constraints": null,
       "credentialSources": [
-        "managed",
+        "platform",
         "customer"
       ],
-      "defaultCredentialSource": "managed",
+      "defaultCredentialSource": "platform",
       "description": "List default registration, renewal, and transfer prices by TLD.",
       "estimateAvailable": false,
       "execution": {
         "estimateAvailable": false,
-        "managedAvailable": false,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": true,
         "trialEligible": false
       },
       "executionModes": [
@@ -4258,22 +4114,15 @@
       ],
       "family": "domain",
       "features": {},
-      "funding": {
-        "eligible": false,
-        "fundingOptions": null,
-        "mode": "byok",
-        "remainingMicros": null,
-        "status": "ready"
-      },
       "idempotencyRequired": false,
       "inputConstraints": {},
       "inputMediaTypes": [],
       "inputSchema": {
         "properties": {
           "credentialSource": {
-            "default": "managed",
+            "default": "platform",
             "enum": [
-              "managed",
+              "platform",
               "customer"
             ],
             "type": "string"
@@ -4288,7 +4137,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "domain.pricing.v1",
@@ -4307,58 +4155,17 @@
           "supported": false
         }
       },
-      "readySummary": "BYOK required",
+      "readySummary": "Execution available",
       "title": "Domain TLD pricing"
     },
     {
-      "billingModes": {
-        "byok": {
-          "available": true,
-          "pricing": {
-            "authoritativeForExecution": false,
-            "billingCurrency": "USD",
-            "display": "Hydracept charge: Free. Provider charges your connected account separately.",
-            "estimateRequired": false,
-            "examples": [],
-            "mode": "free",
-            "pricingContext": "catalog_default",
-            "pricingFactors": [],
-            "pricingVersion": "price_2026_08_1"
-          },
-          "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
-        },
-        "managed": {
-          "available": true,
-          "pricing": {
-            "authoritativeForExecution": false,
-            "billingCurrency": "USD",
-            "display": "Free",
-            "estimateRequired": false,
-            "examples": [],
-            "mode": "free",
-            "pricingContext": "catalog_default",
-            "pricingFactors": [],
-            "pricingVersion": "price_2026_08_1"
-          },
-          "providerChargesExternal": false,
-          "providerChargesIncluded": true,
-          "serviceFeeBps": 600
-        }
-      },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Turn an immutable GLB into an immediately inspectable model-review sheet and deterministic 2D references. The default review bundle shows a three-quarter hero view plus front, right, back, and left orientation views. Authored base colors are retained and embedded base-color textures are sampled when supported. It is a fast review/reference renderer, not a full PBR or animation renderer.",
       "estimateAvailable": false,
       "execution": {
         "estimateAvailable": false,
-        "managedAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -4387,13 +4194,6 @@
         ],
         "staticGeometryReference": true,
         "technicalQa": true
-      },
-      "funding": {
-        "eligible": false,
-        "fundingOptions": null,
-        "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
       },
       "idempotencyRequired": true,
       "inputConstraints": {},
@@ -4491,7 +4291,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "3d.render_reference.v1",
@@ -4554,7 +4353,7 @@
           "supported": false
         }
       },
-      "readySummary": "Ready now \u00b7 managed execution",
+      "readySummary": "Execution available",
       "title": "Review a 3D model"
     },
     {
@@ -4586,8 +4385,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -4623,17 +4421,14 @@
         }
       },
       "category": "generation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Read attached image pixels and return structured JSON.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -4666,10 +4461,8 @@
       },
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {},
@@ -4779,7 +4572,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "text.vision.structured.v1",
@@ -4833,7 +4625,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/text.vision.structured.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "Structured vision text"
     },
     {
@@ -4871,8 +4663,7 @@
             "pricingVersion": "price_2026_08_1"
           },
           "providerChargesExternal": true,
-          "providerChargesIncluded": false,
-          "serviceFeeBps": null
+          "providerChargesIncluded": false
         },
         "managed": {
           "available": true,
@@ -4914,17 +4705,14 @@
         }
       },
       "category": "translation",
-      "constraints": null,
-      "credentialSources": null,
-      "defaultCredentialSource": null,
       "description": "Translate one or more strings with optional context, glossary mappings, explicit placeholders, and preserved terms. This is a stateless translation primitive; localization memory, approvals, corpus refinement, readiness, and export remain caller-owned workflows.",
       "estimateAvailable": true,
       "execution": {
         "estimateAvailable": true,
-        "managedAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
         "oneShot": true,
         "projectLocalRequired": false,
-        "providerSetupRequired": false,
         "trialEligible": false
       },
       "executionModes": [
@@ -4957,10 +4745,8 @@
       },
       "funding": {
         "eligible": false,
-        "fundingOptions": null,
         "mode": "managed",
-        "remainingMicros": null,
-        "status": "ready"
+        "status": "catalog_available"
       },
       "idempotencyRequired": true,
       "inputConstraints": {},
@@ -5063,7 +4849,6 @@
         "type": "object"
       },
       "interaction": {
-        "reason": null,
         "typicallyRequired": false
       },
       "key": "text.translate.v1",
@@ -5140,7 +4925,7 @@
         },
         "quoteEndpoint": "/v1/capabilities/text.translate.v1/quote"
       },
-      "readySummary": "Ready now \u00b7 managed execution \u00b7 quote available",
+      "readySummary": "Managed inference available \u00b7 quote available",
       "title": "Translation"
     }
   ],
@@ -5185,7 +4970,6 @@
       "bootstrap-session.json"
     ]
   },
-  "contentHash": "94a343a10049a4a43dcfb5af43c0d42645458e27fe0bbab2b58e938bcfcd70bf",
   "credentialSafety": {
     "browserAlternative": "Open interaction_required.action.url; then run python -m hydracept init --apply --yes --json --wait",
     "multiAccountHint": "If the user has multiple GitHub or Google accounts, tell them to pick the correct account on the connect page (Use a different account if needed).",
@@ -6020,5 +5804,6 @@
       "authenticated",
       "ready"
     ]
-  }
+  },
+  "contentHash": "332cb1a466b6a57099a6e9e8b0819ba8b87d10d1dfb19016f4b443e0970e6fce"
 }

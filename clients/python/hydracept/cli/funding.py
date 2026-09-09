@@ -30,17 +30,98 @@ def connections_url(api_url: str, project_id: str, environment: str) -> str:
 
 
 def _managed_credit_from_diagnostics(body: dict[str, Any]) -> tuple[float | None, str]:
-    """Read aggregate managed credit without presenting it as the trial grant.
-
-    New servers expose ``managedCreditRemaining``. Older servers exposed the same
-    aggregate ledger balance under ``managedTrialRemaining``; retain that fallback
-    but mark its provenance so agents cannot infer that it is the original grant.
-    """
+    """Read customer-visible managed credit with a marked legacy fallback."""
     if body.get("managedCreditRemaining") is not None:
         return float(body["managedCreditRemaining"]), "managedCreditRemaining"
     if body.get("managedTrialRemaining") is not None:
         return float(body["managedTrialRemaining"]), "managedTrialRemaining_legacy_alias"
     return None, "unavailable"
+
+
+def _trial_credit_from_diagnostics(body: dict[str, Any]) -> float | None:
+    value = body.get("managedTrialRemaining")
+    if value is None:
+        return None
+    return float(value)
+
+
+def _coverage_kind(source: str, available: bool | None) -> str:
+    if not available:
+        return "unavailable"
+    return {
+        "internal": "covered_by_hydracept",
+        "managed_trial": "covered_by_trial",
+        "wallet": "uses_customer_managed_credit",
+        "unknown": "funded_source_sealed_at_admission",
+    }.get(source, "managed_funding_available")
+
+
+def funding_payload_from_diagnostics(
+    body: dict[str, Any],
+    *,
+    project_id: str,
+    environment: str,
+) -> dict[str, Any]:
+    """Project diagnostics into the public funding.v1 contract.
+
+    Customer-visible managed credit, trial bucket, and execution-available
+    funding are separate facts. Operator grants may fund execution without
+    becoming a fake customer wallet or trial balance.
+    """
+    remaining, remaining_source = _managed_credit_from_diagnostics(body)
+    remaining_semantics = str(
+        body.get("managedCreditSemantics") or "aggregate_available_credit_legacy"
+    )
+    trial_remaining = _trial_credit_from_diagnostics(body)
+    execution_funding_available: bool | None = None
+    if body.get("managedExecutionFundingAvailable") is not None:
+        execution_funding_available = bool(body.get("managedExecutionFundingAvailable"))
+    sources = body.get("managedExecutionFundingSources")
+    execution_funding_sources = (
+        [str(source) for source in sources if str(source)] if isinstance(sources, list) else []
+    )
+    execution_funding_source = str(
+        body.get("managedExecutionFundingSource")
+        or ("unknown" if execution_funding_available else "unavailable")
+    )
+    execution_coverage = str(body.get("managedExecutionCoverage") or "")
+    operator_funding_present = bool(body.get("managedOperatorFundingPresent"))
+    byok = bool(body.get("byokBound"))
+    if execution_funding_available is None and remaining is not None:
+        execution_funding_available = remaining > 0
+        execution_funding_source = "unknown" if execution_funding_available else "unavailable"
+
+    if byok:
+        next_action = None
+    elif execution_funding_available:
+        next_action = "python -m hydracept smoke"
+    else:
+        next_action = "python -m hydracept funding setup"
+
+    return {
+        "schemaVersion": "hydracept.funding.v1",
+        "options": ["managed_credit", "byok"],
+        "managedWalletTopUpLive": False,
+        "managedCreditRemainingUsd": remaining,
+        "managedCreditSemantics": remaining_semantics,
+        "managedCreditSource": remaining_source,
+        "managedExecutionFundingAvailable": execution_funding_available,
+        "managedExecutionFundingSources": execution_funding_sources,
+        "managedExecutionFundingSource": execution_funding_source,
+        "managedExecutionCoverage": execution_coverage or None,
+        "managedChargeExpectation": _coverage_kind(
+            execution_funding_source,
+            execution_funding_available,
+        ),
+        "managedOperatorFundingPresent": operator_funding_present,
+        "trialRemainingUsd": trial_remaining,
+        "trialRemainingSemantics": "active_trial_bucket_only",
+        "byokConnected": byok,
+        "setupCli": "python -m hydracept funding setup",
+        "nextAction": next_action,
+        "projectId": project_id,
+        "environment": environment,
+    }
 
 
 def funding_status(
@@ -49,9 +130,7 @@ def funding_status(
     overrides: CliOverrides | None = None,
 ) -> dict[str, Any]:
     workspace = require_ready_workspace(project_root, overrides=overrides)
-    remaining: float | None = None
-    remaining_source = "unavailable"
-    byok = False
+    body: dict[str, Any] = {}
     with httpx.Client(timeout=20.0) as client:
         try:
             resp = client.get(
@@ -60,27 +139,15 @@ def funding_status(
             )
             if resp.status_code == 200:
                 raw = resp.json()
-                body = raw if isinstance(raw, dict) else {}
-                remaining, remaining_source = _managed_credit_from_diagnostics(body)
-                byok = bool(body.get("byokBound"))
+                if isinstance(raw, dict):
+                    body = raw
         except (httpx.HTTPError, TypeError, ValueError):
             pass
-    return {
-        "schemaVersion": "hydracept.funding.v1",
-        "options": ["managed_credit", "byok"],
-        "managedWalletTopUpLive": False,
-        "managedCreditRemainingUsd": remaining,
-        "managedCreditSemantics": "aggregate_available_credit",
-        "managedCreditSource": remaining_source,
-        # Compatibility only. This value is aggregate available managed credit,
-        # not proof of the original trial grant amount.
-        "trialRemainingUsd": remaining,
-        "trialRemainingUsdDeprecated": True,
-        "byokConnected": byok,
-        "setupCli": "python -m hydracept funding setup",
-        "projectId": workspace.project_id,
-        "environment": workspace.environment,
-    }
+    return funding_payload_from_diagnostics(
+        body,
+        project_id=str(workspace.project_id or ""),
+        environment=str(workspace.environment or ""),
+    )
 
 
 def funding_setup(

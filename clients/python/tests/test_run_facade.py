@@ -179,3 +179,17 @@ def test_materialize_does_not_write_on_sha_mismatch(tmp_path: Path) -> None:
     assert result.artifacts[0].local_path is None
     assert result.artifacts[0].verified is False
 
+
+def test_parse_input_argument_reads_structured_json_file(tmp_path: Path) -> None:
+    from hydracept.cli.run_facade import parse_input_argument
+
+    path = tmp_path / "extract.json"
+    path.write_text(
+        '{"document": "invoice 42", "schema": {"type": "object", "properties": {"id": {"type": "string"}}}}',
+        encoding="utf-8",
+    )
+    payload = parse_input_argument(None, path)
+    assert payload["document"] == "invoice 42"
+    assert payload["schema"]["properties"]["id"]["type"] == "string"
+    assert parse_input_argument('{"prompt": "x"}', None) == {"prompt": "x"}
+

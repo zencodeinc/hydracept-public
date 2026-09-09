@@ -1,0 +1,68 @@
+{
+  "name": "@hydracept/sdk",
+  "version": "0.3.5",
+  "description": "TypeScript client for Hydracept — production-ready game assets, with a receipt for every run.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "hydracept",
+    "game",
+    "gamedev",
+    "unity",
+    "unreal",
+    "ai",
+    "llm",
+    "mcp",
+    "image-generation",
+    "sprite-sheet",
+    "transparent-png",
+    "reference-image",
+    "multi-provider",
+    "audio",
+    "byok",
+    "api",
+    "sdk",
+    "game-ai",
+    "unity-ai",
+    "ai-integration"
+  ],
+  "license": "MIT",
+  "homepage": "https://hydracept.com",
+  "bugs": {
+    "url": "https://github.com/zencodeinc/hydracept-public/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zencodeinc/hydracept-public.git",
+    "directory": "clients/typescript"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": false
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
+}

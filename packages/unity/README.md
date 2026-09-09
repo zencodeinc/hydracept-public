@@ -1,4 +1,4 @@
-﻿# Hydracept for Unity
+# Hydracept for Unity
 
 Editor-only integration for generating and importing Hydracept production assets.
 

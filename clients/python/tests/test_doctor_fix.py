@@ -59,5 +59,9 @@ def test_fix_idempotent_after_bind(tmp_path: Path) -> None:
     bind_workspace_mcp(tmp_path)
     first = apply_doctor_fix(tmp_path)
     second = apply_doctor_fix(tmp_path)
-    assert not second.reload_required
     assert first.spent is False
+    assert second.spent is False
+    assert second.repaired == []
+    # Disk bind is idempotent; reload stays required until a live stdio lease attests.
+    assert second.reload_required
+    assert second.human_action_required == "reload_cursor"

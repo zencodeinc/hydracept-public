@@ -18,12 +18,18 @@ verification:
 discovery:
   - List capabilities: GET /v1/capabilities
   - Describe capability: GET /v1/capabilities/{key}
+  - Treat inputConstraints on the descriptor as the overflow contract. Hydracept never silently truncates semantic user input.
   - Resolve missing capability: POST /v1/capabilities/resolve (side-effect free; never spends)
   - Retail quote: POST /v1/capabilities/{key}/quote (optional preview; never reserves or charges). /estimate is the HTTP alias of the same 0.3 response.
   - Anonymous catalog prices: pricingContext catalog_default, authoritativeForExecution false
   - Authenticated quotes: account billing currency, authoritativeForExecution true
   - Agent context bundle: GET /v1/agent-context
   - Capability request: POST /v1/capability-requests (non-binding; humans pay quotes)
+input_overflow:
+  - Reject semantic prompt overflow before quote, reservation, or provider submission (HTTP 422 PromptTooLong).
+  - Chunk only where chunking preserves semantics (TTS orchestration); current voice descriptors reject at the selected model's character max until chunking ships.
+  - Prune only fields marked disposable context. Do not prune instructions, user prompts, or structured inputs.
+  - Limits may be model-specific (inputConstraints.<field>.byModel). JSON Schema maxLength is the coarse ceiling.
 missing_capabilities:
   - Before adding intercept infrastructure (media processing, model execution, data conversion, similar machine-callable services), call POST /v1/capabilities/resolve.
   - If resolution is no_match_requestable, you may create a non-binding capability request. Requesting a quote does not spend money.

@@ -6,7 +6,7 @@ Python client for the Hydracept public API — an execution control plane for so
 pip install hydracept
 ```
 
-The current PyPI cut is **0.3.12**. Receipts do not invent BYOK or managed trial when funding evidence is missing. Domain and CPU capabilities omit inference `billingModes`.
+The current PyPI cut is **0.3.15**. `hydracept run --input-file` accepts structured JSON on Windows/PowerShell, including UTF-8 BOM and UTF-16 files. Funding status reports customer-visible managed credit separately from trial and operator execution funding. Receipts do not invent BYOK or managed trial when funding evidence is missing. Domain and CPU capabilities omit inference `billingModes`.
 
 ```bash
 python -m hydracept init

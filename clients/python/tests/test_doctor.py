@@ -68,10 +68,12 @@ def test_project_alignment_home_mismatch_is_informational() -> None:
     )
     names = {check.name: check for check in checks}
     assert names["local.config_project"].passed is True
-    assert names["local.home_project"].passed is True
-    assert names["local.home_project"].fatal is False
-    assert "Checkout project is authoritative" in names["local.home_project"].detail
-    assert "no action required" in names["local.home_project"].detail
+    assert names["local.config_project"].fatal is False
+    assert names["api.account_home_context"].passed is True
+    assert names["api.account_home_context"].fatal is False
+    assert "informational" in names["api.account_home_context"].detail
+    assert "checkout binding remains authoritative" in names["api.account_home_context"].detail
+    assert "local.home_project" not in names
     report = DoctorReport()
     for check in checks:
         report.add(check)
@@ -79,6 +81,7 @@ def test_project_alignment_home_mismatch_is_informational() -> None:
     payload = report.to_json_dict()
     assert payload["failedChecks"] == []
     assert payload["warnings"] == []
+    assert payload["sections"]["project"]["status"] == "ready"
 
 
 def test_project_alignment_token_mismatch_is_fatal() -> None:
@@ -89,6 +92,7 @@ def test_project_alignment_token_mismatch_is_fatal() -> None:
     )
     assert checks[0].passed is False
     assert checks[0].fatal is True
+    assert checks[0].name == "local.config_project"
     report = DoctorReport()
     report.add(checks[0])
     assert not report.passed
@@ -102,8 +106,9 @@ def test_project_alignment_home_echoed_as_token_is_informational() -> None:
     )
     names = {check.name: check for check in checks}
     assert names["local.config_project"].passed is True
-    assert names["local.home_project"].passed is True
-    assert names["local.home_project"].fatal is False
+    assert names["api.account_home_context"].passed is True
+    assert names["api.account_home_context"].fatal is False
+    assert "local.home_project" not in names
     report = DoctorReport()
     for check in checks:
         report.add(check)
@@ -111,6 +116,7 @@ def test_project_alignment_home_echoed_as_token_is_informational() -> None:
     payload = report.to_json_dict()
     assert payload["failedChecks"] == []
     assert payload["warnings"] == []
+    assert payload["sections"]["project"]["status"] == "ready"
 
 
 def test_project_alignment_matching_home_checkout_is_not_fatal() -> None:
@@ -121,6 +127,7 @@ def test_project_alignment_matching_home_checkout_is_not_fatal() -> None:
     )
     names = {check.name: check for check in checks}
     assert names["local.config_project"].passed is True
+    assert "api.account_home_context" not in names
     report = DoctorReport()
     for check in checks:
         report.add(check)

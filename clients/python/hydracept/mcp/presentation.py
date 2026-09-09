@@ -32,6 +32,8 @@ __all__ = [
     "smoke_presentation",
 ]
 
+_TERMINAL_SUCCESS = frozenset({"succeeded", "completed"})
+
 
 def _new_surface_session_id(existing: str | None = None) -> str:
     value = str(existing or "").strip()
@@ -57,9 +59,7 @@ def presentation_for_host(
     ctx = dict(context or {})
     session_id = _new_surface_session_id(str(ctx.get("surfaceSessionId") or "") or None)
     nxt = None
-    if surface == "job.progress":
-        nxt = next_presentation(surface, "job_succeeded")
-    elif surface == "authorization.preflight":
+    if surface == "authorization.preflight":
         nxt = next_presentation(surface, "authorization_accepted")
     elif surface == "project.connect":
         nxt = next_presentation(surface, "workspace_ready")
@@ -147,8 +147,10 @@ def job_presentation(
     *,
     apps_supported: bool | None = None,
 ) -> dict[str, Any]:
+    """Present active work and visual review; typed terminal output is a no-op."""
     job = payload.get("job") if isinstance(payload.get("job"), Mapping) else payload
     status = str(payload.get("status") or payload.get("state") or job.get("status") or "")
+    normalized_status = status.strip().lower()
     capability_key = str(
         payload.get("capabilityKey")
         or job.get("capabilityKey")
@@ -169,6 +171,7 @@ def job_presentation(
         str(media_type or payload.get("mediaType") or "")
     )
     surface = surface_for_job_status(status, visual=visual)
+
     context: dict[str, Any] = {
         "jobId": str(payload.get("jobId") or job.get("jobId") or job.get("id") or ""),
         "projectId": str(payload.get("projectId") or job.get("projectId") or ""),
@@ -179,9 +182,18 @@ def job_presentation(
         context["artifactId"] = artifact_id
     if media_type:
         context["mediaType"] = str(media_type)
-    preferred = True
-    if surface == "artifact.review":
-        preferred = visual or bool(artifacts)
+
+    if normalized_status in _TERMINAL_SUCCESS and not visual:
+        return presentation_contract(
+            surface="job.progress",
+            status="unsupported",
+            preferred=False,
+            blocking=False,
+            agent_action="none",
+            reason="typed_result_requires_no_review_surface",
+            context=context,
+        )
+
     confirmation_required = True if surface == "authorization.preflight" else None
     status_name: PresentationStatus
     if apps_supported is True:
@@ -193,13 +205,15 @@ def job_presentation(
     return presentation_contract(
         surface=surface,
         status=status_name,
-        preferred=preferred,
+        preferred=True,
         blocking=default_blocking(surface, confirmation_required=confirmation_required),
         agent_action=default_agent_action(surface, confirmation_required=confirmation_required),
         context=context,
-        next_presentation_meta=next_presentation("job.progress", "job_succeeded")
-        if surface == "job.progress"
-        else None,
+        next_presentation_meta=(
+            next_presentation("job.progress", "visual_artifact_succeeded")
+            if surface == "job.progress" and visual
+            else None
+        ),
         reason=None if apps_supported is not False else "host_does_not_support_apps",
         fallback={"kind": "structured_contract"} if apps_supported is False else None,
         host_confirmation="unobserved" if apps_supported is True else None,

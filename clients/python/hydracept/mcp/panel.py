@@ -56,19 +56,27 @@ def is_tool_failure_payload(result: Any) -> bool:
     return result.get("error") is True
 
 
-def attach_interaction(result: Any, surface: str) -> Any:
-    if not isinstance(result, dict) or is_tool_failure_payload(result):
+def attach_interaction(result: Any, surface: str | None) -> Any:
+    if not isinstance(result, dict) or is_tool_failure_payload(result) or not surface:
         return result
     attached = dict(result)
     attached.setdefault("interaction", panel_interaction(surface))
     return attached
 
 
-def surface_for_job(job: dict[str, Any] | None) -> str:
-    from hydracept.mcp.surface_contract import is_visual_capability, surface_for_job_status
+def surface_for_job(job: dict[str, Any] | None) -> str | None:
+    from hydracept.mcp.surface_contract import is_visual_capability, is_visual_media_type, surface_for_job_status
 
     payload = job or {}
     nested = payload.get("job") if isinstance(payload.get("job"), dict) else payload
     status = str(payload.get("status") or payload.get("state") or nested.get("status") or nested.get("state") or "")
     capability_key = str(payload.get("capabilityKey") or nested.get("capabilityKey") or "")
-    return surface_for_job_status(status, visual=is_visual_capability(capability_key))
+    media_type = str(payload.get("mediaType") or nested.get("mediaType") or "")
+    artifacts = nested.get("artifacts") if isinstance(nested.get("artifacts"), list) else payload.get("artifacts")
+    if not media_type and isinstance(artifacts, list):
+        for item in artifacts:
+            if isinstance(item, dict) and (item.get("mediaType") or item.get("media_type")):
+                media_type = str(item.get("mediaType") or item.get("media_type"))
+                break
+    visual = is_visual_capability(capability_key) or is_visual_media_type(media_type)
+    return surface_for_job_status(status, visual=visual)

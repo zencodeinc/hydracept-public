@@ -1,22 +1,15 @@
-"""Installed CLI entrypoint with compatibility options for machine-readable commands.
+"""Installed CLI entrypoint with a stable public-agent contract.
 
-Several public commands have always emitted JSON but historically rejected an
-explicit ``--json`` flag. Agents should not need command-specific knowledge to
-know when the flag is syntactically accepted. This adapter adds an ignored
-``--json`` option only to commands whose existing output is already JSON; it does
-not introduce a second renderer or alter execution semantics.
-
-The adapter also repairs the public ``capabilities find`` surface. ``main.py``
-contains legacy duplicate registrations for that command; the installed command
-is normalized here to one compact, workspace-aware finder without disturbing
-lower-level compatibility callbacks.
-
-The adapter also dispatches ``verify <file.png>`` to the local PNG transparency
-verifier while preserving the existing lockfile/run-manifest verify callback.
+This adapter normalizes legacy Typer registrations without creating a second
+execution or discovery plane. Machine-readable commands accept a consistent
+``--json`` flag, capability find preserves the server's canonical relevance
+order while exposing workspace runnability, and known operational HTTP failures
+become one structured error document instead of a Python traceback.
 """
 
 from __future__ import annotations
 
+import functools
 import json
 from collections.abc import Iterable
 from pathlib import Path
@@ -27,6 +20,7 @@ import httpx
 from typer.main import get_command
 
 from hydracept.cli.main import app as _typer_app
+from hydracept.errors import HydraceptApiError, RunAdmissionError, raise_api_status
 
 # Paths are intentionally limited to commands whose callbacks already emit JSON.
 # Commands that have a real --json/--no-json presentation switch are left alone.
@@ -48,8 +42,7 @@ _JSON_COMPAT_PATHS: tuple[tuple[str, ...], ...] = (
 )
 
 # image.generate.v1 routinely exceeds the old 90-second local wait while
-# remaining healthy. This is the CLI projection of the 0.3.12 SmokeWaitPolicy;
-# the remote job is never cancelled when the local wait ends.
+# remaining healthy. The remote job is never cancelled when this local wait ends.
 _IMAGE_SMOKE_TIMEOUT_SECONDS = 300
 
 
@@ -71,6 +64,15 @@ def _resolve_command(root: Any, path: Iterable[str]) -> Any | None:
         if current is None:
             return None
     return current
+
+
+def _walk_commands(root: Any) -> Iterable[Any]:
+    yield root
+    commands = _command_map(root)
+    if commands is None:
+        return
+    for child in commands.values():
+        yield from _walk_commands(child)
 
 
 def _has_option(command: Any, option: str) -> bool:
@@ -149,6 +151,8 @@ def _compact_capability(item: dict[str, Any]) -> dict[str, Any]:
     }
     if workspace.get("billingMode") is not None:
         compact["billingMode"] = workspace.get("billingMode")
+    if workspace.get("requiredAction") is not None:
+        compact["requiredAction"] = workspace.get("requiredAction")
     if price:
         compact["pricing"] = {
             key: price.get(key)
@@ -156,6 +160,11 @@ def _compact_capability(item: dict[str, Any]) -> dict[str, Any]:
             if price.get(key) is not None
         }
     return compact
+
+
+def _server_ordered_candidates(items: Iterable[Any]) -> list[dict[str, Any]]:
+    """Preserve API resolver order; CLI is a projection, not a second ranker."""
+    return [item for item in items if isinstance(item, dict)]
 
 
 def _add_capabilities_find_dispatch(root: Any) -> None:
@@ -173,14 +182,11 @@ def _add_capabilities_find_dispatch(root: Any) -> None:
             headers=_find_headers(api),
             timeout=30.0,
         )
-        response.raise_for_status()
+        raise_api_status(response)
         payload = response.json()
         items = payload.get("capabilities") if isinstance(payload, dict) else []
-        candidates = [
-            _compact_capability(item)
-            for item in (items or [])[:5]
-            if isinstance(item, dict)
-        ]
+        ordered = _server_ordered_candidates(items or [])
+        candidates = [_compact_capability(item) for item in ordered[:5]]
         click.echo(
             json.dumps(
                 {
@@ -202,9 +208,6 @@ def _add_png_verify_dispatch(root: click.Command) -> None:
         return
     original: Callable[..., Any] = command.callback
 
-    # TyperCommand.invoke calls `ctx.invoke(callback, **ctx.params)`. Keep
-    # *args/**kwargs so this adapter stays stable across Typer/Click internals.
-    # Path parameters may arrive as raw strings; normalize before suffix checks.
     def callback(*args: Any, **kwargs: Any) -> Any:
         path = kwargs.get("path")
         target = Path(path) if path is not None else None
@@ -217,6 +220,65 @@ def _add_png_verify_dispatch(root: click.Command) -> None:
     command.callback = callback
 
 
+def _emit_operational_error(payload: dict[str, Any]) -> None:
+    body = dict(payload)
+    body.setdefault("error", True)
+    body.setdefault("code", "OPERATION_FAILED")
+    body.setdefault("message", str(body.get("code")))
+    click.echo(json.dumps(body, separators=(",", ":")))
+
+
+def _as_http_error(exc: httpx.HTTPStatusError) -> HydraceptApiError:
+    try:
+        raise_api_status(exc.response)
+    except HydraceptApiError as converted:
+        return converted
+    # HTTPStatusError necessarily represents a non-success response, but keep a
+    # defensive fallback if a synthetic test object violates that invariant.
+    return HydraceptApiError(
+        str(exc),
+        request=exc.request,
+        response=exc.response,
+        payload={},
+        code="HTTP_ERROR",
+    )
+
+
+def _wrap_public_operational_errors(command: Any) -> None:
+    """Make known runtime/API failures a stable CLI contract, not tracebacks."""
+    callback = getattr(command, "callback", None)
+    if callback is None or getattr(callback, "__hydracept_error_boundary__", False):
+        return
+
+    @functools.wraps(callback)
+    def guarded(*args: Any, **kwargs: Any) -> Any:
+        try:
+            return callback(*args, **kwargs)
+        except HydraceptApiError as exc:
+            _emit_operational_error(exc.as_tool_result())
+            raise click.exceptions.Exit(1) from None
+        except RunAdmissionError as exc:
+            _emit_operational_error(exc.as_tool_result())
+            raise click.exceptions.Exit(1) from None
+        except httpx.HTTPStatusError as exc:
+            converted = _as_http_error(exc)
+            _emit_operational_error(converted.as_tool_result())
+            raise click.exceptions.Exit(1) from None
+        except httpx.RequestError as exc:
+            _emit_operational_error(
+                {
+                    "error": True,
+                    "code": "TRANSPORT_ERROR",
+                    "message": str(exc),
+                    "retryable": True,
+                }
+            )
+            raise click.exceptions.Exit(1) from None
+
+    setattr(guarded, "__hydracept_error_boundary__", True)
+    command.callback = guarded
+
+
 def build_app() -> click.Command:
     root = get_command(_typer_app)
     for path in _JSON_COMPAT_PATHS:
@@ -226,6 +288,10 @@ def build_app() -> click.Command:
     _apply_smoke_wait_policy(root)
     _add_capabilities_find_dispatch(root)
     _add_png_verify_dispatch(root)
+    # Apply last so compatibility callbacks and dispatch replacements are all
+    # protected by the same operational error contract.
+    for command in _walk_commands(root):
+        _wrap_public_operational_errors(command)
     return root
 
 

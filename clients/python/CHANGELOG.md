@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.15 — 2026-09-09
+
+- `run --input-file` accepts PowerShell UTF-8 BOM and UTF-16 JSON files
+- `capabilities describe` keeps quote metadata and includes `nextAction.exampleInput` so a request.json can be built without reverse-engineering
+- `quote`, `estimate`, `invoke`, and `jobs submit` accept `--input-file`
+
+## 0.3.14 — 2026-09-09
+
+- Consumer-truth projection: workspace verification capabilities, doctor/checkout authority, and funding provenance no longer masquerade as entitlement or trial balances
+- Capability resolve attaches retail pricing only when the descriptor has a complete retail contract; domain quote metadata no longer crashes discovery
+- `hydracept run --body` / `--input-file` reads structured JSON on Windows/PowerShell without inline quoting
+- Python client remains the 0.3.14 surface of this release (TypeScript/dotnet stay 0.3.5)
+
+## 0.3.13 — 2026-09-09
+
+- `funding status` and `doctor --json` now distinguish customer-visible managed credit, the active trial bucket, and execution-available funding (including operator grants)
+- Customer-visible `$0` is no longer labeled aggregate/trial credit, and trial remaining is no longer aliased to the customer balance
+- Python client remains the 0.3.13 surface of this release (TypeScript/dotnet stay 0.3.5)
+
 ## 0.3.12 — 2026-09-08
 
 - Consumer-contract convergence: missing receipt funding evidence no longer displays as managed trial or BYOK
