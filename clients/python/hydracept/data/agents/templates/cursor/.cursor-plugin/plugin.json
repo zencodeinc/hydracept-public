@@ -1,8 +1,0 @@
-{
-  "name": "hydracept",
-  "displayName": "Hydracept",
-  "version": "0.1.8",
-  "description": "Game asset generation for Cursor via Hydracept capabilities, MCP, and Skills.",
-  "logo": "assets/logo.png",
-  "minimumHydraceptVersion": "0.3.9"
-}

@@ -8,7 +8,19 @@ from typing import Any
 from hydracept import __version__ as installed_client_version
 from hydracept.cli.agent_status import manifest_path
 from hydracept.cli.mcp_bind import inspect_workspace_mcp
+from hydracept.cli.package_provenance import package_provenance
 from hydracept.cli.workspace import read_json
+
+
+def consumer_version_report(project_root: Path | None = None) -> dict[str, Any]:
+    """Package provenance plus workspace consumer versions when a checkout is present."""
+    payload: dict[str, Any] = dict(package_provenance())
+    if project_root is None:
+        return payload
+    root = Path(project_root)
+    if (root / ".hydracept").is_dir():
+        payload["consumer"] = consumer_versions(root)
+    return payload
 
 
 def consumer_versions(

@@ -160,10 +160,35 @@ def attest_runtime_binding(
     }
     path = runtime_binding_path(root)
     path.parent.mkdir(parents=True, exist_ok=True)
+    encoded = json.dumps(payload, indent=2) + "\n"
+    existing = _read_json(path)
+    if _lease_equivalent(existing, payload):
+        return payload
     temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
-    temporary.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    _atomic_replace(temporary, path)
+    temporary.write_text(encoded, encoding="utf-8")
+    try:
+        _atomic_replace(temporary, path)
+    except OSError:
+        if temporary.exists():
+            temporary.unlink(missing_ok=True)
+        if _lease_equivalent(_read_json(path), payload):
+            return payload
+        raise
     return payload
+
+
+def _lease_equivalent(existing: dict[str, Any], payload: dict[str, Any]) -> bool:
+    keys = (
+        "serverInstanceId",
+        "pid",
+        "workspaceRoot",
+        "workspaceFingerprint",
+        "executionProjectId",
+        "generation",
+        "version",
+        "mcpVersion",
+    )
+    return all(existing.get(key) == payload.get(key) for key in keys)
 
 
 def _atomic_replace(source: Path, destination: Path, *, retries: int = 8) -> None:

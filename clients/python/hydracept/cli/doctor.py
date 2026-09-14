@@ -213,8 +213,9 @@ class DoctorReport:
                 ).to_dict()
             except Exception:  # noqa: BLE001
                 pass
-            from hydracept.cli.consumer_versions import consumer_versions
+            from hydracept.cli.consumer_versions import consumer_version_report, consumer_versions
 
+            payload["packageProvenance"] = consumer_version_report(self.project_root)
             payload["versions"] = consumer_versions(
                 self.project_root,
                 session=self.session_payload,

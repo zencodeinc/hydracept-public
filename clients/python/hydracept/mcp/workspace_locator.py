@@ -133,13 +133,31 @@ def _acceptable_fallback(root: Path) -> bool:
     return (root / ".git").is_dir()
 
 
-def _maybe_attest(root: Path, *, source: str, env: dict[str, str]) -> Path:
-    """Publish a lease only for configured MCP launches, not locator library calls."""
-    if str(env.get("HYDRACEPT_MCP_GENERATION") or "").strip():
-        from hydracept.mcp.runtime_binding import attest_runtime_binding
+_ATTESTED: set[tuple[str, str]] = set()
 
-        attest_runtime_binding(root, source=source, env=env)
-    return root
+
+def reset_runtime_attestation_cache() -> None:
+    """Test helper: clear per-process attestation memo."""
+    _ATTESTED.clear()
+
+
+def _maybe_attest(root: Path, *, source: str, env: dict[str, str]) -> Path:
+    """Publish a lease once per process for configured MCP launches."""
+    generation = str(env.get("HYDRACEPT_MCP_GENERATION") or "").strip()
+    if not generation:
+        return root
+    resolved = root.resolve()
+    key = (str(resolved), generation)
+    if key in _ATTESTED:
+        return resolved
+    from hydracept.mcp.runtime_binding import attest_runtime_binding
+
+    try:
+        attest_runtime_binding(resolved, source=source, env=env)
+    except OSError:
+        pass
+    _ATTESTED.add(key)
+    return resolved
 
 
 def resolve_mcp_workspace(

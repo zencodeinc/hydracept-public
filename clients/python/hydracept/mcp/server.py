@@ -24,12 +24,14 @@ from hydracept.job_wait import decorate_job_tool_result, infer_primary_artifact_
 from hydracept.mcp.icons import hydracept_mcp_icons
 from hydracept.mcp.panel import APP_URI, attach_interaction, create_apps, surface_for_job
 from hydracept.mcp.register_project_tools import register_project_tools
+from hydracept.mcp.capability_arg import resolve_capability_key
 from hydracept.mcp.workspace_locator import (
     is_unexpanded_placeholder,
     resolve_mcp_workspace,
 )
 
 _WORKSPACE_ROOT: Path | None = None
+_RESOLVED_WORKSPACE: Path | None = None
 _MOUNTED_JOB_IDS: set[str] = set()
 _INTERNAL_SENTINEL_COST_FLOOR = 900_000_000.0
 
@@ -43,12 +45,19 @@ def _first_nonempty(*values: Any) -> str:
 
 
 def configure_workspace(root: Path | str | None) -> None:
-    global _WORKSPACE_ROOT
+    global _WORKSPACE_ROOT, _RESOLVED_WORKSPACE
+    _RESOLVED_WORKSPACE = None
     if root is None or is_unexpanded_placeholder(root):
         _WORKSPACE_ROOT = None
         return
     path = Path(root)
     _WORKSPACE_ROOT = path.resolve() if path.is_dir() else None
+
+
+def reset_workspace_cache() -> None:
+    """Test helper: clear memoized MCP workspace resolution."""
+    global _RESOLVED_WORKSPACE
+    _RESOLVED_WORKSPACE = None
 
 
 server = MCPServer(
@@ -92,7 +101,11 @@ apps = create_apps()
 
 
 def _project_root() -> Path:
-    return resolve_mcp_workspace(_WORKSPACE_ROOT)
+    global _RESOLVED_WORKSPACE
+    if _RESOLVED_WORKSPACE is not None:
+        return _RESOLVED_WORKSPACE
+    _RESOLVED_WORKSPACE = resolve_mcp_workspace(_WORKSPACE_ROOT)
+    return _RESOLVED_WORKSPACE
 
 
 def _execution_workspace():
@@ -408,21 +421,33 @@ def resolve_capability(intent: str, requirements: dict[str, Any] | None = None) 
 
 @server.tool()
 def estimate_capability(
-    capability_key: str,
+    capability_key: str = "",
     body: dict[str, Any] | None = None,
+    capability: str = "",
+    capabilityKey: str = "",
 ) -> dict[str, Any]:
     """HTTP alias of hydracept_quote_capability. Same 0.3 retail quote (pricing.quote)."""
-    return hydracept_quote_capability(capability_key, body)
+    key = resolve_capability_key(
+        capability_key=capability_key,
+        capability=capability,
+        capabilityKey=capabilityKey,
+    )
+    return hydracept_quote_capability(key, body)
 
 
 @server.tool()
 def hydracept_quote_capability(
     capability_key: str = "",
     body: dict[str, Any] | None = None,
+    capability: str = "",
     capabilityKey: str = "",
 ) -> dict[str, Any]:
     """POST /v1/capabilities/{key}/quote — optional preview; does not reserve or charge funds."""
-    key = _first_nonempty(capability_key, capabilityKey)
+    key = resolve_capability_key(
+        capability_key=capability_key,
+        capability=capability,
+        capabilityKey=capabilityKey,
+    )
 
     def _run() -> dict[str, Any]:
         workspace = _execution_workspace()
@@ -455,10 +480,15 @@ def hydracept_quote_capability(
 def hydracept_invoke(
     capability_key: str = "",
     body: dict[str, Any] | None = None,
+    capability: str = "",
     capabilityKey: str = "",
 ) -> dict[str, Any]:
     """Invoke a synchronous capability (read-only domain/DNS and text)."""
-    key = _first_nonempty(capability_key, capabilityKey)
+    key = resolve_capability_key(
+        capability_key=capability_key,
+        capability=capability,
+        capabilityKey=capabilityKey,
+    )
 
     def _run() -> dict[str, Any]:
         workspace = _execution_workspace()
@@ -480,16 +510,22 @@ def hydracept_run(
     max_cost: float | None = None,
     idempotency_key: str = "",
     out: str = "",
+    capability: str = "",
     capabilityKey: str = "",
 ) -> dict[str, Any]:
     """Canonical run. Waits for terminal completion by default; pass wait=false for a continuation."""
     from hydracept.cli.run_facade import execute_run
 
-    key = _first_nonempty(capability_key, capabilityKey)
+    key = resolve_capability_key(
+        capability_key=capability_key,
+        capability=capability,
+        capabilityKey=capabilityKey,
+    )
+    root = _project_root()
 
     def _run() -> dict[str, Any]:
         outcome = execute_run(
-            _project_root(),
+            root,
             key,
             dict(body or {}),
             wait=wait,
@@ -590,10 +626,15 @@ def hydracept_submit_job(
     capability_key: str = "",
     body: dict[str, Any] | None = None,
     idempotency_key: str = "",
+    capability: str = "",
     capabilityKey: str = "",
 ) -> dict[str, Any]:
     """Submit a capability job. Omit quoteId; the API seals pricing at admission. Eligible durable text jobs use deferred processing at 50% of standard token rates. Returns nextAction."""
-    key = _first_nonempty(capability_key, capabilityKey)
+    key = resolve_capability_key(
+        capability_key=capability_key,
+        capability=capability,
+        capabilityKey=capabilityKey,
+    )
     return _tool_call(lambda: _submit_job_payload(key, body, idempotency_key))
 
 
@@ -817,16 +858,24 @@ def _download_artifact(
 
 @server.tool()
 def hydracept_smoke(
-    capability: str = DEFAULT_SMOKE_CAPABILITY,
+    capability: str = "",
+    capability_key: str = "",
+    capabilityKey: str = "",
     prompt: str = DEFAULT_SMOKE_PROMPT,
     poll_seconds: int = 90,
     output_path: str = ".hydracept/demo/first-asset.png",
 ) -> dict[str, Any]:
     """Explicit managed-trial smoke. Downloads first artifact when available."""
+    key = resolve_capability_key(
+        capability_key=capability_key or capability or DEFAULT_SMOKE_CAPABILITY,
+        capability=capability,
+        capabilityKey=capabilityKey,
+    )
+
     def _run() -> dict[str, Any]:
         result = run_smoke(
             _project_root(),
-            capability=capability,
+            capability=key,
             prompt=prompt,
             poll_seconds=poll_seconds,
         )

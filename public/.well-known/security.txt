@@ -1,4 +1,0 @@
-Contact: mailto:support@hydracept.com
-Expires: 2027-09-01T00:00:00Z
-Preferred-Languages: en
-Canonical: https://hydracept.com/.well-known/security.txt

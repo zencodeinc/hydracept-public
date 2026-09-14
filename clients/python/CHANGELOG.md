@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.22 — 2026-09-14
+
+- MCP workspace resolution attests runtime once per process and caches the resolved checkout (fewer Windows `mcp-runtime.json` locks)
+- MCP tools accept `capability`, `capability_key`, and `capabilityKey` interchangeably
+- `version --json` and doctor/agent-status include unified `packageProvenance` + workspace consumer versions
+- `docs.hydracept.com/llms.txt` mirror ships with site build (same content as hydracept.com/llms.txt)
+
 ## 0.3.21 — 2026-09-14
 
 - `text.translate.v1 --prompt` maps to `targetLocale` + `items` (`--target-locale` or `locale:text` prefix); bare prompt fails with recovery guidance instead of empty output

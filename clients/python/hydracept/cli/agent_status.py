@@ -208,13 +208,14 @@ def build_agent_status(
         "installedHosts": _installed_hosts(manifest),
         "lastVerifiedAt": cache.get("lastVerifiedAt"),
     }
-    from hydracept.cli.consumer_versions import consumer_versions
+    from hydracept.cli.consumer_versions import consumer_version_report, consumer_versions
 
     versions = consumer_versions(project_root)
     payload["installedClientVersion"] = versions["installedClient"]
     payload["runningMcpVersion"] = versions["runningMcp"]
     payload["apiRevision"] = versions["apiRevision"]
     payload["versions"] = versions
+    payload["packageProvenance"] = consumer_version_report(project_root)
     api_url = str(payload.get("apiUrl") or "https://api.hydracept.com").rstrip("/")
     from hydracept.cli.mcp_bind import inspect_workspace_mcp
 

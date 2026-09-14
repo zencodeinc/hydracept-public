@@ -182,9 +182,12 @@ def _root(
 @app.command("version")
 def version_cmd(
     json_output: bool = typer.Option(False, "--json", help="Machine-readable provenance"),
+    project_root: Path = typer.Option(Path.cwd(), "--project-root"),
 ) -> None:
     """Show the installed hydracept package version and where it loaded from."""
-    payload = package_provenance()
+    from hydracept.cli.consumer_versions import consumer_version_report
+
+    payload = consumer_version_report(project_root)
     if json_output:
         console.print_json(data=payload)
         return
@@ -192,6 +195,12 @@ def version_cmd(
     console.print(payload["version"])
     console.print(f"path={payload['packagePath']}")
     console.print(f"source={dist.get('source', 'unknown')}")
+    consumer = payload.get("consumer")
+    if isinstance(consumer, dict):
+        console.print(f"mcpBinding={consumer.get('mcpBindingVersion')}")
+        console.print(f"mcpRuntime={consumer.get('mcpRuntimeState')}")
+        console.print(f"apiRevision={consumer.get('apiRevision')}")
+        console.print(f"agentPack={consumer.get('agentPack')}")
 
 
 def _resolve_token(project_root: Path, token: str | None) -> str:

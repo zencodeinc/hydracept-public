@@ -67,6 +67,16 @@ def test_cli_version_json_flag() -> None:
     }
 
 
+def test_consumer_version_report_includes_workspace_versions(tmp_path: Path) -> None:
+    from hydracept.cli.consumer_versions import consumer_version_report
+
+    (tmp_path / ".hydracept").mkdir()
+    payload = consumer_version_report(tmp_path)
+    assert payload["version"] == hydracept.__version__
+    assert "consumer" in payload
+    assert payload["consumer"]["installedClient"] == hydracept.__version__
+
+
 def test_cli_version_command_json() -> None:
     import json
 
