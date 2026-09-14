@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from hydracept.receipt_cost import present_receipt
+
 SCHEMA_VERSION = "hydracept.run-result.v1"
 
 
@@ -40,13 +42,29 @@ class RunPricing:
     actual_cost: float | None = None
     currency: str = "USD"
     reserved_cost: float | None = None
+    customer_total_micros: int | None = None
+    financial_state: str | None = None
+    mode: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        from hydracept.receipt_cost import format_pricing_summary, micros_to_usd
+
+        owed = micros_to_usd(self.customer_total_micros)
+        summary = format_pricing_summary(owed, self.financial_state, self.estimated_cost)
         return {
+            "customerCharge": {
+                "customerTotalMicros": self.customer_total_micros,
+                "amountMicros": self.customer_total_micros,
+                "currency": self.currency,
+                "state": self.financial_state,
+            },
+            "summary": summary,
+            "mode": self.mode,
             "estimatedCost": self.estimated_cost,
             "actualCost": self.actual_cost,
             "currency": self.currency,
             "reservedCost": self.reserved_cost,
+            "note": "pricing.summary and customerCharge are what this customer was charged; estimatedCost/actualCost are not that value.",
         }
 
 
@@ -77,7 +95,7 @@ class RunResult:
             "typedOutput": self.typed_output,
             "artifacts": [item.to_dict() for item in self.artifacts],
             "pricing": self.pricing.to_dict(),
-            "receipt": self.receipt,
+            "receipt": present_receipt(self.receipt) if isinstance(self.receipt, dict) else self.receipt,
             "idempotencyKey": self.idempotency_key,
             "error": self.error,
             "diagnostics": self.diagnostics,
@@ -105,4 +123,7 @@ class TypedRunError:
             payload["httpStatus"] = self.http_status
         if self.recovery:
             payload["recovery"] = self.recovery
+            next_action = self.recovery.get("nextAction") or self.recovery.get("cli")
+            if next_action:
+                payload["nextAction"] = next_action
         return payload

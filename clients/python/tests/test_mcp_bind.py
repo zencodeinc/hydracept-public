@@ -6,8 +6,19 @@ import json
 import sys
 from pathlib import Path
 
-from hydracept.cli.mcp_bind import bind_workspace_mcp, inspect_workspace_mcp, stdio_args, stdio_server_entry
-from hydracept.mcp.runtime_binding import attest_runtime_binding
+from hydracept.cli.mcp_bind import bind_workspace_mcp, inspect_workspace_mcp, stdio_args, stdio_command, stdio_server_entry
+from hydracept.mcp.runtime_binding import attest_runtime_binding, inspect_runtime_binding
+
+
+def test_stdio_command_uses_installing_interpreter() -> None:
+    assert stdio_command() == sys.executable
+
+
+def test_inspect_runtime_missing_generation_is_not_mismatch(tmp_path: Path) -> None:
+    attest_runtime_binding(tmp_path, source="test")
+    status = inspect_runtime_binding(tmp_path, expected_generations=("configured-gen",))
+    assert status.verified is True
+    assert status.status == "verified"
 
 
 def test_stdio_args_always_include_workspace() -> None:
@@ -127,6 +138,30 @@ def test_bind_bumps_generation_when_credential_identity_changes(tmp_path: Path) 
     assert second.runtime.status == "generation_mismatch"
 
 
+def test_bind_does_not_rewrite_user_level_cursor_targets(tmp_path: Path, monkeypatch) -> None:
+    host = tmp_path / "host-mcp.json"
+    host.write_text(
+        json.dumps(
+            {
+                "mcpServers": {
+                    "hydracept": {
+                        "command": "python",
+                        "args": ["-m", "hydracept", "mcp", "serve"],
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "hydracept.cli.mcp_bind.cursor_host_mcp_targets",
+        lambda: [(host, "mcpServers")],
+    )
+    bind_workspace_mcp(tmp_path)
+    payload = json.loads(host.read_text(encoding="utf-8"))
+    assert payload["mcpServers"]["hydracept"]["args"] == ["-m", "hydracept", "mcp", "serve"]
+
+
 def test_bind_skips_custom_host_hydracept_entry(tmp_path: Path, monkeypatch) -> None:
     host = tmp_path / "host-mcp.json"
     host.write_text(
@@ -148,31 +183,24 @@ def test_bind_skips_custom_host_hydracept_entry(tmp_path: Path, monkeypatch) -> 
     assert payload["mcpServers"]["hydracept"]["command"] == "node"
 
 
-def test_bind_rewrites_owned_host_stdio_with_workspace(tmp_path: Path, monkeypatch) -> None:
+def test_bind_does_not_rewrite_owned_host_stdio(tmp_path: Path, monkeypatch) -> None:
     host = tmp_path / "host-mcp.json"
-    host.write_text(
-        json.dumps(
-            {
-                "mcpServers": {
-                    "hydracept": {
-                        "command": "python",
-                        "args": ["-m", "hydracept", "mcp", "serve"],
-                    }
-                }
+    original = {
+        "mcpServers": {
+            "hydracept": {
+                "command": "python",
+                "args": ["-m", "hydracept", "mcp", "serve"],
             }
-        ),
-        encoding="utf-8",
-    )
+        }
+    }
+    host.write_text(json.dumps(original), encoding="utf-8")
     monkeypatch.setattr(
         "hydracept.cli.mcp_bind.cursor_host_mcp_targets",
         lambda: [(host, "mcpServers")],
     )
     bind_workspace_mcp(tmp_path)
     payload = json.loads(host.read_text(encoding="utf-8"))
-    args = payload["mcpServers"]["hydracept"]["args"]
-    assert "--workspace" in args
-    assert "${workspaceFolder}" in args
-    assert payload["mcpServers"]["hydracept"]["env"]["HYDRACEPT_WORKSPACE"] == "${workspaceFolder}"
+    assert payload == original
 
 
 def test_bind_writes_vscode_only_when_vscode_exists(tmp_path: Path) -> None:
@@ -230,3 +258,23 @@ def test_user_apps_workaround_is_explicit_and_removable(tmp_path: Path, monkeypa
     assert "hydracept" in restored_project["mcpServers"]
     assert "hydracept-project" not in restored_project["mcpServers"]
     assert not (home / ".cursor" / "hydracept-user-apps.json").exists()
+
+
+def test_inspect_runtime_binding_same_process_is_verified(tmp_path: Path) -> None:
+    payload = attest_runtime_binding(tmp_path, source="test")
+    status = inspect_runtime_binding(tmp_path)
+    assert status.verified is True
+    assert status.status == "verified"
+    assert payload["version"]
+    assert payload["mcpVersion"] == payload["version"]
+
+
+def test_inspect_runtime_binding_dead_pid_is_stale(tmp_path: Path) -> None:
+    attest_runtime_binding(tmp_path, source="test")
+    path = tmp_path / ".hydracept" / "mcp-runtime.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["pid"] = 1_000_000_001
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    status = inspect_runtime_binding(tmp_path)
+    assert status.verified is False
+    assert status.status in {"stale", "pid_reused"}

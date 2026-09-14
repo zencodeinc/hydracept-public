@@ -14,8 +14,8 @@ from hydracept.mcp.surface_contract import (
     authorization_contract,
     default_agent_action,
     default_blocking,
-    is_visual_capability,
-    is_visual_media_type,
+    is_reviewable_capability,
+    is_reviewable_media_type,
     next_presentation,
     presentation_contract,
     surface_for_job_status,
@@ -76,7 +76,7 @@ def presentation_for_host(
         elif already_mounted:
             resolved_status = "already_mounted"
         else:
-            resolved_status = "mounted"
+            resolved_status = "mount_requested"
         reason = None
         fallback = None
     elif surface == "job.progress":
@@ -108,7 +108,7 @@ def presentation_for_host(
         surface_session_id=session_id,
         host_confirmation=(
             "unobserved"
-            if resolved_status in {"mounted", "already_mounted", "transitioned"}
+            if resolved_status in {"mounted", "already_mounted", "transitioned", "mount_requested"}
             else None
         ),
     )
@@ -147,7 +147,7 @@ def job_presentation(
     *,
     apps_supported: bool | None = None,
 ) -> dict[str, Any]:
-    """Present active work and visual review; typed terminal output is a no-op."""
+    """Present active work and reviewable media; typed terminal output is a no-op."""
     job = payload.get("job") if isinstance(payload.get("job"), Mapping) else payload
     status = str(payload.get("status") or payload.get("state") or job.get("status") or "")
     normalized_status = status.strip().lower()
@@ -167,10 +167,10 @@ def job_presentation(
             media_type = item.get("mediaType") or item.get("media_type")
             if media_type:
                 break
-    visual = is_visual_capability(capability_key) or is_visual_media_type(
+    reviewable = is_reviewable_capability(capability_key) or is_reviewable_media_type(
         str(media_type or payload.get("mediaType") or "")
     )
-    surface = surface_for_job_status(status, visual=visual)
+    surface = surface_for_job_status(status, reviewable=reviewable)
 
     context: dict[str, Any] = {
         "jobId": str(payload.get("jobId") or job.get("jobId") or job.get("id") or ""),
@@ -183,7 +183,7 @@ def job_presentation(
     if media_type:
         context["mediaType"] = str(media_type)
 
-    if normalized_status in _TERMINAL_SUCCESS and not visual:
+    if normalized_status in _TERMINAL_SUCCESS and not reviewable:
         return presentation_contract(
             surface="job.progress",
             status="unsupported",
@@ -197,7 +197,7 @@ def job_presentation(
     confirmation_required = True if surface == "authorization.preflight" else None
     status_name: PresentationStatus
     if apps_supported is True:
-        status_name = "mounted"
+        status_name = "mount_requested"
     elif apps_supported is False:
         status_name = "fallback"
     else:
@@ -210,13 +210,13 @@ def job_presentation(
         agent_action=default_agent_action(surface, confirmation_required=confirmation_required),
         context=context,
         next_presentation_meta=(
-            next_presentation("job.progress", "visual_artifact_succeeded")
-            if surface == "job.progress" and visual
+            next_presentation("job.progress", "reviewable_artifact_succeeded")
+            if surface == "job.progress" and reviewable
             else None
         ),
         reason=None if apps_supported is not False else "host_does_not_support_apps",
         fallback={"kind": "structured_contract"} if apps_supported is False else None,
-        host_confirmation="unobserved" if apps_supported is True else None,
+        host_confirmation="unobserved" if apps_supported is not False else None,
     )
 
 

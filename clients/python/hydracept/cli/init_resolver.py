@@ -71,6 +71,7 @@ _REASON_STAGES = {
     "project_selection": "project_resolution",
     "bootstrap_wait_timeout": "local_binding",
     "missing_api_key": "authentication",
+    "credential_invalid": "authentication",
     "provider_connection_missing": "provider_readiness",
     "multiple_organizations": "organization_resolution",
     "multiple_matching_projects": "project_resolution",
@@ -771,19 +772,26 @@ def agent_pack_init_fields(pack_installed: bool, pack_error: str, *, doctor_ok: 
 
 
 def doctor_init_fields(report: Any, doctor_code: int) -> dict[str, Any]:
+    payload = report.to_json_dict() if hasattr(report, "to_json_dict") else {}
     checks = list(getattr(report, "checks", None) or [])
-    return {
-        "status": "passed" if doctor_code == SUCCESS else "failed",
-        "failedChecks": [
+    failed = list(payload.get("failedChecks") or [])
+    warnings = list(payload.get("warnings") or [])
+    if not failed:
+        failed = [
             {"name": check.name, "detail": check.detail, "nextAction": check.next_action}
             for check in checks
             if not check.passed and check.fatal
-        ],
-        "warnings": [
+        ]
+    if not warnings:
+        warnings = [
             {"name": check.name, "detail": check.detail}
             for check in checks
             if not check.passed and not check.fatal
-        ],
+        ]
+    return {
+        "status": "passed" if doctor_code == SUCCESS else "failed",
+        "failedChecks": failed,
+        "warnings": warnings,
     }
 
 
@@ -833,10 +841,11 @@ def _ensure_installation_credential(
     project_id: str,
     environment: str,
     api_url: str,
+    allow_reuse: bool = True,
 ) -> tuple[str, str]:
     secrets = read_json(secrets_path(project_root))
     existing = str(secrets.get("apiKey") or secrets.get("token") or "").strip()
-    if existing:
+    if allow_reuse and existing:
         resolved = resolve_workspace(
             project_root,
             overrides=CliOverrides(token=existing, api_url=api_url, project_id=project_id),
@@ -861,6 +870,49 @@ def _ensure_installation_credential(
         return api_key, "created"
 
     raise SessionClientError("authentication required", status_code=401)
+
+
+def _credential_project_id_from_token(api_url: str, token: str) -> str:
+    """Project the API key is issued for. Empty when it cannot be observed."""
+    try:
+        response = httpx.get(
+            f"{api_url.rstrip('/')}/v1/diagnostics/session",
+            headers=auth_headers(token),
+            timeout=20.0,
+        )
+    except httpx.HTTPError:
+        return ""
+    if response.status_code != 200:
+        return ""
+    try:
+        body = response.json()
+    except ValueError:
+        return ""
+    if not isinstance(body, dict):
+        return ""
+    return str(body.get("tokenProjectId") or body.get("projectId") or "").strip()
+
+
+def _align_checkout_to_api_key(
+    project_root: Path,
+    api_url: str,
+    binding: dict[str, Any],
+    token: str,
+) -> tuple[dict[str, Any], str] | None:
+    """Bind an empty or mismatched checkout to the project the supplied API key belongs to."""
+    cred = _credential_project_id_from_token(api_url, token)
+    if not cred:
+        return None
+    bound = {
+        **binding,
+        "projectId": cred,
+        "resolution": "credential_project",
+        "apiOrigin": api_url.rstrip("/"),
+    }
+    write_project_binding(project_root, bound)
+    write_secrets(project_root, {"apiKey": token, "kind": "api_key", "schemaVersion": 2})
+    ensure_gitignore(project_root)
+    return bound, cred
 
 
 def _resolve_project_binding(project_root: Path) -> dict[str, Any]:
@@ -893,6 +945,11 @@ def _identity_payload(
     if login:
         identity["provider"] = identity.get("provider") or "github"
         identity["account"] = identity.get("account") or login
+        identity["githubCliReuse"] = True
+        identity["method"] = identity.get("method") or "github_cli"
+        identity["note"] = (
+            "Init reused the authenticated GitHub CLI session; a browser login was not required."
+        )
     if not identity.get("authenticated"):
         identity["authenticated"] = bool(authenticated)
     return identity
@@ -1105,18 +1162,28 @@ def run_init(
             detail=installed.detail or "The local project binding file is unreadable.",
         )
     if installed.status == InstalledWorkspaceStatus.PROJECT_CREDENTIAL_MISMATCH:
-        return _configuration_required(
-            "project_credential_mismatch",
-            detail=installed.detail,
-            context=installed.context,
-            retryable=True,
-        )
+        env_token = (
+            os.environ.get("HYDRACEPT_API_KEY") or os.environ.get("HYDRACEPT_TOKEN") or ""
+        ).strip()
+        if env_token:
+            aligned = _align_checkout_to_api_key(project_root, api, binding, env_token)
+            if aligned is not None:
+                binding, _project_id = aligned
+                installed = validate_installed_workspace(project_root)
+        if installed.status == InstalledWorkspaceStatus.PROJECT_CREDENTIAL_MISMATCH:
+            return _configuration_required(
+                "project_credential_mismatch",
+                detail=installed.detail,
+                context=installed.context,
+                retryable=True,
+            )
     if installed.status == InstalledWorkspaceStatus.VALIDATION_UNAVAILABLE:
         return _configuration_required(
             "validation_unavailable",
             detail=installed.detail or "Remote credential validation is unavailable.",
             retryable=True,
         )
+    credential_invalid = installed.status == InstalledWorkspaceStatus.CREDENTIAL_INVALID
 
     _discard_expired_session()
     install_action = "reused"
@@ -1164,9 +1231,31 @@ def run_init(
             else:
                 return browser_outcome
 
+        env_token = (
+            os.environ.get("HYDRACEPT_API_KEY") or os.environ.get("HYDRACEPT_TOKEN") or ""
+        ).strip()
+        aligned_to_key = False
+        if not installed_ready and env_token:
+            aligned = _align_checkout_to_api_key(project_root, api, binding, env_token)
+            if aligned is not None:
+                binding, project_id = aligned
+                api_key = env_token
+                aligned_to_key = True
+                install_action = "reused"
+                project_resolution = {
+                    "state": "resolved",
+                    "resolution": "credential_project",
+                    "projectId": project_id,
+                    "displayName": str(binding.get("projectName") or ""),
+                    "environment": environment,
+                    "created": False,
+                }
+                identity = _identity_payload(None, authenticated=True)
+
         if (
             not installed_ready
-            and (load_session() is not None or (os.environ.get("HYDRACEPT_API_KEY") or "").strip())
+            and not aligned_to_key
+            and (load_session() is not None or env_token)
         ):
             session_context: dict[str, Any] = {}
             if load_session() is not None:
@@ -1232,6 +1321,7 @@ def run_init(
                 project_id=project_id,
                 environment=environment,
                 api_url=api,
+                allow_reuse=not credential_invalid,
             )
     except SessionClientError:
         _discard_expired_session()

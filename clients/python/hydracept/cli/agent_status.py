@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,7 @@ from hydracept.cli.workspace import (
 AGENT_PACK_VERSION = "0.1.1"
 STATUS_CACHE_NAME = "agent-status.json"
 MANIFEST_NAME = "agent-pack.manifest.json"
+AGENT_CONTEXT_MAX_AGE = timedelta(hours=6)
 
 
 def _config_dir(project_root: Path) -> Path:
@@ -77,7 +79,48 @@ def _capability_keys_from_context(payload: dict[str, Any]) -> set[str]:
             key = item.get("key") or item.get("capabilityKey")
             if key:
                 keys.add(str(key))
+    for key in payload.get("featuredCapabilities") or []:
+        if key:
+            keys.add(str(key))
     return keys
+
+
+def _context_fingerprint(payload: dict[str, Any]) -> str:
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def inspect_agent_context_cache(project_root: Path) -> dict[str, Any]:
+    """Local-only staleness of .hydracept/agent-context.json."""
+    path = agent_context_cache_path(project_root)
+    if not path.is_file():
+        return {
+            "path": str(path),
+            "present": False,
+            "stale": True,
+            "reason": "missing",
+        }
+    try:
+        mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+    except OSError:
+        return {
+            "path": str(path),
+            "present": False,
+            "stale": True,
+            "reason": "unreadable",
+        }
+    age = datetime.now(timezone.utc) - mtime
+    stale = age > AGENT_CONTEXT_MAX_AGE
+    payload = read_json(path)
+    return {
+        "path": str(path),
+        "present": True,
+        "stale": stale,
+        "reason": "expired" if stale else "fresh",
+        "ageSeconds": int(age.total_seconds()),
+        "capabilityCount": len(_capability_keys_from_context(payload)),
+        "contentHash": _context_fingerprint(payload) if payload else None,
+    }
 
 
 def refresh_agent_context_cache(
@@ -90,18 +133,26 @@ def refresh_agent_context_cache(
     response = httpx.get(f"{api_url.rstrip('/')}/v1/agent-context", timeout=timeout)
     response.raise_for_status()
     payload = response.json()
+    if not isinstance(payload, dict):
+        raise httpx.HTTPError("agent-context returned a non-object payload")
+    live_keys = _capability_keys_from_context(payload)
+    if not live_keys:
+        raise httpx.HTTPError("agent-context catalog was empty")
     path = agent_context_cache_path(project_root)
     previous = read_json(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     old_keys = _capability_keys_from_context(previous)
-    new_keys = _capability_keys_from_context(payload)
+    new_keys = live_keys
     added = sorted(new_keys - old_keys)
+    previous_hash = _context_fingerprint(previous) if previous else None
+    live_hash = _context_fingerprint(payload)
     return {
         "path": str(path),
-        "stale": bool(old_keys) and old_keys != new_keys,
+        "stale": bool(previous) and previous_hash != live_hash,
         "capabilityCount": len(new_keys),
         "addedKeys": added,
+        "contentHash": live_hash,
     }
 
 
@@ -157,6 +208,13 @@ def build_agent_status(
         "installedHosts": _installed_hosts(manifest),
         "lastVerifiedAt": cache.get("lastVerifiedAt"),
     }
+    from hydracept.cli.consumer_versions import consumer_versions
+
+    versions = consumer_versions(project_root)
+    payload["installedClientVersion"] = versions["installedClient"]
+    payload["runningMcpVersion"] = versions["runningMcp"]
+    payload["apiRevision"] = versions["apiRevision"]
+    payload["versions"] = versions
     api_url = str(payload.get("apiUrl") or "https://api.hydracept.com").rstrip("/")
     from hydracept.cli.mcp_bind import inspect_workspace_mcp
 
@@ -174,6 +232,7 @@ def build_agent_status(
         ),
         **bind.to_dict(),
     }
+    payload["agentContextCache"] = inspect_agent_context_cache(project_root)
     next_steps = credential_setup_next_steps(project_root)
     if next_steps:
         payload["nextSteps"] = next_steps
@@ -190,6 +249,11 @@ def build_agent_status(
                 payload["agentContextCache"] = {"error": str(exc)}
         if network.get("reachable") and network.get("authenticated"):
             payload["lastVerifiedAt"] = datetime.now(timezone.utc).isoformat()
+            session = network.get("session") if isinstance(network.get("session"), dict) else None
+            versions = consumer_versions(project_root, session=session)
+            payload["versions"] = versions
+            payload["runningMcpVersion"] = versions["runningMcp"]
+            payload["apiRevision"] = versions["apiRevision"]
             _write_cache(
                 project_root,
                 {

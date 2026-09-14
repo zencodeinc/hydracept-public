@@ -44,6 +44,9 @@ def test_completed_run_prefers_sealed_receipt_quote_over_job_estimate() -> None:
 
     assert pricing.estimated_cost == 0.03
     assert pricing.actual_cost == 0.0
+    assert pricing.customer_total_micros == 0
+    assert pricing.financial_state == "covered"
+    assert pricing.to_dict()["customerCharge"]["customerTotalMicros"] == 0
 
 
 def test_materialized_artifact_is_verified_from_disk(tmp_path: Path) -> None:
@@ -65,6 +68,22 @@ def test_materialized_artifact_is_verified_from_disk(tmp_path: Path) -> None:
     assert local.is_file()
     assert local.read_bytes() == data
     assert artifact.sha256 == hashlib.sha256(data).hexdigest()
+
+
+def test_materialize_honors_file_destination(tmp_path: Path) -> None:
+    data = b"audio-bytes"
+    target = tmp_path / "coin-pickup.ogg"
+    result = materialize_job_artifacts(
+        _ArtifactClient(data),
+        "job_test",
+        _artifact_source(data),
+        target,
+    )
+    assert result.failed is False
+    assert target.is_file()
+    assert target.read_bytes() == data
+    assert Path(result.artifacts[0].local_path or "").name == "coin-pickup.ogg"
+    assert result.artifacts[0].filename == "coin-pickup.ogg"
 
 
 def test_materialization_fails_closed_when_local_write_fails(

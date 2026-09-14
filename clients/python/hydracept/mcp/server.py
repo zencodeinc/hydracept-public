@@ -14,12 +14,12 @@ from mcp_types import CallToolResult, TextContent
 
 from hydracept import HydraceptClient
 from hydracept.errors import HydraceptApiError, RunAdmissionError, raise_api_status
-from hydracept.cli.agent_status import build_agent_status
+from hydracept.cli.agent_status import AGENT_PACK_VERSION, build_agent_status
 from hydracept.cli.run_capability import ensure_workspace_for_run
 from hydracept.cli.smoke_runner import DEFAULT_SMOKE_CAPABILITY, DEFAULT_SMOKE_PROMPT, SmokeError, run_smoke
 from hydracept.cli.job_context import merge_workspace_job_context
 from hydracept.cli.artifact_output import finalize_single_artifact_path, resolve_artifact_output
-from hydracept.cli.workspace import WorkspaceNotReadyError, require_ready_workspace, resolve_workspace
+from hydracept.cli.workspace import DEFAULT_API, WorkspaceNotReadyError, require_ready_workspace, resolve_workspace
 from hydracept.job_wait import decorate_job_tool_result, infer_primary_artifact_id, infer_preview_artifact_id
 from hydracept.mcp.icons import hydracept_mcp_icons
 from hydracept.mcp.panel import APP_URI, attach_interaction, create_apps, surface_for_job
@@ -30,6 +30,16 @@ from hydracept.mcp.workspace_locator import (
 )
 
 _WORKSPACE_ROOT: Path | None = None
+_MOUNTED_JOB_IDS: set[str] = set()
+_INTERNAL_SENTINEL_COST_FLOOR = 900_000_000.0
+
+
+def _first_nonempty(*values: Any) -> str:
+    for value in values:
+        text = str(value or "").strip()
+        if text:
+            return text
+    return ""
 
 
 def configure_workspace(root: Path | str | None) -> None:
@@ -50,7 +60,8 @@ server = MCPServer(
         "Hydracept public capability jobs, pinned execution, and project surfaces. "
         "Credentials resolve from workspace only. "
         "One capability call is enough — do not assume repeated usage is required. "
-        "hydracept_run composes init when needed. "
+        "hydracept_run composes init when needed and waits for terminal completion by default; "
+        "pass wait=false when an immediate durable-job continuation is preferred. "
         "Project surface tools require cwd to be the game checkout. "
         "hydracept_submit_job and hydracept_job_status return immediately. "
         "If nextAction is poll, wait pollAfterSeconds and call hydracept_job_status again. "
@@ -114,6 +125,10 @@ def _hydrate_result(payload: dict[str, Any], surface: str | None = None) -> dict
 def _status_payload(job_id: str, job: dict[str, Any]) -> dict[str, Any]:
     payload = decorate_job_tool_result(job)
     payload["jobId"] = job_id
+    if job_id in _MOUNTED_JOB_IDS:
+        from hydracept.mcp.presentation import job_presentation
+
+        payload["presentation"] = job_presentation(payload, apps_supported=True)
     return _hydrate_result(payload)
 
 
@@ -169,6 +184,28 @@ def _tool_call(fn):
         return _as_error_result(
             {"error": True, "code": "INVALID_ARGUMENT", "message": str(exc)}
         )
+    except httpx.RequestError as exc:
+        return _as_error_result(
+            {
+                "error": True,
+                "code": "TRANSPORT_ERROR",
+                "message": str(exc),
+                "retryable": True,
+                "nextAction": "retry_after_backoff",
+                "retryAfterSeconds": 2,
+            }
+        )
+    except Exception as exc:  # noqa: BLE001
+        # Public MCP tools must never collapse into an opaque SDK/bare exception.
+        # Keep the error typed while leaving traceback detail to server logs.
+        return _as_error_result(
+            {
+                "error": True,
+                "code": "MCP_CLIENT_ERROR",
+                "message": str(exc) or exc.__class__.__name__,
+                "retryable": False,
+            }
+        )
 
 
 def _client_for_run() -> HydraceptClient | dict[str, Any]:
@@ -185,24 +222,57 @@ def _anonymous_api_url() -> str:
     return (os.environ.get("HYDRACEPT_API_URL") or DEFAULT_API).rstrip("/")
 
 
-def _receipt_summary(receipt: dict[str, Any]) -> dict[str, Any]:
-    from hydracept.receipt_cost import (
-        customer_charge_micros,
-        micros_to_usd,
-        provider_cost_micros,
-        surfaced_cost_micros,
-    )
+def _sanitize_public_payload(value: Any, *, key: str = "") -> Any:
+    """Remove historical internal monetary sentinels from public MCP JSON."""
+    if isinstance(value, dict):
+        return {
+            name: _sanitize_public_payload(item, key=str(name))
+            for name, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_sanitize_public_payload(item, key=key) for item in value]
+    lowered = key.lower()
+    if isinstance(value, (int, float)) and any(
+        token in lowered for token in ("cost", "charge", "amount")
+    ):
+        if abs(float(value)) >= _INTERNAL_SENTINEL_COST_FLOOR:
+            return None
+    return value
 
-    pricing = receipt.get("pricing") or {}
+
+def _receipt_summary(receipt: dict[str, Any]) -> dict[str, Any]:
+    from hydracept.receipt_cost import present_receipt, micros_to_usd, surfaced_cost_micros
+
+    presented = present_receipt(receipt)
+    inner = presented.get("receipt") if isinstance(presented.get("receipt"), dict) else receipt
+    pricing = inner.get("pricing") if isinstance(inner, dict) else {}
+    charge = presented.get("customerCharge")
+    if not isinstance(charge, dict) and isinstance(pricing, dict):
+        nested = pricing.get("customerCharge")
+        if nested is None and isinstance(pricing.get("charge"), dict):
+            nested = pricing["charge"].get("customerCharge")
+        if isinstance(nested, dict):
+            charge = nested
     return {
-        "receiptId": receipt.get("receiptId") or receipt.get("id"),
-        "jobId": receipt.get("jobId"),
-        "pricing": pricing or None,
+        "receiptId": inner.get("receiptId") or inner.get("id") if isinstance(inner, dict) else None,
+        "jobId": inner.get("jobId") if isinstance(inner, dict) else None,
+        "customerOwedUsd": presented.get("customerOwedUsd"),
+        "customerChargeUsd": presented.get("customerOwedUsd"),
+        "customerCharge": charge,
+        "customerChargeNote": "customerCharge is what this customer was charged; retailUsd and providerCostUsd are not substitutes.",
+        "retailUsd": presented.get("retailUsd"),
         "costUsd": micros_to_usd(surfaced_cost_micros(receipt)),
-        "providerCostUsd": micros_to_usd(provider_cost_micros(receipt)),
-        "customerChargeUsd": micros_to_usd(customer_charge_micros(receipt)),
-        "durationMs": receipt.get("durationMs") or receipt.get("latencyMs"),
-        "artifacts": receipt.get("artifacts") or [],
+        "providerCostUsd": presented.get("providerCostUsd"),
+        "pricing": {
+            "customerCharge": charge,
+            "mode": pricing.get("mode") if isinstance(pricing, dict) else None,
+            "retailUsd": presented.get("retailUsd"),
+            "providerCostUsd": presented.get("providerCostUsd"),
+            "providerUsage": pricing.get("providerUsage") if isinstance(pricing, dict) else None,
+            "note": "customerCharge is what this customer was charged; retailUsd and providerUsage are not substitutes.",
+        },
+        "durationMs": inner.get("durationMs") or inner.get("latencyMs") if isinstance(inner, dict) else None,
+        "artifacts": inner.get("artifacts") or [] if isinstance(inner, dict) else [],
     }
 
 
@@ -251,7 +321,28 @@ def hydracept_status(refresh: bool = False) -> dict[str, Any]:
         root = _project_root()
     except WorkspaceNotReadyError as exc:
         return _unresolved_status_payload(str(exc))
-    return build_agent_status(root, refresh=refresh)
+    payload = build_agent_status(root, refresh=refresh)
+    from hydracept import __version__ as installed_client_version
+
+    payload["runningMcpVersion"] = installed_client_version
+    versions = payload.get("versions")
+    if isinstance(versions, dict):
+        versions["runningMcp"] = installed_client_version
+    mcp = payload.get("mcp")
+    if isinstance(mcp, dict):
+        mcp.setdefault(
+            "app",
+            {
+                "uri": "ui://hydracept/app.html",
+                "tool": "hydracept_interaction_surface",
+                "note": "Built-in Hydracept App. hydracept panels list is for custom hosted panels only.",
+            },
+        )
+        mcp.setdefault(
+            "toolCatalogNote",
+            "hydracept_ui_* tools are App iframe adapters. Agent-facing tools match GET /v1/agent-context mcp.tools.",
+        )
+    return payload
 
 
 @server.tool()
@@ -265,11 +356,42 @@ def hydracept_capabilities(key: str = "", query: str = "") -> dict[str, Any]:
             headers["Authorization"] = f"Bearer {resolved.token}"
         if key.strip():
             response = httpx.get(f"{api}/v1/capabilities/{key.strip()}", headers=headers, timeout=30.0)
-            response.raise_for_status()
+            raise_api_status(response)
             return response.json()
-        params = {"q": query.strip()} if query.strip() else None
+        if query.strip() and resolved is not None and resolved.token:
+            response = httpx.post(
+                f"{api}/v1/capabilities/resolve",
+                headers=headers,
+                json={"intent": query.strip(), "requirements": {}},
+                timeout=30.0,
+            )
+            raise_api_status(response)
+            payload = response.json()
+            matches = payload.get("matches") if isinstance(payload, dict) else []
+            if (not matches) and str((payload or {}).get("resolution") or "") in {
+                "no_match_requestable",
+                "no_match",
+                "",
+            }:
+                from hydracept.cli.catalog_match import catalog_matches
+
+                fallback = catalog_matches(query.strip(), api=api, headers=headers)
+                if fallback:
+                    payload = {
+                        "resolution": "matched",
+                        "matchSource": "catalog_fallback",
+                        "matches": fallback,
+                    }
+                    matches = fallback
+            if isinstance(payload, dict) and matches:
+                from hydracept.cli.catalog_match import prefer_intent_matches
+
+                payload = dict(payload)
+                payload["matches"] = prefer_intent_matches(query.strip(), list(matches))
+            return payload
+        params = {"q": query.strip()} if query.strip() else {"view": "summary"}
         response = httpx.get(f"{api}/v1/capabilities", headers=headers, params=params, timeout=30.0)
-        response.raise_for_status()
+        raise_api_status(response)
         return response.json()
 
     return _tool_call(_run)
@@ -295,16 +417,27 @@ def estimate_capability(
 
 @server.tool()
 def hydracept_quote_capability(
-    capability_key: str,
+    capability_key: str = "",
     body: dict[str, Any] | None = None,
+    capabilityKey: str = "",
 ) -> dict[str, Any]:
     """POST /v1/capabilities/{key}/quote — optional preview; does not reserve or charge funds."""
+    key = _first_nonempty(capability_key, capabilityKey)
+
     def _run() -> dict[str, Any]:
         workspace = _execution_workspace()
         payload = merge_workspace_job_context(dict(body or {}), workspace)
-        return HydraceptClient(workspace.api_url, workspace.token).quote_capability(
-            capability_key, payload
+        from hydracept.cli.image_canvas import preflight_image_canvas
+
+        blocked = preflight_image_canvas(key, payload)
+        if blocked is not None:
+            return blocked
+        quoted = HydraceptClient(workspace.api_url, workspace.token).quote_capability(
+            key, payload
         )
+        from hydracept.receipt_cost import present_quote
+
+        return present_quote(quoted)
 
     result = _tool_call(_run)
     if isinstance(result, dict) and not result.get("error"):
@@ -312,44 +445,52 @@ def hydracept_quote_capability(
         result.setdefault(
             "note",
             "Retail preview only. Omit execution.quoteId on submit unless the job body is unchanged. "
-            "This quoteId is not a commission quote from request_capability_quote.",
+            "This quoteId is not a commission quote from request_capability_quote. "
+            "spending=none means this customer will not be billed.",
         )
     return result
 
 
 @server.tool()
 def hydracept_invoke(
-    capability_key: str,
+    capability_key: str = "",
     body: dict[str, Any] | None = None,
+    capabilityKey: str = "",
 ) -> dict[str, Any]:
     """Invoke a synchronous capability (read-only domain/DNS and text)."""
+    key = _first_nonempty(capability_key, capabilityKey)
+
     def _run() -> dict[str, Any]:
         workspace = _execution_workspace()
         payload = merge_workspace_job_context(dict(body or {}), workspace)
-        return HydraceptClient(workspace.api_url, workspace.token).invoke_capability(
-            capability_key, payload
+        invoked = HydraceptClient(workspace.api_url, workspace.token).invoke_capability(
+            key, payload
         )
+        return _sanitize_public_payload(invoked)
 
     return _tool_call(_run)
 
 
 @apps.tool(resource_uri=APP_URI)
 def hydracept_run(
-    capability_key: str,
+    capability_key: str = "",
     body: dict[str, Any] | None = None,
     wait: bool = True,
     timeout: float | None = None,
     max_cost: float | None = None,
     idempotency_key: str = "",
     out: str = "",
+    capabilityKey: str = "",
 ) -> dict[str, Any]:
-    """hydracept.run-result.v1 — admit, wait, persist. Server-authoritative maxCost."""
+    """Canonical run. Waits for terminal completion by default; pass wait=false for a continuation."""
     from hydracept.cli.run_facade import execute_run
+
+    key = _first_nonempty(capability_key, capabilityKey)
 
     def _run() -> dict[str, Any]:
         outcome = execute_run(
             _project_root(),
-            capability_key,
+            key,
             dict(body or {}),
             wait=wait,
             timeout=timeout,
@@ -357,12 +498,45 @@ def hydracept_run(
             idempotency_key=idempotency_key or None,
             out=Path(out) if out else None,
         )
-        payload = outcome.payload()
+        payload = _sanitize_public_payload(outcome.payload())
         if outcome.error is not None and outcome.result is None:
             raise McpToolError(payload)
         if outcome.exit_code and outcome.result is not None:
-            # Admitted-then-failed or persist failure: still a RunResult, but isError.
             raise McpToolError({**payload, "isError": True})
+        status = str(payload.get("status") or "").lower()
+        job_id = str(payload.get("jobId") or payload.get("executionId") or "")
+        if out:
+            payload["requestedOutputPath"] = out
+            persisted = ((payload.get("diagnostics") or {}) if isinstance(payload.get("diagnostics"), dict) else {}).get(
+                "persistedOutputPath"
+            )
+            artifacts = payload.get("artifacts") if isinstance(payload.get("artifacts"), list) else []
+            if not persisted:
+                for item in artifacts:
+                    if isinstance(item, dict) and item.get("localPath"):
+                        persisted = item["localPath"]
+                        break
+            if persisted:
+                payload["persistedOutputPath"] = persisted
+        if job_id and status in {"running", "queued", "pending", "submitted"}:
+            payload["nextAction"] = "poll"
+            payload["pollAfterSeconds"] = 2
+            payload["continuation"] = {
+                "tool": "hydracept_job_status",
+                "arguments": {"job_id": job_id},
+            }
+            payload["requestedWait"] = bool(wait)
+            payload["transportWaited"] = bool(wait)
+            if wait:
+                payload["waitNote"] = (
+                    "The requested wait ended before the durable job became terminal; "
+                    "continue with hydracept_job_status."
+                )
+            if out and not payload.get("persistedOutputPath"):
+                payload["outputNote"] = (
+                    "The durable job is not terminal yet. On success use "
+                    "hydracept_download_artifact with output_path to persist the artifact."
+                )
         return _hydrate_result(payload, surface_for_job(payload.get("job") or payload))
 
     return _tool_call(_run)
@@ -413,24 +587,74 @@ def _submit_job_payload(
 
 @apps.tool(resource_uri=APP_URI)
 def hydracept_submit_job(
-    capability_key: str,
+    capability_key: str = "",
     body: dict[str, Any] | None = None,
     idempotency_key: str = "",
+    capabilityKey: str = "",
 ) -> dict[str, Any]:
     """Submit a capability job. Omit quoteId; the API seals pricing at admission. Eligible durable text jobs use deferred processing at 50% of standard token rates. Returns nextAction."""
-    return _tool_call(lambda: _submit_job_payload(capability_key, body, idempotency_key))
+    key = _first_nonempty(capability_key, capabilityKey)
+    return _tool_call(lambda: _submit_job_payload(key, body, idempotency_key))
 
 
 @apps.tool(resource_uri=APP_URI)
-def hydracept_job_status(job_id: str) -> dict[str, Any]:
+def hydracept_job_status(job_id: str = "", jobId: str = "") -> dict[str, Any]:
     """GET /v1/jobs/{jobId} once. If nextAction is poll, wait pollAfterSeconds and call again."""
-    return _tool_call(lambda: _status_payload(job_id, _client().get_job(job_id)))
+    identifier = _first_nonempty(job_id, jobId)
+    return _tool_call(lambda: _status_payload(identifier, _client().get_job(identifier)))
+
+
+def _receipt_from_identifier(identifier: str) -> dict[str, Any]:
+    """Resolve either the job/execution id or a receiptId emitted by Hydracept."""
+    value = str(identifier or "").strip()
+    if not value:
+        raise ValueError("job_id or receipt_id is required")
+    client = _client()
+    try:
+        receipt = client.get_job_receipt(value)
+        if isinstance(receipt, dict):
+            return receipt
+    except HydraceptApiError as exc:
+        status = exc.response.status_code if exc.response is not None else None
+        if status != 404:
+            raise
+
+    jobs = client.list_jobs(limit=100)
+    items = []
+    if isinstance(jobs, dict):
+        for candidate_key in ("jobs", "items", "results"):
+            candidate = jobs.get(candidate_key)
+            if isinstance(candidate, list):
+                items = candidate
+                break
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        job_id = str(item.get("jobId") or item.get("id") or item.get("executionId") or "")
+        if not job_id:
+            continue
+        if str(item.get("receiptId") or "") == value:
+            return client.get_job_receipt(job_id)
+        try:
+            receipt = client.get_job_receipt(job_id)
+        except HydraceptApiError:
+            continue
+        if str(receipt.get("receiptId") or receipt.get("id") or "") == value:
+            return receipt
+    raise McpToolError(
+        {
+            "code": "RECEIPT_NOT_FOUND",
+            "message": f"No receipt found for identifier {value}",
+            "identifier": value,
+        }
+    )
 
 
 @server.tool()
-def hydracept_get_receipt(job_id: str) -> dict[str, Any]:
-    """Fetch sealed receipt summary for a job."""
-    result = _tool_call(lambda: _client().get_job_receipt(job_id))
+def hydracept_get_receipt(job_id: str = "", receipt_id: str = "", jobId: str = "", receiptId: str = "") -> dict[str, Any]:
+    """Fetch a sealed receipt by job/execution id or by receiptId returned from a prior result."""
+    identifier = _first_nonempty(receipt_id, receiptId, job_id, jobId)
+    result = _tool_call(lambda: _receipt_from_identifier(identifier))
     if isinstance(result, CallToolResult):
         return result
     if isinstance(result, dict) and result.get("error"):
@@ -449,6 +673,29 @@ def hydracept_download_artifact(
     return _tool_call(lambda: _download_artifact(job_id, artifact_id, label, output_path))
 
 
+def _suffix_for_media_type(media_type: str | None) -> str:
+    normalized = str(media_type or "").split(";", 1)[0].strip().lower()
+    exact = {
+        "application/json": ".json",
+        "text/plain": ".txt",
+        "image/png": ".png",
+        "image/jpeg": ".jpg",
+        "image/webp": ".webp",
+        "image/gif": ".gif",
+        "audio/ogg": ".ogg",
+        "audio/mpeg": ".mp3",
+        "audio/wav": ".wav",
+        "audio/x-wav": ".wav",
+        "model/gltf-binary": ".glb",
+        "model/gltf+json": ".gltf",
+    }
+    if normalized in exact:
+        return exact[normalized]
+    if normalized.endswith("+json"):
+        return ".json"
+    return ".bin"
+
+
 def _download_artifact(
     job_id: str,
     artifact_id: str,
@@ -458,6 +705,7 @@ def _download_artifact(
     workspace = require_ready_workspace(_project_root())
     resolved_id = artifact_id.strip()
     filename_hint = resolved_id
+    media_type_hint = ""
     job: dict[str, Any] | None = None
     if not resolved_id:
         job = _client().get_job(job_id)
@@ -477,8 +725,8 @@ def _download_artifact(
                     item.get("filename"),
                     item.get("sliceCellId"),
                 )
-                for value in candidates:
-                    key = str(value or "").strip().lower().replace("_", "").replace("-", "")
+                for candidate_value in candidates:
+                    key = str(candidate_value or "").strip().lower().replace("_", "").replace("-", "")
                     if key.endswith(".png"):
                         key = key[:-4]
                     if key and key == needle:
@@ -490,6 +738,7 @@ def _download_artifact(
                 raise ValueError(f"no artifact labeled {label!r} on job {job_id}")
             resolved_id = str(match.get("artifactId") or "")
             filename_hint = str(match.get("filename") or match.get("label") or resolved_id)
+            media_type_hint = str(match.get("mediaType") or match.get("media_type") or "")
         else:
             primary = infer_primary_artifact_id(job) or ""
             if not primary:
@@ -508,6 +757,7 @@ def _download_artifact(
             for item in artifacts:
                 if isinstance(item, dict) and str(item.get("artifactId") or "") == resolved_id:
                     filename_hint = str(item.get("filename") or item.get("label") or resolved_id)
+                    media_type_hint = str(item.get("mediaType") or item.get("media_type") or "")
                     break
     if not resolved_id:
         raise ValueError("artifact_id is required")
@@ -521,9 +771,10 @@ def _download_artifact(
         for item in artifacts:
             if isinstance(item, dict) and str(item.get("artifactId") or "") == resolved_id:
                 filename_hint = str(item.get("filename") or item.get("label") or resolved_id)
+                media_type_hint = str(item.get("mediaType") or item.get("media_type") or media_type_hint)
                 break
         if Path(filename_hint).suffix == "":
-            filename_hint = f"{resolved_id}.png"
+            filename_hint = f"{resolved_id}{_suffix_for_media_type(media_type_hint)}"
     target = finalize_single_artifact_path(
         resolve_artifact_output(
             _project_root(),
@@ -753,7 +1004,8 @@ def hydracept_ui_submit_job(
 
 @server.tool(meta=_APP_ONLY_META)
 def hydracept_ui_poll_job(job_id: str) -> dict[str, Any]:
-    """Panel job poll. Same projection as hydracept_job_status."""
+    """Panel job poll. Same projection as hydracept_job_status; proves the App is mounted."""
+    _MOUNTED_JOB_IDS.add(job_id)
     return _tool_call(lambda: _status_payload(job_id, _client().get_job(job_id)))
 
 
@@ -784,7 +1036,7 @@ def hydracept_ui_download_artifact(
 
 @server.tool(meta=_APP_ONLY_META)
 def hydracept_ui_artifact_preview(jobId: str = "", artifactId: str = "", job_id: str = "", artifact_id: str = "") -> dict[str, Any]:
-    """App-only bounded image preview. Server uses the workspace client; iframe has no API token."""
+    """App-only bounded media preview. Server uses the workspace client; iframe has no API token."""
     import base64
 
     resolved_job = (jobId or job_id).strip()
@@ -802,13 +1054,13 @@ def hydracept_ui_artifact_preview(jobId: str = "", artifactId: str = "", job_id:
         if not artifact:
             raise ValueError("jobId and artifactId are required")
         data, media_type = _artifact_bytes(resolved_job, artifact)
-        if not media_type.startswith("image/"):
+        if not (media_type.startswith("image/") or media_type.startswith("audio/")):
             return {
                 "jobId": resolved_job,
                 "artifactId": artifact,
                 "mediaType": media_type,
                 "unsupported": True,
-                "message": "This panel previews images only. Download or Use still work for other media.",
+                "message": "This panel previews images and audio. Download or Use still work for other media.",
             }
         return {
             "jobId": resolved_job,
@@ -852,7 +1104,7 @@ def hydracept_ui_run(
             max_cost=max_cost,
             idempotency_key=idempotency_key or None,
         )
-        payload = outcome.payload()
+        payload = _sanitize_public_payload(outcome.payload())
         if outcome.error is not None:
             raise McpToolError(payload)
         return attach_hydrated_interaction(
@@ -1017,6 +1269,21 @@ server._install_extension_interceptor()
 
 
 def serve_stdio() -> None:
+    try:
+        import os
+
+        from hydracept.mcp.runtime_binding import attest_runtime_binding
+        from hydracept.mcp.workspace_locator import resolve_mcp_workspace
+
+        root = _WORKSPACE_ROOT or resolve_mcp_workspace(None)
+        env = dict(os.environ)
+        if not str(env.get("HYDRACEPT_MCP_GENERATION") or "").strip():
+            from hydracept.cli.mcp_bind import binding_generation, stdio_args
+
+            env["HYDRACEPT_MCP_GENERATION"] = binding_generation(root, stdio_args(root))
+        attest_runtime_binding(root, source="stdio", env=env)
+    except Exception:  # noqa: BLE001 — status still works if the lease cannot be written
+        pass
     server.run(transport="stdio")
 
 

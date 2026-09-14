@@ -62,7 +62,8 @@ def test_apps_host_returns_mounted_presentation() -> None:
         )
     )
     presentation = result["presentation"]
-    assert presentation["status"] == "mounted"
+    assert presentation["status"] == "mount_requested"
+    assert presentation["hostConfirmation"] == "unobserved"
     assert presentation["appUri"] == "ui://hydracept/app.html"
     assert presentation["agentAction"] == "present_and_yield"
     assert presentation["blocking"] is True
@@ -131,8 +132,23 @@ def test_job_result_attaches_artifact_review_presentation() -> None:
     assert attached["presentation"]["surface"] == "artifact.review"
     assert attached["presentation"]["status"] == "mount_requested"
     assert attached["presentation"]["preferred"] is True
-    assert attached["presentation"].get("hostConfirmation") is None
+    assert attached["presentation"].get("hostConfirmation") == "unobserved"
     assert attached["presentation"]["context"]["artifactId"] == "art_1"
+
+
+def test_audio_result_attaches_artifact_review_presentation() -> None:
+    attached = attach_hydrated_interaction(
+        {
+            "jobId": "job_audio",
+            "status": "succeeded",
+            "capabilityKey": "audio.sfx.generate.v1",
+            "artifacts": [{"artifactId": "art_audio", "mediaType": "audio/ogg"}],
+        }
+    )
+    assert attached["surface"] == "artifact.review"
+    assert attached["presentation"]["surface"] == "artifact.review"
+    assert attached["presentation"]["preferred"] is True
+    assert attached["presentation"]["context"]["artifactId"] == "art_audio"
 
 
 def test_awaiting_approval_job_owns_blocking_preflight() -> None:
@@ -156,7 +172,9 @@ def test_present_and_yield_is_structured_not_prose_only() -> None:
         confirmation_required=True,
     )
     assert payload["agentAction"] == "present_and_yield"
-    assert payload["status"] == "mounted"
+    assert payload["status"] == "mount_requested"
+    assert payload["hostConfirmation"] == "unobserved"
+    assert payload["uri"] == payload["appUri"]
 
 
 def test_init_style_presentation_does_not_claim_mount() -> None:
@@ -168,7 +186,8 @@ def test_init_style_presentation_does_not_claim_mount() -> None:
     )
     assert payload["status"] == "mount_requested"
     assert payload["agentAction"] == "present_and_yield"
-    assert payload.get("hostConfirmation") is None
+    assert payload.get("hostConfirmation") == "unobserved"
+    assert payload["uri"] == payload["appUri"] == "ui://hydracept/app.html"
 
 
 def test_stale_progress_interaction_advances_to_artifact_review() -> None:

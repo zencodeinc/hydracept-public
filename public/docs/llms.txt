@@ -1,0 +1,6 @@
+# Hydracept docs mirror
+
+Canonical machine-readable agent index:
+https://hydracept.com/llms.txt
+
+This mirror exists so agents probing docs.hydracept.com/llms.txt reach the same bootstrap guidance as the site root index.

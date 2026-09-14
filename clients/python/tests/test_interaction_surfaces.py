@@ -429,7 +429,8 @@ def test_apps_path_returns_full_contract_not_elicitation() -> None:
     assert not isinstance(result, InputRequiredResult)
     assert result["schemaVersion"] == "hydracept.interaction.v1"
     assert result["surface"] == "job.progress"
-    assert result["presentation"]["status"] == "mounted"
+    assert result["presentation"]["status"] == "mount_requested"
+    assert result["presentation"]["hostConfirmation"] == "unobserved"
     assert result["presentation"]["agentAction"] == "present"
 
 

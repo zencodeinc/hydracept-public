@@ -33,7 +33,6 @@ from hydracept.cli.integrations.unity import UnityInstallError, install_unity_pa
 from hydracept.cli.init_resolver import run_init, unified_bootstrap_enabled
 from hydracept.cli.login_flow import LoginError, login_device, login_with_token
 from hydracept.cli.quickstart import run_quickstart
-from hydracept.cli.run_capability import RunCapabilityError, run_capability
 from hydracept.cli.setup_grant_cmd import setup_grant_app
 from hydracept.cli.session_store import DEFAULT_APP_BASE_URL
 from hydracept.cli.smoke_runner import (
@@ -318,7 +317,7 @@ def init_cmd(
         help="Suggested Hydracept project name (default: folder name or HYDRACEPT_PROJECT_NAME)",
     ),
 ) -> None:
-    """Idempotent universal bootstrap resolver (ADR-028)."""
+    """Idempotent workspace bootstrap. Reuses GitHub CLI or HYDRACEPT_API_KEY when present."""
     if unified_bootstrap_enabled():
         grant = (os.environ.get(setup_grant_env) or "").strip() if setup_grant_env else None
         suggested = (project_name or "").strip() or None
@@ -389,58 +388,6 @@ def init_cmd(
         console.print("Refusing --apply without --yes")
         raise typer.Exit(USAGE)
     configure_cmd(api=api, project_root=project_root, token="", rotate=False, print_env=False)
-
-
-@app.command("run")
-def run_cmd(
-    capability_key: str = typer.Argument(..., help="Capability key, e.g. image.generate.v1"),
-    prompt: str = typer.Option("", "--prompt", help="Convenience input.prompt for generation capabilities"),
-    input_json: str = typer.Option("", "--input", help="JSON object merged into capability input"),
-    api: str = typer.Option(DEFAULT_API, "--api"),
-    project_root: Path = typer.Option(Path.cwd(), "--project-root"),
-    token: str = typer.Option("", "--token"),
-    watch: bool = typer.Option(True, "--watch/--no-watch"),
-    json_output: bool = typer.Option(False, "--json"),
-    poll_seconds: int = typer.Option(600, "--poll-seconds"),
-) -> None:
-    """Invoke a capability. Composes init automatically when the workspace can be bootstrapped."""
-    try:
-        result = run_capability(
-            project_root,
-            capability_key,
-            prompt=prompt or None,
-            input_json=input_json or None,
-            api_url=api,
-            token=token or None,
-            watch=watch,
-            poll_seconds=poll_seconds,
-        )
-    except RunCapabilityError as exc:
-        if json_output and exc.payload:
-            console.print_json(data=exc.payload)
-        else:
-            console.print(f"[red]{exc}[/red]")
-        raise typer.Exit(exc.exit_code) from exc
-
-    if json_output or result.get("status") == "interaction_required":
-        console.print_json(data=result)
-        if result.get("status") == "interaction_required":
-            action = result.get("action") or {}
-            url = str(action.get("url") or "").strip()
-            if url and not json_output:
-                console.print(f"\n[link={url}]{url}[/link]")
-        return
-
-    status = str(result.get("status") or "")
-    if status == "succeeded":
-        artifacts = result.get("artifacts") or []
-        console.print("[green]Capability succeeded[/green]")
-        if artifacts:
-            console.print_json(data={"artifacts": artifacts})
-        elif result.get("result") is not None:
-            console.print_json(data=result["result"])
-        return
-    console.print_json(data=result)
 
 
 @app.command("quickstart")
@@ -674,6 +621,8 @@ def context_cmd(
 @app.command("run")
 def run_cmd(
     capability: str = typer.Argument(..., help="Capability key"),
+    prompt: str = typer.Option("", "--prompt", help="Convenience input.prompt for generation capabilities"),
+    target_locale: str = typer.Option("", "--target-locale", help="BCP 47 target locale for text.translate.v1"),
     input_json: str = typer.Option("", "--input", help="JSON object or prompt string"),
     body: Path | None = _input_file_option(),
     wait: bool = typer.Option(True, "--wait/--no-wait"),
@@ -689,7 +638,38 @@ def run_cmd(
     """Find, admit, wait, persist. Canonical public execution primitive."""
     from hydracept.cli.run_facade import execute_run, parse_input_argument
 
-    payload = parse_input_argument(input_json or None, body)
+    try:
+        payload = parse_input_argument(input_json or None, body)
+    except (ValueError, json.JSONDecodeError) as exc:
+        console.print_json(
+            data={
+                "error": True,
+                "code": "InvalidInput",
+                "message": str(exc),
+                "recovery": {
+                    "nextAction": "python -m hydracept run <key> --prompt \"...\" --json"
+                },
+            }
+        )
+        raise typer.Exit(USAGE) from exc
+    if prompt:
+        payload.setdefault("prompt", prompt)
+    if target_locale:
+        payload.setdefault("targetLocale", target_locale)
+    if payload.get("prompt") and str(capability).startswith("image."):
+        payload.setdefault("requestTransparentOutput", True)
+    if (
+        not json_output
+        and str(capability).startswith("image.")
+        and payload.get("prompt")
+    ):
+        from hydracept.cli.image_canvas import MIN_PIXELS, MIN_SQUARE, canvas_size
+
+        if canvas_size(payload) is None:
+            console.print(
+                f"note: default image output is at least {MIN_SQUARE}×{MIN_SQUARE} "
+                f"({MIN_PIXELS:,} px)."
+            )
     outcome = execute_run(
         project_root,
         capability,
@@ -704,15 +684,88 @@ def run_cmd(
         idempotency_key=idempotency_key or None,
         out=out,
     )
-    console.print_json(data=outcome.payload())
+    _print_run_outcome(outcome, json_output=json_output)
     if outcome.exit_code:
         raise typer.Exit(outcome.exit_code)
 
 
-funding_app = typer.Typer(help="How this workspace pays (trial + BYOK).")
+def _print_run_outcome(outcome: Any, *, json_output: bool) -> None:
+    payload = outcome.payload()
+    if json_output:
+        console.print_json(data=payload)
+        return
+    if outcome.error is not None:
+        console.print(f"[red]{outcome.error.message}[/red]")
+        recovery = outcome.error.recovery or {}
+        next_action = recovery.get("nextAction") or recovery.get("cli")
+        if next_action:
+            console.print(f"next: {next_action}")
+        return
+    status = str(payload.get("status") or "unknown")
+    capability = str(payload.get("capability") or "")
+    console.print(f"[green]status={status}[/green] capability={capability}")
+    pricing = payload.get("pricing") if isinstance(payload.get("pricing"), dict) else {}
+    summary = pricing.get("summary")
+    if summary:
+        console.print(str(summary))
+    from hydracept.cli.run_output_preview import human_run_preview
+
+    preview = human_run_preview(payload)
+    if preview:
+        console.print(preview)
+    for artifact in payload.get("artifacts") or []:
+        if not isinstance(artifact, dict):
+            continue
+        path = artifact.get("localPath") or artifact.get("filename")
+        if path:
+            console.print(f"artifact: {path}")
+    if payload.get("jobId"):
+        console.print(f"job: {payload['jobId']}")
+
+
+def _print_funding_status(payload: dict, *, json_output: bool) -> None:
+    if json_output:
+        console.print_json(data=payload)
+        return
+    credit = payload.get("managedCreditRemainingUsd")
+    trial = payload.get("trialRemainingUsd")
+    source = payload.get("managedExecutionFundingSource") or "unavailable"
+    coverage = payload.get("managedExecutionCoverage") or payload.get("managedChargeExpectation")
+    byok = bool(payload.get("byokConnected"))
+    credit_text = "unknown" if credit is None else f"${float(credit):.2f}"
+    trial_text = "unknown" if trial is None else f"${float(trial):.2f}"
+    if payload.get("summary"):
+        console.print(str(payload["summary"]))
+    console.print(
+        f"canExecute={str(bool(payload.get('canExecute'))).lower()} "
+        f"customerCredit={credit_text} trial={trial_text} "
+        f"executionFunding={source} coverage={coverage or 'unknown'} byok={str(byok).lower()}"
+    )
+    if payload.get("nextAction"):
+        console.print(f"next={payload['nextAction']}")
+
+
+funding_app = typer.Typer(
+    help="How this workspace pays (trial + BYOK).",
+    invoke_without_command=True,
+    no_args_is_help=False,
+)
 app.add_typer(funding_app, name="funding")
 providers_app = typer.Typer(help="Provider credentials (alias of funding).")
 app.add_typer(providers_app, name="providers")
+
+
+@funding_app.callback()
+def funding_default(
+    ctx: typer.Context,
+    project_root: Path = typer.Option(Path.cwd(), "--project-root"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    if ctx.invoked_subcommand is not None:
+        return
+    from hydracept.cli.funding import funding_status
+
+    _print_funding_status(funding_status(project_root), json_output=json_output)
 
 
 @funding_app.command("status")
@@ -722,11 +775,7 @@ def funding_status_cmd(
 ) -> None:
     from hydracept.cli.funding import funding_status
 
-    payload = funding_status(project_root)
-    if json_output:
-        console.print_json(data=payload)
-        return
-    console.print(f"options={', '.join(payload['options'])} walletLive={payload['managedWalletTopUpLive']}")
+    _print_funding_status(funding_status(project_root), json_output=json_output)
 
 
 @funding_app.command("setup")
@@ -765,7 +814,7 @@ def mcp_serve_cmd(
     """Run the Hydracept stdio MCP server."""
     from hydracept.mcp.server import configure_workspace, serve_stdio
 
-    configure_workspace(workspace)
+    configure_workspace(workspace or Path.cwd())
     serve_stdio()
 
 
@@ -897,6 +946,7 @@ def agent_context_cmd(
         "--profile",
         help="Projection profile: compact, integration, or omit for full bundle.",
     ),
+    json_output: bool = typer.Option(False, "--json"),
 ) -> None:
     params: dict[str, str] = {}
     if profile:
@@ -914,6 +964,9 @@ def agent_context_cmd(
         )
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(payload, separators=(",", ":")) + "\n", encoding="utf-8")
+    if json_output:
+        console.print_json(data=payload)
+        return
     console.print(f"[green]Wrote[/green] {output} (snapshot — use GET /v1/agent-context live)")
 
 
@@ -952,10 +1005,16 @@ def consumer_check_cmd(
 @capabilities_app.command("list")
 def capabilities_list(
     api: str = typer.Option(DEFAULT_API, "--api"),
+    compact: bool = typer.Option(
+        False,
+        "--compact",
+        help="Identity-free browse (GET /v1/capabilities?view=summary).",
+    ),
     json_output: bool = typer.Option(False, "--json", help="No-op; list is already JSON"),
 ) -> None:
     del json_output
-    response = httpx.get(f"{api.rstrip('/')}/v1/capabilities", timeout=30.0)
+    params = {"view": "summary"} if compact else None
+    response = httpx.get(f"{api.rstrip('/')}/v1/capabilities", params=params, timeout=30.0)
     console.print_json(data=_cli_json(response))
 
 
@@ -970,6 +1029,16 @@ def capabilities_describe(
 
     response = httpx.get(f"{api.rstrip('/')}/v1/capabilities/{key}", timeout=30.0)
     console.print_json(data=describe_use_contract(_cli_json(response)))
+
+
+@capabilities_app.command("get")
+def capabilities_get(
+    key: str = typer.Argument(...),
+    api: str = typer.Option(DEFAULT_API, "--api"),
+    json_output: bool = typer.Option(False, "--json", help="No-op; get is already JSON"),
+) -> None:
+    """Alias of `capabilities describe`."""
+    capabilities_describe(key, api=api, json_output=json_output)
 
 
 @capabilities_app.command("find")
@@ -997,6 +1066,7 @@ def capabilities_quote(
         None,
         help="JSON file path, inline JSON object, or - for stdin",
     ),
+    prompt: str = typer.Option("", "--prompt", help="Convenience input.prompt for generation capabilities"),
     input_json: str = typer.Option("", "--input", help="Inline JSON object"),
     body_file: Path | None = _input_file_option(),
     api: str = typer.Option(DEFAULT_API, "--api"),
@@ -1006,10 +1076,24 @@ def capabilities_quote(
 ) -> None:
     del json_output
     workspace = _execution_workspace(project_root, token=token, api=api)
-    payload = _load_json_payload(body, input_json, body_file)
+    if prompt and not (body or input_json or body_file):
+        payload: dict[str, Any] = {"prompt": prompt}
+    else:
+        payload = _load_json_payload(body, input_json, body_file)
+        if prompt:
+            payload.setdefault("prompt", prompt)
+    if payload.get("prompt") and str(key).startswith("image."):
+        payload.setdefault("requestTransparentOutput", True)
     payload = merge_workspace_job_context(payload, workspace)
+    from hydracept.cli.image_canvas import preflight_image_canvas
+    from hydracept.receipt_cost import present_quote
+
+    blocked = preflight_image_canvas(key, payload)
+    if blocked is not None:
+        console.print_json(data=blocked)
+        raise typer.Exit(USAGE)
     client = HydraceptClient(workspace.api_url, workspace.token, workspace=workspace)
-    console.print_json(data=client.quote_capability(key, payload))
+    console.print_json(data=present_quote(client.quote_capability(key, payload)))
 
 
 @capabilities_app.command("estimate")
@@ -1019,6 +1103,7 @@ def capabilities_estimate(
         None,
         help="JSON file path, inline JSON object, or - for stdin",
     ),
+    prompt: str = typer.Option("", "--prompt", help="Convenience input.prompt for generation capabilities"),
     input_json: str = typer.Option("", "--input", help="Inline JSON object"),
     body_file: Path | None = _input_file_option(),
     api: str = typer.Option(DEFAULT_API, "--api"),
@@ -1029,27 +1114,13 @@ def capabilities_estimate(
     capabilities_quote(
         key,
         body,
+        prompt=prompt,
         input_json=input_json,
         body_file=body_file,
         api=api,
         project_root=project_root,
         token=token,
     )
-
-
-@capabilities_app.command("find")
-def capabilities_find(
-    query: str = typer.Argument(..., help="Natural-language task, e.g. 'generate an image'"),
-    api: str = typer.Option(DEFAULT_API, "--api"),
-) -> None:
-    """Find capabilities that can satisfy a task. Includes one-shot readiness facts."""
-    response = httpx.get(
-        f"{api.rstrip('/')}/v1/capabilities",
-        params={"q": query},
-        timeout=30.0,
-    )
-    response.raise_for_status()
-    console.print_json(data=response.json())
 
 
 @capabilities_app.command("invoke")
@@ -1209,7 +1280,15 @@ def jobs_get(
     token: str = typer.Option("", "--token"),
 ) -> None:
     client = HydraceptClient(api, _resolve_token(project_root, token or None))
-    console.print_json(data=client.get_job(job_id))
+    job = client.get_job(job_id)
+    receipt = None
+    try:
+        receipt = client.get_job_receipt(job_id)
+    except Exception:  # noqa: BLE001 — job JSON still useful if the receipt is unavailable
+        receipt = None
+    from hydracept.receipt_cost import present_job
+
+    console.print_json(data=present_job(job, receipt))
 
 
 @jobs_app.command("recover")
@@ -1278,7 +1357,9 @@ def jobs_receipt(
     token: str = typer.Option("", "--token"),
 ) -> None:
     client = HydraceptClient(api, _resolve_token(project_root, token or None))
-    console.print_json(data=client.get_job_receipt(job_id))
+    from hydracept.receipt_cost import present_receipt
+
+    console.print_json(data=present_receipt(client.get_job_receipt(job_id)))
 
 
 @jobs_app.command("cancel")
@@ -1314,7 +1395,22 @@ def pinned_get(
     token: str = typer.Option("", "--token"),
 ) -> None:
     client = HydraceptClient(api, _resolve_token(project_root, token or None))
-    console.print_json(data=client.get_pinned_receipt(receipt_id))
+    try:
+        console.print_json(data=client.get_pinned_receipt(receipt_id))
+    except HydraceptApiError as exc:
+        payload = {
+            "error": True,
+            "code": exc.code or "NOT_FOUND",
+            "message": str(exc),
+            "nextAction": (
+                f"python -m hydracept jobs receipt {receipt_id} --json"
+                if str(receipt_id).startswith("wfr_")
+                else "python -m hydracept jobs receipt <jobId> --json"
+            ),
+            "note": "pinned get is for pinned inference receipts. Smoke/run receipts use jobs receipt <jobId>.",
+        }
+        console.print_json(data=payload)
+        raise typer.Exit(1) from exc
 
 
 @pinned_app.command("bulk")

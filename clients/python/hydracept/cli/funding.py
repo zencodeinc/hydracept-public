@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import webbrowser
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,7 @@ from hydracept.cli.workspace import (
 )
 
 STUDIO_CONNECTIONS_PATH = "/connections"
+_INTERNAL_SENTINEL_COST_FLOOR = 900_000_000.0
 
 
 def connections_url(api_url: str, project_id: str, environment: str) -> str:
@@ -29,20 +31,38 @@ def connections_url(api_url: str, project_id: str, environment: str) -> str:
     return f"{origin}{STUDIO_CONNECTIONS_PATH}{query}"
 
 
+def _public_money(value: Any) -> float | None:
+    """Return a customer-visible monetary value, never an internal unbounded sentinel."""
+    if value is None:
+        return None
+    try:
+        resolved = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(resolved) or abs(resolved) >= _INTERNAL_SENTINEL_COST_FLOOR:
+        return None
+    return resolved
+
+
 def _managed_credit_from_diagnostics(body: dict[str, Any]) -> tuple[float | None, str]:
     """Read customer-visible managed credit with a marked legacy fallback."""
     if body.get("managedCreditRemaining") is not None:
-        return float(body["managedCreditRemaining"]), "managedCreditRemaining"
+        remaining = _public_money(body["managedCreditRemaining"])
+        source = "managedCreditRemaining" if remaining is not None else "unavailable_internal_value"
+        return remaining, source
     if body.get("managedTrialRemaining") is not None:
-        return float(body["managedTrialRemaining"]), "managedTrialRemaining_legacy_alias"
+        remaining = _public_money(body["managedTrialRemaining"])
+        source = (
+            "managedTrialRemaining_legacy_alias"
+            if remaining is not None
+            else "unavailable_internal_value"
+        )
+        return remaining, source
     return None, "unavailable"
 
 
 def _trial_credit_from_diagnostics(body: dict[str, Any]) -> float | None:
-    value = body.get("managedTrialRemaining")
-    if value is None:
-        return None
-    return float(value)
+    return _public_money(body.get("managedTrialRemaining"))
 
 
 def _coverage_kind(source: str, available: bool | None) -> str:
@@ -66,12 +86,16 @@ def funding_payload_from_diagnostics(
 
     Customer-visible managed credit, trial bucket, and execution-available
     funding are separate facts. Operator grants may fund execution without
-    becoming a fake customer wallet or trial balance.
+    becoming a fake customer wallet or trial balance. Historical unbounded
+    numeric sentinels are treated as unavailable evidence, never as money.
     """
     remaining, remaining_source = _managed_credit_from_diagnostics(body)
-    remaining_semantics = str(
-        body.get("managedCreditSemantics") or "aggregate_available_credit_legacy"
-    )
+    if remaining is None:
+        remaining_semantics = "unavailable"
+    else:
+        remaining_semantics = str(
+            body.get("managedCreditSemantics") or "aggregate_available_credit_legacy"
+        )
     trial_remaining = _trial_credit_from_diagnostics(body)
     execution_funding_available: bool | None = None
     if body.get("managedExecutionFundingAvailable") is not None:
@@ -98,8 +122,27 @@ def funding_payload_from_diagnostics(
     else:
         next_action = "python -m hydracept funding setup"
 
+    can_execute = bool(execution_funding_available) or byok
+    if byok:
+        summary = "BYOK is connected; provider usage is billed to your key."
+    elif execution_funding_available:
+        credit_usd = 0.0 if remaining is None else float(remaining)
+        summary = (
+            "This workspace can run jobs. Customer wallet credit is "
+            f"${credit_usd:.2f} and is not required; Hydracept is covering execution."
+            if credit_usd <= 0
+            else (
+                "Managed execution is available. "
+                f"Customer credit ${credit_usd:.2f}."
+            )
+        )
+    else:
+        summary = "Execution is not funded. Run python -m hydracept funding setup."
+
     return {
         "schemaVersion": "hydracept.funding.v1",
+        "summary": summary,
+        "canExecute": can_execute,
         "options": ["managed_credit", "byok"],
         "managedWalletTopUpLive": False,
         "managedCreditRemainingUsd": remaining,

@@ -12,7 +12,7 @@ from rich.console import Console
 from hydracept import __version__ as cli_version
 from hydracept.cli.agent_status import manifest_path, refresh_agent_context_cache
 from hydracept.cli.console_io import cli_console
-from hydracept.cli.mcp_bind import bind_workspace_mcp
+from hydracept.cli.mcp_bind import bind_workspace_mcp, inspect_workspace_mcp
 from hydracept.cli.exit_codes import AUTH, DOCTOR_FAILED, SUCCESS
 from hydracept.cli.onboarding_next import (
     START_URL,
@@ -57,6 +57,7 @@ class DoctorReport:
     mcp: dict[str, Any] | None = None
     funding: dict[str, Any] | None = None
     project_root: Path | None = None
+    session_payload: dict[str, Any] = field(default_factory=dict)
 
     @property
     def passed(self) -> bool:
@@ -72,6 +73,10 @@ class DoctorReport:
                 continue
             if check.next_action not in actions:
                 actions.append(check.next_action)
+        if isinstance(self.mcp, dict) and self.mcp.get("reloadRequired"):
+            reload_action = "Start or reload Hydracept MCP in the coding agent once"
+            if reload_action not in actions:
+                actions.append(reload_action)
         return actions
 
     def _section_status(self, names: tuple[str, ...]) -> dict[str, Any]:
@@ -97,12 +102,20 @@ class DoctorReport:
         project = self._section_status(("local.config_project",))
         managed = self._section_status(("api.managed_trial",))
         byok = self._section_status(("api.image_generation", "api.diagnostics_providers"))
+        if isinstance(self.funding, dict):
+            if self.funding.get("byokConnected"):
+                byok = {"status": "ready", "detail": "BYOK bound"}
+            elif self.funding.get("managedExecutionFundingAvailable"):
+                byok = {
+                    "status": "not_required",
+                    "detail": "BYOK not bound; managed execution covers this workspace",
+                }
         mcp_status = "ready" if isinstance(self.mcp, dict) and self.mcp else "unknown"
         mcp_detail = "configured" if mcp_status == "ready" else "not checked"
         if isinstance(self.mcp, dict):
             if self.mcp.get("reloadRequired"):
                 mcp_status = "warning"
-                mcp_detail = "configured; reload MCP once"
+                mcp_detail = "configured; start or reload MCP once"
         environment = {
             "status": "ready" if ws and ws.environment else "unknown",
             "detail": (ws.environment if ws and ws.environment else "not bound"),
@@ -162,7 +175,17 @@ class DoctorReport:
                 {"name": check.name, "detail": check.detail}
                 for check in self.checks
                 if not check.passed and not check.fatal
-            ],
+            ]
+            + (
+                [
+                    {
+                        "name": "mcp.reload",
+                        "detail": "stdio MCP is bound; start or reload the MCP process once so it matches this checkout. CLI still works.",
+                    }
+                ]
+                if isinstance(self.mcp, dict) and self.mcp.get("reloadRequired")
+                else []
+            ),
             "checks": [
                 {
                     "name": check.name,
@@ -190,6 +213,12 @@ class DoctorReport:
                 ).to_dict()
             except Exception:  # noqa: BLE001
                 pass
+            from hydracept.cli.consumer_versions import consumer_versions
+
+            payload["versions"] = consumer_versions(
+                self.project_root,
+                session=self.session_payload,
+            )
         return payload
 
 
@@ -330,11 +359,7 @@ def _scripts_path_check() -> DoctorCheck:
     return DoctorCheck(
         "cli.path",
         True,
-        (
-            "User-site Scripts not on PATH. Hydracept.exe may be missing; "
-            "use python -m hydracept. Missing: "
-            + ", ".join(str(item) for item in missing)
-        ),
+        "Canonical invocation is python -m hydracept. A Scripts directory on PATH is optional.",
         fatal=False,
         next_action="python -m hydracept",
     )
@@ -367,9 +392,23 @@ def build_doctor_report(
     report = DoctorReport()
     report.project_root = project_root
     api_base = api.rstrip("/")
-    bind = bind_workspace_mcp(project_root)
+    resolved = resolve_workspace(project_root, overrides=CliOverrides(token=token, api_url=api))
+    bind = bind_workspace_mcp(project_root) if resolved is not None else inspect_workspace_mcp(project_root)
     report.mcp = bind.to_dict()
     report.add(_scripts_path_check())
+    reload_or_start = (
+        "Hydracept CLI is ready. Reload MCP once to enable IDE tools."
+        if bind.reload_required and bind.bound
+        else (
+            "Run python -m hydracept doctor --fix to repair stale MCP config generations"
+            if getattr(bind, "config_stale", False)
+            else (
+                "Start or reload Hydracept MCP in the coding agent once"
+                if bind.reload_required
+                else None
+            )
+        )
+    )
     report.add(
         DoctorCheck(
             "local.mcp_bind",
@@ -377,16 +416,32 @@ def build_doctor_report(
             (
                 f"stdio MCP bound ({', '.join(bind.project_config)})"
                 if bind.bound
-                else "could not bind project stdio MCP"
+                else "project stdio MCP is not bound yet; run init or python -m hydracept mcp bind"
             ),
             fatal=False,
-            next_action=(
-                "Reload MCP in the coding agent once"
-                if bind.reload_required
-                else None
-            ),
+            next_action=reload_or_start,
         )
     )
+    runtime_status = bind.runtime.status if bind.runtime else "missing"
+    if runtime_status in {
+        "workspace_mismatch",
+        "project_mismatch",
+        "generation_mismatch",
+        "pid_reused",
+        "stale",
+    }:
+        report.add(
+            DoctorCheck(
+                "local.mcp_runtime",
+                False,
+                (
+                    f"stdio MCP runtime is {runtime_status}; CLI still works. "
+                    "Start or reload MCP so the live process matches this checkout."
+                ),
+                fatal=False,
+                next_action="Start or reload Hydracept MCP in the coding agent once, or use python -m hydracept run",
+            )
+        )
 
     pack_manifest = read_json(manifest_path(project_root))
     pack_installed = bool(pack_manifest)
@@ -397,8 +452,9 @@ def build_doctor_report(
             (
                 "agent pack installed"
                 if pack_installed
-                else "agent pack not installed after init"
+                else "Agent pack missing. CLI still works; run python -m hydracept agents install --auto."
             ),
+            fatal=False,
             next_action=None if pack_installed else "python -m hydracept agents install --auto",
         )
     )
@@ -534,6 +590,7 @@ def build_doctor_report(
         )
         session_resp.raise_for_status()
         session_payload = session_resp.json()
+        report.session_payload = session_payload if isinstance(session_payload, dict) else {}
         principal = session_payload.get("principalId")
         bundle = session_payload.get("routeBundleVersion")
         if principal and bundle:
@@ -552,6 +609,23 @@ def build_doctor_report(
                     "diagnostics/session missing principalId or routeBundleVersion",
                 )
             )
+    except httpx.HTTPStatusError as exc:
+        rejected = exc.response.status_code in {401, 403}
+        report.add(
+            DoctorCheck(
+                "api.diagnostics_session",
+                False,
+                (
+                    "Installed credential was rejected. Recover with "
+                    "python -m hydracept init --apply --yes --json"
+                    if rejected
+                    else f"GET /v1/diagnostics/session failed: {exc}"
+                ),
+                next_action=(
+                    "python -m hydracept init --apply --yes --json" if rejected else None
+                ),
+            )
+        )
     except httpx.HTTPError as exc:
         report.add(
             DoctorCheck(
@@ -840,7 +914,7 @@ def build_doctor_report(
                     (
                         f"CLI {cli_version} is below the 0.3 public contract. "
                         "In this checkout, use the repo CLI (`python -m hydracept`). "
-                        "Outside it, `pip install -U hydracept` (0.3.15+ required for current init, receipts, funding display, and PowerShell --input-file)."
+                        "Outside it, `pip install -U hydracept` (0.3.17+ required for current init, receipts, funding display, and PowerShell --input-file)."
                     ),
                     fatal=False,
                     next_action="python -m hydracept --version",
@@ -919,8 +993,8 @@ def run_doctor(
             if fix_result.blocked:
                 out.print("[yellow]repair_blocked — Hydracept will not overwrite user-owned MCP bytes[/yellow]")
             if fix_result.reload_required:
-                out.print("[yellow]Reload MCP once (humanActionRequired=reload_cursor)[/yellow]")
-        if fix_result.blocked or fix_result.reload_required or not report.passed:
+                out.print("[yellow]Start or reload MCP once (humanActionRequired=reload_cursor)[/yellow]")
+        if fix_result.blocked or not report.passed:
             return DOCTOR_FAILED
         return SUCCESS
     if repair:
@@ -1017,6 +1091,8 @@ def _finish(report: DoctorReport, console: Console, json_output: bool) -> int:
             detail = str(section.get("detail") or "")
             if status == "ready":
                 icon = "[green]✓[/green]"
+            elif status == "not_required":
+                icon = "[dim]✓[/dim]"
             elif status == "warning":
                 icon = "[yellow]○[/yellow]"
             elif status == "unknown":
@@ -1043,7 +1119,7 @@ def _finish(report: DoctorReport, console: Console, json_output: bool) -> int:
             mcp = payload.get("mcp") or {}
             if mcp.get("reloadRequired"):
                 console.print(
-                    "[yellow]Reload MCP once[/yellow] so stdio Hydracept uses this workspace."
+                    "[yellow]Start or reload MCP once[/yellow] so stdio Hydracept uses this workspace."
                 )
         else:
             console.print("[bold red]Doctor failed — fix checks above before submitting jobs.[/bold red]")

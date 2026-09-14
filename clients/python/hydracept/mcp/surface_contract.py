@@ -109,10 +109,10 @@ INTERACTION_SURFACES: dict[str, dict[str, Any]] = {
         "blocking": False,
         "agentAction": "present",
         "owns": "job_queued_or_running",
-        "next": {"visual_artifact_succeeded": "artifact.review"},
+        "next": {"reviewable_artifact_succeeded": "artifact.review"},
     },
     "artifact.review": {
-        "trigger": "reviewable_visual_artifact_available",
+        "trigger": "reviewable_artifact_available",
         "blocking": False,
         "agentAction": "present",
         "owns": "reviewable_artifact_produced",
@@ -136,6 +136,8 @@ _VISUAL_PREFIXES = (
     "sheet.",
 )
 _VISUAL_MEDIA_PREFIXES = ("image/", "video/", "model/")
+_REVIEWABLE_PREFIXES = _VISUAL_PREFIXES + ("audio.",)
+_REVIEWABLE_MEDIA_PREFIXES = _VISUAL_MEDIA_PREFIXES + ("audio/",)
 _TERMINAL_SUCCESS = frozenset({"succeeded", "completed"})
 _RUNNING = frozenset({"queued", "submitted", "running", "processing", "canceling"})
 
@@ -181,20 +183,44 @@ def surface_catalog(*, compact: bool = False) -> dict[str, Any]:
 
 
 def is_visual_capability(capability_key: str | None) -> bool:
+    """Compatibility helper for callers that specifically need visual media."""
     key = str(capability_key or "").strip().lower()
     return bool(key) and key.startswith(_VISUAL_PREFIXES)
 
 
 def is_visual_media_type(media_type: str | None) -> bool:
+    """Compatibility helper for callers that specifically need visual media."""
     value = str(media_type or "").strip().lower()
     return bool(value) and value.startswith(_VISUAL_MEDIA_PREFIXES)
 
 
-def surface_for_job_status(status: str | None, *, visual: bool = False) -> SurfaceId:
-    """Return lifecycle ownership; presentation may still be explicitly no-op."""
+def is_reviewable_capability(capability_key: str | None) -> bool:
+    """Whether successful output should transition into artifact.review."""
+    key = str(capability_key or "").strip().lower()
+    return bool(key) and key.startswith(_REVIEWABLE_PREFIXES)
+
+
+def is_reviewable_media_type(media_type: str | None) -> bool:
+    """Whether an artifact media type belongs on the review surface."""
+    value = str(media_type or "").strip().lower()
+    return bool(value) and value.startswith(_REVIEWABLE_MEDIA_PREFIXES)
+
+
+def surface_for_job_status(
+    status: str | None,
+    *,
+    visual: bool = False,
+    reviewable: bool | None = None,
+) -> SurfaceId:
+    """Return lifecycle ownership; presentation may still be explicitly no-op.
+
+    ``visual`` remains a backwards-compatible alias. New callers should pass
+    ``reviewable`` because audio artifacts are reviewable too.
+    """
     normalized = str(status or "").strip().lower()
+    should_review = bool(visual if reviewable is None else reviewable)
     if normalized in _TERMINAL_SUCCESS:
-        return "artifact.review" if visual else "job.progress"
+        return "artifact.review" if should_review else "job.progress"
     if normalized == "awaiting_approval":
         return "authorization.preflight"
     if normalized in _RUNNING or not normalized:
@@ -252,6 +278,9 @@ def authorization_contract(
     return payload
 
 
+_POSITIVE_HOST_CONFIRMATIONS = frozenset({"acked", "acknowledged", "observed", "confirmed"})
+
+
 def presentation_contract(
     *,
     surface: str,
@@ -279,11 +308,20 @@ def presentation_contract(
         if blocking is None
         else blocking
     )
+    resolved_status = status
+    resolved_confirmation = host_confirmation
+    if resolved_status in {"mounted", "already_mounted"}:
+        if resolved_confirmation not in _POSITIVE_HOST_CONFIRMATIONS:
+            resolved_status = "mount_requested"
+            resolved_confirmation = resolved_confirmation or "unobserved"
+    elif resolved_status == "mount_requested" and not resolved_confirmation:
+        resolved_confirmation = "unobserved"
     payload: dict[str, Any] = {
         "requested": requested or surface,
         "surface": surface,
         "appUri": APP_URI,
-        "status": status,
+        "uri": APP_URI,
+        "status": resolved_status,
         "preferred": bool(preferred),
         "blocking": bool(resolved_blocking),
         "agentAction": resolved_action,
@@ -301,8 +339,6 @@ def presentation_contract(
         payload["authorization"] = dict(authorization)
     if surface_session_id:
         payload["surfaceSessionId"] = surface_session_id
-    if host_confirmation:
-        payload["hostConfirmation"] = host_confirmation
-    elif status in {"mounted", "already_mounted", "transitioned"}:
-        payload["hostConfirmation"] = "unobserved"
+    if resolved_confirmation:
+        payload["hostConfirmation"] = resolved_confirmation
     return payload

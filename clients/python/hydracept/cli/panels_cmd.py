@@ -111,9 +111,23 @@ def panels_list(
             headers=_service_headers(project_root, token or None),
         )
     payload = _raise_for_status(response)
+    definitions = payload.get("definitions") if isinstance(payload, dict) else None
+    if isinstance(payload, dict) and not definitions:
+        payload = dict(payload)
+        payload["definitions"] = []
+        payload["builtInApp"] = {
+            "uri": "ui://hydracept/app.html",
+            "tool": "hydracept_interaction_surface",
+        }
+        payload["note"] = (
+            "No custom hosted panel definitions. The built-in Hydracept App is "
+            "ui://hydracept/app.html via hydracept_interaction_surface, not this list."
+        )
     if json_output:
         out.print_json(data=payload)
         return
+    if payload.get("note"):
+        out.print(str(payload["note"]))
     for row in payload.get("definitions", []):
         out.print(
             f"{row.get('id')}  {row.get('key')}  {row.get('displayName')}  status={row.get('status')}"

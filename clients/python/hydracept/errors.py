@@ -24,6 +24,27 @@ def parse_error_fields(payload: Any) -> tuple[str, str]:
     return "", ""
 
 
+def recovery_fields_from_payload(payload: Any) -> dict[str, Any]:
+    blob = payload
+    if isinstance(payload, dict) and isinstance(payload.get("detail"), dict):
+        blob = payload["detail"]
+    if not isinstance(blob, dict):
+        return {}
+    recovered: dict[str, Any] = {}
+    if "retryable" in blob:
+        recovered["retryable"] = bool(blob.get("retryable"))
+    next_action = blob.get("nextAction") or blob.get("next_action")
+    if next_action:
+        recovered["nextAction"] = str(next_action)
+    retry_after = blob.get("retryAfterSeconds", blob.get("retry_after_seconds"))
+    if retry_after is not None:
+        try:
+            recovered["retryAfterSeconds"] = int(retry_after)
+        except (TypeError, ValueError):
+            pass
+    return recovered
+
+
 class HydraceptApiError(httpx.HTTPStatusError):
     """HTTP error that includes Hydracept `code` / `detail` in the message."""
 
@@ -41,13 +62,19 @@ class HydraceptApiError(httpx.HTTPStatusError):
         self.code = code
 
     def as_tool_result(self) -> dict[str, Any]:
-        return {
+        payload = {
             "error": True,
             "httpStatus": self.response.status_code,
             "code": self.code or "HTTP_ERROR",
             "message": str(self),
             "body": self.payload,
         }
+        payload.update(recovery_fields_from_payload(self.payload))
+        if "retryable" not in payload and self.response.status_code in {429, 500, 502, 503, 504}:
+            payload["retryable"] = True
+            payload.setdefault("nextAction", "retry_after_backoff")
+            payload.setdefault("retryAfterSeconds", 2)
+        return payload
 
 
 class RunAdmissionError(Exception):

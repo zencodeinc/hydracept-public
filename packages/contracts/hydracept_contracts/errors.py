@@ -39,6 +39,8 @@ class HydraceptErrorCode(StrEnum):
     ROUTE_CASCADE_EXHAUSTED = "ROUTE_CASCADE_EXHAUSTED"
     PRICING_INPUTS_REQUIRED = "PRICING_INPUTS_REQUIRED"
     INVALID_INPUT = "InvalidInput"
+    UNSUPPORTED_TLD = "UnsupportedTld"
+    CATALOG_UNAVAILABLE = "CatalogUnavailable"
     UNKNOWN_EXECUTION_FIELD = "UNKNOWN_EXECUTION_FIELD"
     CONFLICTING_EXECUTION_CONSTRAINT = "CONFLICTING_EXECUTION_CONSTRAINT"
     INTERNAL_FAILURE = "InternalFailure"
@@ -50,9 +52,13 @@ RETRYABLE_ERROR_CODES: frozenset[HydraceptErrorCode] = frozenset(
         HydraceptErrorCode.RATE_LIMITED,
         HydraceptErrorCode.PROVIDER_UNAVAILABLE,
         HydraceptErrorCode.PROVIDER_TIMEOUT,
+        HydraceptErrorCode.CATALOG_UNAVAILABLE,
         HydraceptErrorCode.INTERNAL_FAILURE,
     }
 )
+
+
+from hydracept_contracts.public_error import public_error_content
 
 
 class HydraceptError(BaseModel):
@@ -61,6 +67,8 @@ class HydraceptError(BaseModel):
     code: HydraceptErrorCode
     message: str
     retryable: bool = False
+    next_action: str | None = Field(default=None, alias="nextAction")
+    retry_after_seconds: int | None = Field(default=None, alias="retryAfterSeconds")
     execution_id: str | None = Field(default=None, alias="executionId")
     receipt_id: str | None = Field(default=None, alias="receiptId")
     correlation_id: str | None = Field(default=None, alias="correlationId")
@@ -79,13 +87,24 @@ class HydraceptError(BaseModel):
         correlation_id: str | None = None,
         details: dict[str, Any] | None = None,
         retryable: bool | None = None,
+        next_action: str | None = None,
+        retry_after_seconds: int | None = None,
+        status: int | None = None,
     ) -> HydraceptError:
+        recovery = public_error_content(
+            code=code.value,
+            message=message,
+            status=status,
+            retryable=retryable,
+            next_action=next_action,
+            retry_after_seconds=retry_after_seconds,
+        )
         return cls(
             code=code,
             message=message,
-            retryable=RETRYABLE_ERROR_CODES.__contains__(code)
-            if retryable is None
-            else retryable,
+            retryable=bool(recovery.get("retryable", False)),
+            next_action=recovery.get("nextAction"),
+            retry_after_seconds=recovery.get("retryAfterSeconds"),
             execution_id=execution_id,
             receipt_id=receipt_id,
             correlation_id=correlation_id,

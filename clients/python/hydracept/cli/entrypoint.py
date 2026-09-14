@@ -2,9 +2,9 @@
 
 This adapter normalizes legacy Typer registrations without creating a second
 execution or discovery plane. Machine-readable commands accept a consistent
-``--json`` flag, capability find preserves the server's canonical relevance
-order while exposing workspace runnability, and known operational HTTP failures
-become one structured error document instead of a Python traceback.
+``--json`` flag, capability discovery uses the authenticated canonical resolver,
+and known operational HTTP failures become one structured error document instead
+of a Python traceback.
 """
 
 from __future__ import annotations
@@ -120,12 +120,12 @@ def _apply_smoke_wait_policy(root: Any) -> None:
             break
 
 
-def _find_headers(api: str) -> dict[str, str]:
+def _workspace_headers(api: str, project_root: Path | None = None) -> dict[str, str]:
     """Use workspace auth only for its bound API origin."""
     try:
         from hydracept.cli.workspace import resolve_workspace
 
-        workspace = resolve_workspace(Path.cwd())
+        workspace = resolve_workspace(project_root or Path.cwd())
     except Exception:  # noqa: BLE001
         workspace = None
     if workspace is None:
@@ -137,37 +137,83 @@ def _find_headers(api: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"} if token else {}
 
 
-def _compact_capability(item: dict[str, Any]) -> dict[str, Any]:
+def _workspace_access(item: dict[str, Any]) -> dict[str, Any]:
+    access = item.get("accessDecision")
+    if isinstance(access, dict):
+        return access
     runnable = item.get("workspaceRunnable")
-    workspace = runnable if isinstance(runnable, dict) else {}
+    return runnable if isinstance(runnable, dict) else {}
+
+
+def _compact_capability(item: dict[str, Any]) -> dict[str, Any]:
+    workspace = _workspace_access(item)
     pricing = item.get("pricing")
     price = pricing if isinstance(pricing, dict) else {}
+    key = item.get("key") or item.get("capabilityKey")
     compact: dict[str, Any] = {
-        "key": item.get("key"),
+        "key": key,
         "title": item.get("title"),
         "runnable": workspace.get("runnable"),
         "status": workspace.get("status"),
         "readySummary": item.get("readySummary"),
     }
-    if workspace.get("billingMode") is not None:
+    if item.get("confidence") is not None:
+        compact["confidence"] = item.get("confidence")
+    if workspace.get("selectedCredentialSource") is not None:
+        compact["credentialSource"] = workspace.get("selectedCredentialSource")
+    elif workspace.get("billingMode") is not None:
         compact["billingMode"] = workspace.get("billingMode")
-    if workspace.get("requiredAction") is not None:
-        compact["requiredAction"] = workspace.get("requiredAction")
+    required_action = workspace.get("requiredAction")
+    if required_action is not None:
+        compact["requiredAction"] = required_action
+    reasons = workspace.get("reasonCodes")
+    if isinstance(reasons, list) and reasons:
+        compact["reasonCodes"] = reasons
     if price:
         compact["pricing"] = {
-            key: price.get(key)
-            for key in ("mode", "estimateRequired", "pricingContext")
-            if price.get(key) is not None
+            name: price.get(name)
+            for name in ("mode", "estimateRequired", "pricingContext")
+            if price.get(name) is not None
         }
-    return compact
+    return {k: v for k, v in compact.items() if v is not None}
 
 
-def _server_ordered_candidates(items: Iterable[Any]) -> list[dict[str, Any]]:
-    """Preserve API resolver order; CLI is a projection, not a second ranker."""
-    return [item for item in items if isinstance(item, dict)]
+def _add_capabilities_describe_dispatch(root: Any) -> None:
+    """Describe with the same workspace identity used for quote and run."""
+    for name in ("describe", "get"):
+        command = _resolve_command(root, ("capabilities", name))
+        if command is None:
+            continue
+
+        def callback(*args: Any, **kwargs: Any) -> None:
+            del args
+            key = str(kwargs.get("key") or "").strip()
+            api = str(kwargs.get("api") or "https://api.hydracept.com").rstrip("/")
+            response = httpx.get(
+                f"{api}/v1/capabilities/{key}",
+                headers=_workspace_headers(api),
+                timeout=30.0,
+            )
+            raise_api_status(response)
+            from hydracept.cli.describe_contract import describe_use_contract
+
+            click.echo(json.dumps(describe_use_contract(response.json()), separators=(",", ":")))
+
+        command.callback = callback
+
+
+def _execution_hint(key: str) -> str:
+    resolved = str(key or "").strip() or "<key>"
+    if resolved.startswith(("image.", "audio.", "video.", "text.")):
+        return f'python -m hydracept run {resolved} --prompt "..." --json'
+    return (
+        f"python -m hydracept capabilities describe {resolved} --json && "
+        f"python -m hydracept run {resolved} --input-file body.json --json"
+    )
 
 
 def _add_capabilities_find_dispatch(root: Any) -> None:
+    """Use the one semantic resolver; prefer the user's generate/edit verb among matches."""
     command = _resolve_command(root, ("capabilities", "find"))
     if command is None:
         return
@@ -176,24 +222,48 @@ def _add_capabilities_find_dispatch(root: Any) -> None:
         del args
         query = str(kwargs.get("query") or kwargs.get("intent") or "").strip()
         api = str(kwargs.get("api") or "https://api.hydracept.com").rstrip("/")
-        response = httpx.get(
-            f"{api}/v1/capabilities",
-            params={"q": query},
-            headers=_find_headers(api),
+        headers = _workspace_headers(api)
+        response = httpx.post(
+            f"{api}/v1/capabilities/resolve",
+            json={"intent": query, "requirements": {}},
+            headers=headers,
             timeout=30.0,
         )
         raise_api_status(response)
         payload = response.json()
-        items = payload.get("capabilities") if isinstance(payload, dict) else []
-        ordered = _server_ordered_candidates(items or [])
-        candidates = [_compact_capability(item) for item in ordered[:5]]
+        matches = payload.get("matches") if isinstance(payload, dict) else []
+        candidates = [
+            _compact_capability(item)
+            for item in (matches or [])[:5]
+            if isinstance(item, dict)
+        ]
+        resolution = payload.get("resolution") if isinstance(payload, dict) else None
+        match_source = "resolver"
+        if not candidates and str(resolution or "") in {"no_match_requestable", "no_match", ""}:
+            from hydracept.cli.catalog_match import catalog_matches
+
+            fallback = catalog_matches(query, api=api, headers=headers)
+            candidates = [_compact_capability(item) for item in fallback]
+            if candidates:
+                resolution = "matched"
+                match_source = "catalog_fallback"
+        from hydracept.cli.catalog_match import prefer_intent_matches
+
+        candidates = prefer_intent_matches(query, candidates)
+        top_key = str((candidates[0] or {}).get("key") or "") if candidates else ""
         click.echo(
             json.dumps(
                 {
                     "query": query,
+                    "resolution": resolution,
                     "candidates": candidates,
                     "count": len(candidates),
-                    "execution": "python -m hydracept run <key> --input <json-or-prompt> --json",
+                    "matchSource": match_source,
+                    "workspaceAware": bool(headers),
+                    "requirementsSatisfied": (
+                        payload.get("requirementsSatisfied") if isinstance(payload, dict) else None
+                    ),
+                    "execution": _execution_hint(top_key),
                 },
                 separators=(",", ":"),
             )
@@ -207,6 +277,9 @@ def _add_png_verify_dispatch(root: click.Command) -> None:
     if command is None or command.callback is None:
         return
     original: Callable[..., Any] = command.callback
+    command.help = (
+        "Verify a Hydracept lockfile/run manifest, or verify PNG transparency and alpha semantics."
+    )
 
     def callback(*args: Any, **kwargs: Any) -> Any:
         path = kwargs.get("path")
@@ -218,6 +291,15 @@ def _add_png_verify_dispatch(root: click.Command) -> None:
         return original(*args, **kwargs)
 
     command.callback = callback
+
+
+def _clarify_consumer_check(root: click.Command) -> None:
+    command = _resolve_command(root, ("consumer-check",))
+    if command is not None:
+        command.help = (
+            "Static repository consumer-boundary scan. This does not prove live API/MCP execution; "
+            "release CI runs the separate blind-consumer journey gate."
+        )
 
 
 def _emit_operational_error(payload: dict[str, Any]) -> None:
@@ -286,8 +368,10 @@ def build_app() -> click.Command:
         if command is not None:
             _add_json_compat(command)
     _apply_smoke_wait_policy(root)
+    _add_capabilities_describe_dispatch(root)
     _add_capabilities_find_dispatch(root)
     _add_png_verify_dispatch(root)
+    _clarify_consumer_check(root)
     # Apply last so compatibility callbacks and dispatch replacements are all
     # protected by the same operational error contract.
     for command in _walk_commands(root):

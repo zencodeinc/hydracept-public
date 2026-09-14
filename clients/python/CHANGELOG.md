@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.3.21 — 2026-09-14
+
+- `text.translate.v1 --prompt` maps to `targetLocale` + `items` (`--target-locale` or `locale:text` prefix); bare prompt fails with recovery guidance instead of empty output
+- Empty `typedOutput.items` on translation is surfaced as `EmptyStructuredOutput`, not silent success
+- Default `run` prints translation/text previews for non-artifact capabilities
+- Image `run --prompt` notes the 816×816 canvas floor before submission
+- Windows MCP runtime attestation retries transient `mcp-runtime.json` file locks
+
+## 0.3.20 — 2026-09-13
+
+- Default `run` prints human-readable status, `pricing.summary`, and artifact paths; `--json` unchanged
+- `capabilities describe` surfaces `canvasFloor` for image capabilities, deferred job latency notes, and `--prompt` CLI hints
+- `hydracept.run-result.v1` pricing includes a one-line `summary` for covered vs customer-funded charges
+- `llms.txt` documents Windows/PowerShell `--input-file`, customer-charge semantics, and the 816×816 image canvas floor
+
+## 0.3.19 — 2026-09-12
+
+- `hydracept.run-result.v1` pricing leads with `customerCharge.customerTotalMicros` (what this customer was charged)
+- `jobs receipt` and MCP receipt summaries expose the same customer-charge block; estimated/retail fields stay labeled separately
+- Stale stdio MCP is a warning with reload/CLI guidance, not a catastrophic doctor failure
+- Installed client, running MCP, API revision, and agent-pack versions are independently observable
+- `run --out` and MCP `out` preserve the requested filename for generated artifacts and sync results
+- `init --apply` with an existing API key binds the checkout to that key's project instead of creating a mismatched new project
+
+## 0.3.18 — 2026-09-11
+
+- Native Typer `funding` status (no Click Option mix-in); pin `typer<0.26`
+- Empty MCP catalog browse uses `GET /v1/capabilities?view=summary`
+- Receipt printers lead with `pricing.charge.customerCharge` (customer owed)
+- App presentation stays `mount_requested` until the host acknowledges mount
+- Default `mcp bind` no longer rewrites user-level Cursor MCP files
+
+## 0.3.17 — 2026-09-11
+
+- MCP status no longer NameErrors on `AGENT_PACK_VERSION`
+- Invalid registrar TLDs return `UnsupportedTld` instead of a retryable registrar outage
+- Rejected checkout credentials recover by minting a new key or restarting bootstrap instead of reusing a dead `secrets.json`
+- Empty public catalogs fail closed as `CatalogUnavailable`
+- Stale or PID-reused stdio MCP leases are detected instead of reporting a live workspace
+
+## 0.3.16 — 2026-09-10
+
+- Public client identity advances past the 0.3.15 PyPI cut so post-release receipt, sentinel, and discovery fixes are no longer labeled as an already-published version
+- Receipts distinguish retail `price` from owed `customerCharge` and actual `customerDebit`; Hydracept-covered executions report `$0` owed
+- Capability resolve accepts natural paraphrases for transparent icons/sprites instead of overfitting to a single PNG phrase
+- Transient 5xx responses and MCP tool errors carry `retryable`, `nextAction`, and `retryAfterSeconds`
+
 ## 0.3.15 — 2026-09-09
 
 - `run --input-file` accepts PowerShell UTF-8 BOM and UTF-16 JSON files

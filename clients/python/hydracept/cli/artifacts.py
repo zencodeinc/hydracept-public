@@ -67,11 +67,18 @@ def materialize_job_artifacts(
     receipt_or_job: dict[str, Any] | None,
     dest: Path,
 ) -> MaterializeResult:
-    dest.mkdir(parents=True, exist_ok=True)
+    from hydracept.cli.artifact_output import is_file_output_target
+
     result = MaterializeResult()
     items = _artifact_items(receipt_or_job)
     if not items:
         return result
+    file_target = is_file_output_target(dest)
+    if file_target:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        dest.mkdir(parents=True, exist_ok=True)
+    written = 0
     for item in items:
         artifact_id = str(item.get("artifactId") or item.get("id") or "")
         if not artifact_id:
@@ -83,7 +90,12 @@ def materialize_job_artifacts(
         )
         media = str(item.get("mediaType") or item.get("mimeType") or "application/octet-stream")
         remote = str(item.get("downloadPath") or item.get("url") or "") or None
-        target = dest / Path(filename).name
+        if file_target and written == 0:
+            target = dest
+            filename = dest.name
+            written = 1
+        else:
+            target = dest.parent / Path(filename).name if file_target else dest / Path(filename).name
         try:
             data = client.download_job_artifact(job_id, artifact_id)
         except Exception as exc:  # noqa: BLE001

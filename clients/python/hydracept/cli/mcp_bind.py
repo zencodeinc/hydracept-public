@@ -10,7 +10,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -40,6 +39,19 @@ class McpBindResult:
     written: tuple[str, ...] = ()
     generation: str = ""
     runtime: RuntimeBindingStatus | None = None
+    config_stale: bool = False
+    config_generations: tuple[str, ...] = ()
+
+    def readiness(self) -> str:
+        if not self.bound:
+            return "unbound"
+        if self.config_stale:
+            return "bound_stale"
+        if self.runtime is not None and self.runtime.verified:
+            return "runtime_current"
+        if self.runtime is not None and self.runtime.status == "missing":
+            return "runtime_not_started"
+        return "runtime_stale"
 
     def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -47,9 +59,12 @@ class McpBindResult:
             "transport": self.transport,
             "projectConfig": list(self.project_config),
             "reloadRequired": self.reload_required,
+            "readiness": self.readiness(),
             "hostedUrl": self.hosted_url,
             "useHostedWhen": self.use_hosted_when,
             "generation": self.generation,
+            "configStale": self.config_stale,
+            "configGenerations": list(self.config_generations),
         }
         if self.runtime is not None:
             payload.update(self.runtime.to_dict())
@@ -57,8 +72,11 @@ class McpBindResult:
 
 
 def stdio_command() -> str:
-    if shutil.which("python"):
-        return "python"
+    """Interpreter that installed this Hydracept, never a PATH ``python`` alias.
+
+    On Windows, ``python`` often resolves to the Store or global interpreter, which
+    can be a different Hydracept version than the checkout virtualenv.
+    """
     return sys.executable
 
 
@@ -222,8 +240,14 @@ def _merge_mcp_servers_file(
 
 
 def _configured_binding(root: Path) -> tuple[list[str], set[str]]:
+    configs, generations, _ = _configured_binding_details(root)
+    return configs, generations
+
+
+def _configured_binding_details(root: Path) -> tuple[list[str], set[str], dict[str, str]]:
     configs: list[str] = []
     generations: set[str] = set()
+    per_file: dict[str, str] = {}
     candidates = (
         (root / ".cursor" / "mcp.json", "mcpServers", ("hydracept", "hydracept-project")),
         (root / ".mcp.json", "mcpServers", ("hydracept",)),
@@ -238,25 +262,42 @@ def _configured_binding(root: Path) -> tuple[list[str], set[str]]:
         entry = next((servers.get(name) for name in names if _is_stdio_hydracept(servers.get(name))), None)
         if entry is None:
             continue
-        configs.append(_rel(root, path))
+        rel = _rel(root, path)
+        configs.append(rel)
         generation = _entry_generation(entry)
         if generation:
             generations.add(generation)
-    return configs, generations
+            per_file[rel] = generation
+    return configs, generations, per_file
+
+
+def _config_stale(root: Path, per_file: dict[str, str]) -> bool:
+    for rel, generation in per_file.items():
+        if not generation:
+            continue
+        cursor_placeholder = ".cursor" in rel.replace("\\", "/")
+        expected = binding_generation(root, stdio_args(root, cursor_placeholder=cursor_placeholder))
+        if generation != expected:
+            return True
+    return False
 
 
 def inspect_workspace_mcp(project_root: Path | str) -> McpBindResult:
     """Inspect configured state and separately attest the active runtime."""
     root = _root(project_root)
-    configs, generations = _configured_binding(root)
+    configs, generations, per_file = _configured_binding_details(root)
+    config_stale = _config_stale(root, per_file)
     runtime = inspect_runtime_binding(root, expected_generations=generations)
+    reload_required = bool(configs) and (config_stale or not runtime.verified)
     return McpBindResult(
-        bound=bool(configs),
+        bound=bool(configs) and not config_stale,
         transport="stdio",
         project_config=tuple(configs),
-        reload_required=bool(configs) and not runtime.verified,
+        reload_required=reload_required,
         generation=next(iter(sorted(generations)), ""),
         runtime=runtime,
+        config_stale=config_stale,
+        config_generations=tuple(sorted(generations)),
     )
 
 
@@ -287,16 +328,6 @@ def bind_workspace_mcp(project_root: Path | str) -> McpBindResult:
             if path.is_file() or path.parent.is_dir():
                 targets.append((path, key, vscode, False, cursor_placeholder))
 
-    for path, key in cursor_host_mcp_targets():
-        if not path.is_file():
-            continue
-        payload = _read_json(path)
-        servers = payload.get(key)
-        existing = servers.get("hydracept") if isinstance(servers, dict) else None
-        if existing is not None and not _is_hydracept_owned_entry(existing):
-            continue
-        targets.append((path, key, False, False, True))
-
     for path, key, vscode, always, cursor_placeholder in targets:
         if not always and not path.is_file() and not path.parent.is_dir():
             continue
@@ -317,15 +348,20 @@ def bind_workspace_mcp(project_root: Path | str) -> McpBindResult:
         if generation:
             generations.add(generation)
 
+    _, _, per_file = _configured_binding_details(root)
+    config_stale = _config_stale(root, per_file)
     runtime = inspect_runtime_binding(root, expected_generations=generations)
+    reload_required = bool(configs) and (config_stale or not runtime.verified)
     return McpBindResult(
-        bound=bool(configs),
+        bound=bool(configs) and not config_stale,
         transport="stdio",
         project_config=tuple(configs),
-        reload_required=bool(configs) and not runtime.verified,
+        reload_required=reload_required,
         written=tuple(written),
         generation=next(iter(sorted(generations)), ""),
         runtime=runtime,
+        config_stale=config_stale,
+        config_generations=tuple(sorted(generations)),
     )
 
 

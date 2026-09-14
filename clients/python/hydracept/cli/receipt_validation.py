@@ -1,11 +1,12 @@
 """Public terminal-receipt pricing contract for CLI smoke.
 
 Quote/admission → estimatedCharge / maximumAuthorizedCharge
-Settled execution → actualCharge
-Terminal managed success → pricing.charge.customerCharge (authoritative)
+Settled execution → actualCharge / price (retail)
+Terminal managed success → pricing.charge.customerCharge (amount owed)
 
-actualCharge, top-level actualCost, and quote estimates are not substitutes.
-BYOK may omit customerCharge.
+When Hydracept covers the execution, customerCharge is $0 even if retail price
+is nonzero. actualCharge, top-level actualCost, and quote estimates are not
+substitutes for owed charge. BYOK may omit customerCharge.
 """
 
 from __future__ import annotations

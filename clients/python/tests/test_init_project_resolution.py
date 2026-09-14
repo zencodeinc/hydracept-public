@@ -656,3 +656,62 @@ def test_apply_automatic_project_is_idempotent(monkeypatch: pytest.MonkeyPatch) 
     assert first.created is True
     assert second.created is False
     assert created["count"] == 1
+
+
+class _DiagResponse:
+    def __init__(self, payload: dict) -> None:
+        self.status_code = 200
+        self._payload = payload
+
+    def json(self) -> dict:
+        return self._payload
+
+
+def test_env_api_key_binds_new_checkout_to_credential_project(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    workspace = tmp_path / "fresh-game"
+    workspace.mkdir()
+    monkeypatch.setenv("HYDRACEPT_API_KEY", "hapt_existing")
+    monkeypatch.setattr("hydracept.cli.init_resolver.load_session", lambda: HumanSession(
+        session_token="s", csrf_token="c", principal_id="usr_1"
+    ))
+    created: list[str] = []
+
+    def fake_apply(*_args, **_kwargs):
+        created.append("created")
+        raise AssertionError("must not create a new project when an API key is already supplied")
+
+    monkeypatch.setattr("hydracept.cli.project_resolution.apply_automatic_project", fake_apply)
+    monkeypatch.setattr(
+        "hydracept.cli.init_resolver.httpx.get",
+        lambda *_args, **_kwargs: _DiagResponse(
+            {"tokenProjectId": "cpr_from_key", "projectId": "cpr_from_key", "principalId": "usr_1"}
+        ),
+    )
+    monkeypatch.setattr(
+        "hydracept.cli.init_resolver.try_install_agent_pack",
+        lambda *_args, **_kwargs: (True, None),
+    )
+    _ready_patches(monkeypatch)
+    result = run_init(workspace, apply=True, yes=True, json_output=True)
+    assert created == []
+    assert result.payload["status"] == "ready"
+    assert result.payload["project"]["id"] == "cpr_from_key"
+    assert result.payload["project"]["resolution"] == "credential_project"
+    from hydracept.cli.project import load_project_binding
+
+    assert load_project_binding(workspace)["projectId"] == "cpr_from_key"
+
+
+def test_identity_payload_reports_github_cli_reuse(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "hydracept.cli.local_project_context.github_cli_login",
+        lambda: "octocat",
+    )
+    from hydracept.cli.init_resolver import _identity_payload
+
+    payload = _identity_payload(None, authenticated=True)
+    assert payload["githubCliReuse"] is True
+    assert payload["method"] == "github_cli"
+    assert payload["account"] == "octocat"

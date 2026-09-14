@@ -12,6 +12,9 @@ def _assert_common(payload: dict) -> None:
     assert "pricing" in payload
     assert "estimatedCost" in payload["pricing"]
     assert "actualCost" in payload["pricing"]
+    assert "summary" in payload["pricing"]
+    assert "customerCharge" in payload["pricing"]
+    assert "customerTotalMicros" in payload["pricing"]["customerCharge"]
     assert "idempotencyKey" in payload
     assert isinstance(payload["artifacts"], list)
 

@@ -115,7 +115,7 @@ def taxonomy_for_capability(key: str, modality: CapabilityModality) -> tuple[str
         return "text", "translation"
     if normalized.startswith("math.") or ".math." in normalized:
         return "math", "analysis"
-    if normalized.startswith(("research.", "analysis.")):
+    if normalized.startswith(("research.", "analysis.", "inference.")):
         return "research", "analysis"
     if normalized.startswith(("convert.", "file.", "productivity.")):
         return "productivity", "conversion"

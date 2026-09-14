@@ -6,10 +6,10 @@ Python client for the Hydracept public API — an execution control plane for so
 pip install hydracept
 ```
 
-The current PyPI cut is **0.3.15**. `hydracept run --input-file` accepts structured JSON on Windows/PowerShell, including UTF-8 BOM and UTF-16 files. Funding status reports customer-visible managed credit separately from trial and operator execution funding. Receipts do not invent BYOK or managed trial when funding evidence is missing. Domain and CPU capabilities omit inference `billingModes`.
+Required onboarding is `python -m hydracept init --apply --yes --json`. Init reuses an authenticated GitHub CLI (`gh`) session when one is already available; otherwise use a browser connect flow or `HYDRACEPT_API_KEY`. Canonical docs are https://docs.hydracept.com. `hydracept run --input-file` accepts structured JSON on Windows/PowerShell, including UTF-8 BOM and UTF-16 files. Funding status reports customer-visible managed credit separately from trial and operator execution funding. Receipts distinguish retail price from the amount the customer actually owes or was debited (`pricing.customerCharge`). Domain and CPU capabilities omit inference `billingModes`.
 
 ```bash
-python -m hydracept init
+python -m hydracept init --apply --yes --json
 python -m hydracept doctor
 python -m hydracept verify
 python -m hydracept pinned --help

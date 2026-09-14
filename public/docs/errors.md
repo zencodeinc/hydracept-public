@@ -8,7 +8,7 @@ Failed API calls return an HTTP status code. Structured capability errors return
 |--------|---------|
 | `400` | Invalid request / policy rejection |
 | `401` | Missing or invalid Hydracept API key / session |
-| `402` | Funding required, budget exceeded, or managed wallet insufficient |
+| `402` | Funding required, budget prevent-mode block, or managed wallet insufficient |
 | `403` | Your API key, project, or environment is not allowed to make this request |
 | `404` | Capability, job, or resource not found |
 | `410` | Resource gone (expired session or retired endpoint) |
@@ -25,10 +25,27 @@ When an endpoint returns a structured capability error, its body has this shape:
 {
   "detail": {
     "code": "BudgetExceeded",
-    "message": "The request exceeds the configured budget"
+    "message": "Budget exceeded for principal:usr_example (estimated $0.0500, $0.0000 of $5.0000 remaining this UTC day)",
+    "details": {
+      "scope": "principal:usr_example",
+      "enforcement": "prevent",
+      "estimatedCost": 0.05,
+      "available": 0.0,
+      "ceiling": 5.0
+    }
   }
 }
 ```
+
+`BudgetExceeded` is returned only when a project or caller has opted into **prevent** mode. Default is no enforcement: spend ceilings are accounting, not a refuse gate. Opt in with `budget.enforcement` / `executionConstraints.budgetEnforcement` (`warn` or `prevent`) plus ceilings, or project `budget_policy_json.enforcement`.
+
+| Mode | Admission |
+|------|-----------|
+| `off` (default) | Call proceeds. No 402. |
+| `warn` | Call proceeds. Result/job includes `warnings` with scope, remaining, and ceiling. |
+| `prevent` | HTTP 402 `BudgetExceeded` with the scope and remaining USD. |
+
+Setting `maxCostUsd` / `maximumEstimatedCost` on a request without an explicit mode is caller opt-in to **prevent** for that call.
 
 `detail.code` is the stable Hydracept error code. `detail.message` is a human-readable explanation. Validation failures may use a different `detail` shape.
 
@@ -47,7 +64,8 @@ Hydracept never acknowledges an execution request while silently discarding part
       "preferredModel",
       "providerPin",
       "autoSelect",
-      "maxCostUsd"
+      "maxCostUsd",
+      "budgetEnforcement"
     ],
     "retryable": false
   }

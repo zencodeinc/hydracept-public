@@ -65,7 +65,11 @@ def attach_interaction(result: Any, surface: str | None) -> Any:
 
 
 def surface_for_job(job: dict[str, Any] | None) -> str | None:
-    from hydracept.mcp.surface_contract import is_visual_capability, is_visual_media_type, surface_for_job_status
+    from hydracept.mcp.surface_contract import (
+        is_reviewable_capability,
+        is_reviewable_media_type,
+        surface_for_job_status,
+    )
 
     payload = job or {}
     nested = payload.get("job") if isinstance(payload.get("job"), dict) else payload
@@ -78,5 +82,5 @@ def surface_for_job(job: dict[str, Any] | None) -> str | None:
             if isinstance(item, dict) and (item.get("mediaType") or item.get("media_type")):
                 media_type = str(item.get("mediaType") or item.get("media_type"))
                 break
-    visual = is_visual_capability(capability_key) or is_visual_media_type(media_type)
-    return surface_for_job_status(status, visual=visual)
+    reviewable = is_reviewable_capability(capability_key) or is_reviewable_media_type(media_type)
+    return surface_for_job_status(status, reviewable=reviewable)

@@ -149,3 +149,24 @@ def test_doctor_sections_expose_semantic_status() -> None:
     assert sections["identity"]["status"] == "ready"
     assert sections["managedInference"]["status"] == "ready"
     assert report.to_json_dict()["sections"]["identity"]["detail"] == "GitHub example-user"
+
+
+def test_doctor_byok_section_is_not_ready_when_only_managed_covers() -> None:
+    report = DoctorReport()
+    report.add(DoctorCheck("api.image_generation", True, "imageGenerationReady=true", bucket="providers"))
+    report.funding = {
+        "byokConnected": False,
+        "managedExecutionFundingAvailable": True,
+    }
+    sections = report.sections()
+    assert sections["byok"]["status"] == "not_required"
+    assert "BYOK not bound" in sections["byok"]["detail"]
+
+
+def test_doctor_json_warns_when_mcp_reload_required() -> None:
+    report = DoctorReport()
+    report.add(DoctorCheck("local.credential", True, "ok"))
+    report.mcp = {"bound": True, "reloadRequired": True}
+    payload = report.to_json_dict()
+    assert payload["passed"] is True
+    assert any(item["name"] == "mcp.reload" for item in payload["warnings"])

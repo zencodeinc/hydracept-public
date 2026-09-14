@@ -537,6 +537,24 @@
               "title": "Q"
             },
             "description": "Find capabilities matching this task query (title, key, description)."
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "summary returns identity-free browse fields only (key, title, description, modality, family, executionModes). Omit for the default catalog. Browse \u2192 resolve \u2192 describe \u2192 quote/run.",
+              "title": "View"
+            },
+            "description": "summary returns identity-free browse fields only (key, title, description, modality, family, executionModes). Omit for the default catalog. Browse \u2192 resolve \u2192 describe \u2192 quote/run."
           }
         ],
         "responses": {
@@ -3210,6 +3228,69 @@
         ]
       }
     },
+    "/v1/organizations/{org_id}/projects/{project_id}": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "commercial"
+        ],
+        "summary": "Get Org Project",
+        "operationId": "get_org_project_v1_organizations__org_id__projects__project_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Org Project V1 Organizations  Org Id  Projects  Project Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "human_session",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
     "/v1/projects/{project_id}": {
       "patch": {
         "tags": [
@@ -3235,7 +3316,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProjectUpdate"
+                "$ref": "#/components/schemas/ProjectSettingsPatch"
               }
             }
           }
@@ -5742,6 +5823,73 @@
           }
         ]
       }
+    },
+    "/v1/projects/{project_id}/references": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "reference-lineage"
+        ],
+        "summary": "List Project References",
+        "operationId": "list_project_references_v1_projects__project_id__references_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Project References V1 Projects  Project Id  References Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": [
+          "service_principal",
+          "human_session"
+        ],
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -6873,6 +7021,56 @@
         ],
         "title": "DataClassification"
       },
+      "EnvironmentPatch": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "displayName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Displayname"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "title": "EnvironmentPatch"
+      },
       "ExecutionConstraints": {
         "properties": {
           "maxCostUsd": {
@@ -6914,6 +7112,18 @@
             "title": "Autoselect",
             "description": "Opt in to smart fallback when preferredModel is physically unavailable. Ignored when preferredModel is omitted.",
             "default": false
+          },
+          "budgetEnforcement": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budgetenforcement",
+            "description": "warn (admit over ceiling) or prevent (HTTP 402). Setting maxCostUsd without this is prevent."
           }
         },
         "additionalProperties": false,
@@ -7060,6 +7270,14 @@
               }
             ],
             "title": "Dispatchstatus"
+          },
+          "warnings": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Warnings"
           }
         },
         "type": "object",
@@ -7202,6 +7420,14 @@
               }
             ],
             "title": "Typedoutput"
+          },
+          "warnings": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Warnings"
           },
           "error": {
             "anyOf": [
@@ -7620,7 +7846,7 @@
               }
             ],
             "title": "Actualcost",
-            "description": "Deprecated 0.2 shim of pricing.charge.customerCharge. Do not use internally."
+            "description": "Deprecated 0.2 shim of pricing.charge.customerCharge (amount owed). Do not use internally."
           },
           "currency": {
             "type": "string",
@@ -8011,6 +8237,17 @@
               }
             ],
             "title": "Actualcharge"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Retail price of the capability for this execution. Independent of wallet debit."
           },
           "basisEstimated": {
             "anyOf": [
@@ -9225,20 +9462,70 @@
         ],
         "title": "ProjectJobListResponse"
       },
-      "ProjectUpdate": {
+      "ProjectSettingsPatch": {
         "properties": {
           "displayName": {
-            "type": "string",
-            "maxLength": 255,
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Displayname"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "repository": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RepositoryPatch"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "clearRepository": {
+            "type": "boolean",
+            "title": "Clearrepository",
+            "default": false
+          },
+          "environments": {
+            "items": {
+              "$ref": "#/components/schemas/EnvironmentPatch"
+            },
+            "type": "array",
+            "title": "Environments"
           }
         },
         "type": "object",
-        "required": [
-          "displayName"
-        ],
-        "title": "ProjectUpdate"
+        "title": "ProjectSettingsPatch"
       },
       "ProviderCompetitorSpec": {
         "properties": {
@@ -9327,7 +9614,19 @@
       "ReceiptCharge": {
         "properties": {
           "customerCharge": {
-            "$ref": "#/components/schemas/Money"
+            "$ref": "#/components/schemas/Money",
+            "description": "Amount the customer owes Hydracept for this execution. $0 when Hydracept covers it."
+          },
+          "customerDebit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Amount actually removed from a customer-visible stored balance."
           },
           "chargedAt": {
             "anyOf": [
@@ -9536,6 +9835,46 @@
           "name"
         ],
         "title": "RepositoryIn"
+      },
+      "RepositoryPatch": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "maxLength": 32,
+            "title": "Provider",
+            "default": "github"
+          },
+          "owner": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Owner"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "owner",
+          "name"
+        ],
+        "title": "RepositoryPatch"
       },
       "ResolutionKind": {
         "type": "string",

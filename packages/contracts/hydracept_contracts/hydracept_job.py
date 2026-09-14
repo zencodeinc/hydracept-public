@@ -110,6 +110,7 @@ class HydraceptJob(BaseModel):
     receipt_id: str | None = Field(default=None, alias="receiptId")
     primary_artifact_id: str | None = Field(default=None, alias="primaryArtifactId")
     typed_output: Any | None = Field(default=None, alias="typedOutput")
+    warnings: list[dict[str, Any]] = Field(default_factory=list)
     error: dict[str, Any] | None = None
     diagnostics: HydraceptJobDiagnostics | None = None
     request_snapshot: dict[str, Any] | None = Field(
@@ -203,7 +204,7 @@ class HydraceptReceipt(BaseModel):
     actual_cost: float | None = Field(
         default=None,
         alias="actualCost",
-        description="Deprecated 0.2 shim of pricing.charge.customerCharge. Do not use internally.",
+        description="Deprecated 0.2 shim of pricing.charge.customerCharge (amount owed). Do not use internally.",
     )
     currency: str = "USD"
     artifacts: list[HydraceptJobArtifactRef] = Field(default_factory=list)

@@ -11,7 +11,7 @@ from uuid import uuid4
 
 from hydracept import HydraceptClient
 from hydracept.cli.artifacts import default_output_dir, materialize_job_artifacts, _artifact_items
-from hydracept.cli.artifact_output import resolve_artifact_output
+from hydracept.cli.artifact_output import finalize_single_artifact_path, resolve_artifact_output
 from hydracept.cli.job_context import merge_workspace_job_context
 from hydracept.cli.workspace import CliOverrides, ResolvedWorkspace
 from hydracept.context import (
@@ -23,6 +23,9 @@ from hydracept.run_result import RunPricing, RunResult, TypedRunError
 
 _TERMINAL = frozenset({"succeeded", "failed", "canceled", "cancelled"})
 _SYNC_PREFIXES = ("text.", "domain.", "dns.")
+# Historical internal "unbounded" values were never customer prices. Treat any
+# value in that sentinel range as unavailable on public projections.
+_INTERNAL_SENTINEL_COST_FLOOR = 900_000_000.0
 _PRE_ADMISSION_CODES = frozenset(
     {
         "EstimateExceedsMaxCost",
@@ -70,15 +73,23 @@ def _is_sync_capability(key: str, descriptor: dict[str, Any] | None) -> bool:
 
 
 def _pricing_from_job(job: dict[str, Any], receipt: dict[str, Any] | None) -> RunPricing:
-    from hydracept.receipt_cost import micros_to_usd, surfaced_cost_micros
+    from hydracept.receipt_cost import (
+        customer_charge_micros,
+        customer_financial_state,
+        micros_to_usd,
+        pricing_mode,
+        surfaced_cost_micros,
+    )
 
     estimated = job.get("estimatedCost")
     actual = job.get("actualCost")
+    source = receipt if isinstance(receipt, dict) else job
+    customer_total = customer_charge_micros(source)
+    state = customer_financial_state(source)
+    mode = pricing_mode(source) or None
     if receipt:
         pricing = receipt.get("pricing") or {}
         quote = (pricing.get("quote") or {}).get("customerTotal") or {}
-        # The sealed receipt quote is financial authority for completed execution.
-        # Never let an earlier job estimate or internal sentinel override it.
         micros = quote.get("amountMicros")
         if micros is not None:
             estimated = int(micros) / 1_000_000
@@ -89,19 +100,28 @@ def _pricing_from_job(job: dict[str, Any], receipt: dict[str, Any] | None) -> Ru
             actual = None
     elif str(job.get("status") or "").lower() not in {"succeeded", "failed"}:
         actual = None
-    return RunPricing(estimated_cost=_as_float(estimated), actual_cost=_as_float(actual))
+    return RunPricing(
+        estimated_cost=_as_float(estimated),
+        actual_cost=_as_float(actual),
+        customer_total_micros=customer_total,
+        financial_state=state,
+        mode=mode,
+    )
 
 
 def _as_float(value: Any) -> float | None:
     if value is None:
         return None
     try:
-        return float(value)
+        resolved = float(value)
     except (TypeError, ValueError):
         return None
+    if abs(resolved) >= _INTERNAL_SENTINEL_COST_FLOOR:
+        return None
+    return resolved
 
 
-def _map_api_error(exc: HydraceptApiError) -> TypedRunError:
+def _map_api_error(exc: HydraceptApiError, *, capability: str = "") -> TypedRunError:
     payload = exc.payload if isinstance(exc.payload, dict) else {}
     detail = payload.get("detail") if isinstance(payload.get("detail"), dict) else payload
     code = exc.code or str(detail.get("code") or "HTTP_ERROR")
@@ -117,14 +137,53 @@ def _map_api_error(exc: HydraceptApiError) -> TypedRunError:
         details.setdefault("options", ["trial", "byok"])
     message = str(detail.get("message") or exc)
     http_status = exc.response.status_code if exc.response is not None else None
-    pre = code in _PRE_ADMISSION_CODES or (http_status is not None and http_status in {400, 401, 402, 403, 409, 422})
     return TypedRunError(
         code=code,
         message=message,
         details=details,
         http_status=http_status,
-        recovery={} if pre else {},
+        recovery=_recovery_for_mapped_error(
+            code,
+            http_status,
+            detail if isinstance(detail, dict) else {},
+            capability=capability,
+        ),
     )
+
+
+def _recovery_for_mapped_error(
+    code: str,
+    http_status: int | None,
+    detail: dict[str, Any],
+    *,
+    capability: str = "",
+) -> dict[str, Any]:
+    next_action = str(detail.get("nextAction") or "").strip()
+    lowered = f"{code} {detail.get('message') or ''}".lower()
+    key = str(capability or detail.get("capabilityKey") or detail.get("capability") or "").strip()
+    describe = (
+        f"python -m hydracept capabilities describe {key} --json"
+        if key
+        else "python -m hydracept capabilities describe --json"
+    )
+    if not next_action:
+        if code == "EstimateExceedsMaxCost":
+            next_action = (
+                f"python -m hydracept run {key} --input-file request.json --max-cost <higher-usd> --json"
+                if key
+                else "python -m hydracept run <capability> --input-file request.json --max-cost <higher-usd> --json"
+            )
+        elif code == "FundingRequired":
+            next_action = "python -m hydracept funding status --json"
+        elif code in {"UnsupportedTld", "UNSUPPORTED_TLD"} or "unsupported tld" in lowered:
+            next_action = "python -m hydracept capabilities describe domain.search.v1 --json"
+        elif http_status == 404 or code in {"NOT_FOUND", "CapabilityNotFound", "HTTP_ERROR"}:
+            next_action = "python -m hydracept capabilities find --json"
+        elif http_status in {400, 422} or code in {"InvalidInput", "USE_JOBS", "USE_INVOKE"}:
+            next_action = describe
+        else:
+            next_action = "python -m hydracept doctor --json"
+    return {"nextAction": next_action, "cli": next_action}
 
 
 def _attach_max_cost_and_idempotency(
@@ -167,9 +226,17 @@ def _result_from_sync(
     capability: str,
     invoked: dict[str, Any],
     idempotency_key: str,
+    *,
+    client: HydraceptClient | None = None,
 ) -> RunResult:
     status = str(invoked.get("status") or "succeeded")
     execution_id = str(invoked.get("executionId") or invoked.get("id") or "") or None
+    receipt = invoked.get("receipt") if isinstance(invoked.get("receipt"), dict) else None
+    if receipt is None and client is not None and execution_id:
+        try:
+            receipt = client.get_job_receipt(execution_id)
+        except Exception:  # noqa: BLE001
+            receipt = None
     return RunResult(
         capability=capability,
         job_id=execution_id,
@@ -177,12 +244,36 @@ def _result_from_sync(
         status=status,
         output=invoked.get("output"),
         typed_output=invoked.get("typedOutput") or invoked.get("output"),
-        pricing=_pricing_from_job(invoked, invoked.get("receipt") if isinstance(invoked.get("receipt"), dict) else None),
-        receipt=invoked.get("receipt") if isinstance(invoked.get("receipt"), dict) else None,
+        pricing=_pricing_from_job(invoked, receipt),
+        receipt=receipt,
         idempotency_key=idempotency_key,
         error=invoked.get("error") if isinstance(invoked.get("error"), dict) else None,
         diagnostics=invoked.get("diagnostics") if isinstance(invoked.get("diagnostics"), dict) else None,
     )
+
+
+def _persist_sync_result(project_root: Path, out: Path, result: RunResult) -> Path:
+    """Honor `run --out` for invoke-only capabilities as a JSON result artifact."""
+    target = finalize_single_artifact_path(
+        resolve_artifact_output(
+            project_root,
+            out,
+            "result.json",
+            1,
+            job_id=result.execution_id or result.idempotency_key or "sync",
+        ),
+        "result.json",
+    )
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        json.dumps(result.to_dict(), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    result.diagnostics = {
+        **(result.diagnostics or {}),
+        "persistedOutputPath": str(target),
+    }
+    return target
 
 
 def recover_job(
@@ -201,7 +292,7 @@ def recover_job(
     try:
         job = client.get_job(job_id)
     except HydraceptApiError as exc:
-        return RunOutcome(error=_map_api_error(exc), exit_code=1)
+        return RunOutcome(error=_map_api_error(exc, capability=capability), exit_code=1)
     status = str(job.get("status") or "queued")
     if wait and status not in _TERMINAL:
         job = watch_job(client, job_id, timeout=timeout)
@@ -254,7 +345,7 @@ def recover_job(
                 )
                 return RunOutcome(result=result, exit_code=1)
             raise
-        dest = resolved_dest.parent if resolved_dest.suffix else resolved_dest
+        dest = resolved_dest
         materialized = materialize_job_artifacts(client, job_id, source, dest)
         artifacts = materialized.artifacts
         persist_failed = materialized.failed
@@ -274,6 +365,13 @@ def recover_job(
         error=job.get("error") if isinstance(job.get("error"), dict) else None,
         diagnostics=job.get("diagnostics") if isinstance(job.get("diagnostics"), dict) else None,
     )
+    if out is not None:
+        persisted = artifacts[0].local_path if artifacts else None
+        result.diagnostics = {
+            **(result.diagnostics or {}),
+            "requestedOutputPath": str(out),
+            "persistedOutputPath": persisted,
+        }
     if persist_failed:
         result.error = {
             "code": "ArtifactPersistFailed",
@@ -290,6 +388,11 @@ def recover_job(
         return RunOutcome(result=result, exit_code=1)
     if status == "failed":
         return RunOutcome(result=result, exit_code=1)
+    from hydracept.cli.structured_output_guard import empty_structured_output_error
+
+    empty = empty_structured_output_error(cap, result)
+    if empty is not None:
+        return RunOutcome(error=empty, result=result, exit_code=1)
     return RunOutcome(result=result, exit_code=0)
 
 
@@ -330,13 +433,45 @@ def execute_run(
             )
         raise
 
+    from hydracept.cli.run_input_coercion import coerce_capability_input
+
+    try:
+        normalized_input = coerce_capability_input(capability, dict(input_body))
+    except ValueError as exc:
+        return RunOutcome(
+            error=TypedRunError(
+                code="InvalidInput",
+                message=str(exc),
+                recovery={
+                    "nextAction": (
+                        'python -m hydracept run text.translate.v1 --target-locale es --prompt "..." --json'
+                        if str(capability) == "text.translate.v1"
+                        else f"python -m hydracept capabilities describe {capability} --json"
+                    )
+                },
+            ),
+            exit_code=1,
+        )
+
     key = mint_idempotency_key() if not idempotency_key else idempotency_key.strip()
     client = HydraceptClient(workspace.api_url, workspace.token, workspace=workspace)
-    raw = dict(input_body)
+    raw = dict(normalized_input)
     if "input" not in raw and not any(k in raw for k in ("context", "execution", "idempotencyKey")):
         raw = {"input": raw}
     payload = merge_workspace_job_context(raw, workspace)
     payload = _attach_max_cost_and_idempotency(payload, max_cost=max_cost, idempotency_key=key)
+    from hydracept.cli.image_canvas import preflight_image_canvas
+
+    blocked = preflight_image_canvas(capability, payload)
+    if blocked is not None:
+        return RunOutcome(
+            error=TypedRunError(
+                code=str(blocked.get("code") or "InvalidInput"),
+                message=str(blocked.get("message") or "invalid image canvas"),
+                details=blocked,
+            ),
+            exit_code=1,
+        )
 
     descriptor: dict[str, Any] | None = None
     try:
@@ -348,13 +483,27 @@ def execute_run(
     try:
         if sync:
             invoked = client.invoke_capability(capability, payload)
-            result = _result_from_sync(capability, invoked, key)
+            result = _result_from_sync(capability, invoked, key, client=client)
+            from hydracept.cli.structured_output_guard import empty_structured_output_error
+
+            empty = empty_structured_output_error(capability, result)
+            if empty is not None:
+                return RunOutcome(error=empty, result=result, exit_code=1)
             if str(result.status).lower() == "failed":
                 return RunOutcome(result=result, exit_code=1)
+            if persist and out is not None:
+                try:
+                    _persist_sync_result(project_root, out, result)
+                except Exception as exc:  # noqa: BLE001
+                    result.error = {
+                        "code": "OutputPersistFailed",
+                        "message": str(exc),
+                    }
+                    return RunOutcome(result=result, exit_code=1)
             return RunOutcome(result=result, exit_code=0)
         submitted = client.submit_capability_job(capability, payload)
     except HydraceptApiError as exc:
-        mapped = _map_api_error(exc)
+        mapped = _map_api_error(exc, capability=capability)
         return RunOutcome(error=mapped, exit_code=1)
 
     job_id = str(submitted.get("jobId") or submitted.get("id") or submitted.get("executionId") or "")
@@ -408,7 +557,13 @@ def parse_input_argument(value: str | None, file: Path | None) -> dict[str, Any]
     if value:
         stripped = value.strip()
         if stripped.startswith("{"):
-            return json.loads(stripped)
+            try:
+                return json.loads(stripped)
+            except json.JSONDecodeError as exc:
+                raise ValueError(
+                    "Invalid JSON. PowerShell often mangles --input '{...}'. "
+                    "Use --prompt or --input-file path.json."
+                ) from exc
         return {"prompt": stripped}
     return {}
 
@@ -429,7 +584,9 @@ def parse_json_body(
         return payload
     raw = (input_json or positional or "").strip()
     if not raw:
-        raise ValueError("JSON body required (file path, inline object, --input, or -)")
+        raise ValueError(
+            "JSON body required. Use --prompt \"...\", --input-file path.json, inline JSON, or - for stdin."
+        )
     if raw == "-":
         import sys
 

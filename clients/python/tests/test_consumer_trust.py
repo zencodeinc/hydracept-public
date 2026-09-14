@@ -172,6 +172,10 @@ def test_resolve_artifact_output_rejects_traversal(tmp_path: Path) -> None:
 def test_resolve_artifact_output_single_file_target(tmp_path: Path) -> None:
     dest = resolve_artifact_output(tmp_path, "assets/out.png", "sprite.png", 1)
     assert dest == (tmp_path / "assets" / "out.png").resolve()
+    from hydracept.cli.artifact_output import finalize_single_artifact_path, is_file_output_target
+
+    assert is_file_output_target(dest) is True
+    assert finalize_single_artifact_path(dest, "sprite.png") == dest
 
 
 def test_resolve_artifact_output_rejects_file_target_for_many_artifacts(tmp_path: Path) -> None:
@@ -227,3 +231,58 @@ def test_run_init_validation_unavailable_is_retryable_not_browser(
     assert result.payload["status"] == "configuration_required"
     assert result.payload["reason"] == "validation_unavailable"
     assert result.payload.get("retryable") is True
+
+
+def test_ensure_installation_credential_does_not_reuse_rejected_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from hydracept.cli.init_resolver import _ensure_installation_credential
+    from hydracept.cli.session_store import HumanSession
+    from hydracept.cli.workspace import read_json, secrets_path
+
+    _write_installed_workspace(tmp_path, api_key="dead_key")
+    monkeypatch.delenv("HYDRACEPT_API_KEY", raising=False)
+    monkeypatch.setattr(
+        "hydracept.cli.init_resolver.load_session",
+        lambda: HumanSession("sess", "csrf", "usr_1"),
+    )
+    monkeypatch.setattr(
+        "hydracept.cli.init_resolver.create_key",
+        lambda **kwargs: {"apiKey": "fresh_key"},
+    )
+    key, action = _ensure_installation_credential(
+        tmp_path,
+        project_id="cpr_installed",
+        environment="development",
+        api_url="https://api.hydracept.com",
+        allow_reuse=False,
+    )
+    assert key == "fresh_key"
+    assert action == "created"
+    assert read_json(secrets_path(tmp_path)).get("apiKey") == "fresh_key"
+
+
+def test_run_init_credential_invalid_without_session_starts_bootstrap(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from hydracept.cli.init_resolver import InitResult
+
+    _write_installed_workspace(tmp_path)
+    monkeypatch.delenv("HYDRACEPT_API_KEY", raising=False)
+    monkeypatch.setattr("hydracept.cli.init_resolver.load_session", lambda: None)
+
+    with patch(
+        "hydracept.cli.installed_workspace.httpx.get",
+        return_value=_FakeResponse(status_code=401),
+    ):
+        with patch(
+            "hydracept.cli.init_resolver._bootstrap_interaction",
+            return_value=InitResult(
+                exit_code=0,
+                payload={"status": "interaction_required", "reason": "authentication"},
+            ),
+        ) as bootstrap:
+            result = run_init(tmp_path, apply=True, yes=True, json_output=True)
+
+    assert bootstrap.called
+    assert result.payload["status"] == "interaction_required"

@@ -188,6 +188,25 @@ def fetch_identity_payloads(
     return diagnostics, session
 
 
+def _trust_ready_checkout(
+    *,
+    checkout: str,
+    home: str,
+    environment: str,
+    api_url: str,
+) -> ResolvedHydraceptContext:
+    """Local READY checkout+token is execution truth when identity was not observed."""
+    return build_resolved_context(
+        checkout_project_id=checkout,
+        credential_project_id=checkout,
+        home_project_id=home,
+        product_id=checkout,
+        environment=environment,
+        api_url=api_url,
+        workspace_ready=True,
+    )
+
+
 def resolve_hydracept_context(
     project_root: Path,
     *,
@@ -203,12 +222,14 @@ def resolve_hydracept_context(
     local_ready = workspace_state(workspace) == WorkspaceState.READY
     diag = diagnostics or {}
     session = session_context or {}
+    identity_observed = bool(diag) or bool(session)
     if refresh and workspace is not None and workspace.token:
         fetched_diag, fetched_session = fetch_identity_payloads(workspace)
         if fetched_diag:
             diag = fetched_diag
         if fetched_session:
             session = fetched_session
+        identity_observed = bool(fetched_diag) or bool(fetched_session) or identity_observed
     home = _home_from_session_context(session)
     credential = _credential_from_diagnostics(
         diag,
@@ -224,15 +245,18 @@ def resolve_hydracept_context(
         api_url=api_url,
         workspace_ready=local_ready,
     )
-    if ctx.execution_project_id is None and not credential and checkout and local_ready and not refresh:
-        return build_resolved_context(
-            checkout_project_id=checkout,
-            credential_project_id=checkout,
-            home_project_id=home,
-            product_id=checkout,
+    if (
+        ctx.execution_project_id is None
+        and not credential
+        and checkout
+        and local_ready
+        and (not refresh or not identity_observed)
+    ):
+        return _trust_ready_checkout(
+            checkout=checkout,
+            home=home,
             environment=environment,
             api_url=api_url,
-            workspace_ready=True,
         )
     return ctx
 
@@ -301,6 +325,20 @@ def assert_execution_allowed(workspace: ResolvedWorkspace) -> ResolvedHydraceptC
                 "or use a credential issued for this project."
             ),
             payload=ctx.to_dict(),
+        )
+    if (
+        ctx.execution_project_id is None
+        and not credential
+        and checkout
+        and local_ready
+        and not diag
+        and not session
+    ):
+        return _trust_ready_checkout(
+            checkout=checkout,
+            home=home,
+            environment=workspace.environment,
+            api_url=workspace.api_url,
         )
     if ctx.execution_project_id is None:
         raise ProjectCredentialMismatch(

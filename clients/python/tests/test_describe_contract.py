@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from hydracept.cli.describe_contract import describe_use_contract
+from hydracept.cli.image_canvas import MIN_PIXELS, MIN_SQUARE
 
 
 def test_describe_omits_fake_default_for_variable_work() -> None:
@@ -36,10 +37,35 @@ def test_describe_allows_default_for_fixed_image_unit() -> None:
                 "managed": {"available": True},
                 "byok": {"available": True},
             },
+            "features": {"deferredProcessing": True},
         }
     )
     assert payload["pricing"]["defaultEstimate"] == 0.05
     assert payload["execution"]["mode"] == "job"
+    assert payload["canvasFloor"]["minPixels"] == MIN_PIXELS
+    assert str(MIN_SQUARE) in payload["canvasFloor"]["minimumSquare"]
+    assert payload["execution"]["deferredProcessing"] is True
+    assert payload["nextAction"]["cli"] == (
+        'python -m hydracept run image.generate.v1 --prompt "..." --json'
+    )
+
+
+def test_describe_translate_surfaces_target_locale_cli_hint() -> None:
+    payload = describe_use_contract(
+        {
+            "key": "text.translate.v1",
+            "executionModes": ["invoke_sync", "job_async"],
+            "estimateAvailable": True,
+            "pricing": {"pricingUnit": "per_million_tokens", "catalogUsd": 0.05},
+            "billingModes": {
+                "managed": {"available": True},
+                "byok": {"available": True},
+            },
+        }
+    )
+    assert payload["nextAction"]["cli"] == (
+        'python -m hydracept run text.translate.v1 --target-locale es --prompt "..." --json'
+    )
 
 
 def test_describe_keeps_quote_metadata_and_surfaces_example_input() -> None:

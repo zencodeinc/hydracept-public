@@ -16,6 +16,7 @@ verification:
   - Run hydracept doctor after integration changes.
   - Use GET /v1/diagnostics/session to verify auth and bundle version.
 discovery:
+  - Browse capabilities: GET /v1/capabilities?view=summary
   - List capabilities: GET /v1/capabilities
   - Describe capability: GET /v1/capabilities/{key}
   - Treat inputConstraints on the descriptor as the overflow contract. Hydracept never silently truncates semantic user input.

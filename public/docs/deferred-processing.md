@@ -47,6 +47,6 @@ Pinned native envelopes add `service_tier: "flex"` only when the caller opts in 
 The 50% applies to the **provider token basis**, not the Hydracept service fee.
 
 - **BYOK** — you pay the provider 50% of standard token rates for eligible deferred calls. Hydracept fee remains 0%.
-- **Managed** — the published upstream basis is the discounted rate, then the catalog Hydracept service fee applies. Managed pinned remains unavailable (`501`).
+- **Managed** — the published upstream basis is the discounted rate, then the catalog Hydracept service fee applies. Pinned inference uses the same managed/platform admission as other catalog capabilities.
 
 See [Billing](../billing/), [Durable jobs](../jobs/), and [Pinned Execution](../pinned-execution/).

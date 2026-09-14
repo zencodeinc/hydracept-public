@@ -6,7 +6,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from hydracept_contracts.capability_invoke_envelope import CapabilityInvocationEnvelope
 from hydracept_contracts.execution import DataClassification, ExecutionMode, RetentionPolicy
@@ -53,8 +53,23 @@ class ExecutionConstraints(BaseModel):
             "Ignored when preferredModel is omitted."
         ),
     )
+    budget_enforcement: str | None = Field(
+        default=None,
+        alias="budgetEnforcement",
+        description="warn (admit over ceiling) or prevent (HTTP 402). Setting maxCostUsd without this is prevent.",
+    )
 
     model_config = {"populate_by_name": True, "extra": "forbid"}
+
+    @field_validator("budget_enforcement")
+    @classmethod
+    def _budget_enforcement_values(cls, value: str | None) -> str | None:
+        if value is None or value == "":
+            return None
+        text = str(value).strip().lower()
+        if text not in {"off", "warn", "prevent"}:
+            raise ValueError(f"unsupported budgetEnforcement '{value}'")
+        return text
 
 
 class CapabilityExecutionOptions(BaseModel):

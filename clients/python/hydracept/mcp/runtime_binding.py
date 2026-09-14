@@ -13,9 +13,11 @@ from __future__ import annotations
 
 import json
 import os
+import sys
+import time
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -63,6 +65,75 @@ def _pid_alive(pid: int) -> bool:
     return True
 
 
+def _windows_process_create_time(pid: int) -> datetime | None:
+    import ctypes
+    from ctypes import wintypes
+
+    process_query_limited_information = 0x1000
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    handle = kernel32.OpenProcess(process_query_limited_information, False, pid)
+    if not handle:
+        return None
+    try:
+        ctime = wintypes.FILETIME()
+        etime = wintypes.FILETIME()
+        ktime = wintypes.FILETIME()
+        utime = wintypes.FILETIME()
+        if not kernel32.GetProcessTimes(
+            handle,
+            ctypes.byref(ctime),
+            ctypes.byref(etime),
+            ctypes.byref(ktime),
+            ctypes.byref(utime),
+        ):
+            return None
+        stamp = (ctime.dwHighDateTime << 32) | ctime.dwLowDateTime
+        return datetime(1601, 1, 1, tzinfo=UTC) + timedelta(microseconds=stamp / 10)
+    finally:
+        kernel32.CloseHandle(handle)
+
+
+def _posix_process_create_time(pid: int) -> datetime | None:
+    stat_path = Path(f"/proc/{pid}")
+    try:
+        return datetime.fromtimestamp(stat_path.stat().st_ctime, tz=UTC)
+    except OSError:
+        return None
+
+
+def _process_create_time(pid: int) -> datetime | None:
+    if pid == os.getpid():
+        return None
+    if sys.platform == "win32":
+        return _windows_process_create_time(pid)
+    return _posix_process_create_time(pid)
+
+
+def _parse_started_at(value: Any) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
+
+
+def _pid_matches_lease(pid: int, started_at: datetime | None) -> bool:
+    if not _pid_alive(pid):
+        return False
+    if pid == os.getpid():
+        return True
+    created = _process_create_time(pid)
+    if created is None or started_at is None:
+        # Could not prove the PID still belongs to the lease writer.
+        return sys.platform != "win32"
+    return created <= started_at + timedelta(seconds=5)
+
+
 def attest_runtime_binding(
     project_root: Path | str,
     *,
@@ -72,22 +143,44 @@ def attest_runtime_binding(
     """Atomically publish this MCP process's checkout identity."""
     root = Path(project_root).resolve()
     environ = os.environ if env is None else env
+    from hydracept import __version__ as hydracept_version
+
     payload: dict[str, Any] = {
         "schemaVersion": 1,
         "serverInstanceId": _SERVER_INSTANCE_ID,
         "pid": os.getpid(),
         "startedAt": datetime.now(UTC).isoformat(),
         "bindingSource": source,
+        "workspaceRoot": str(root),
         "workspaceFingerprint": workspace_fingerprint(root),
         "executionProjectId": _project_id(root),
         "generation": str(environ.get("HYDRACEPT_MCP_GENERATION") or "").strip() or None,
+        "version": str(hydracept_version),
+        "mcpVersion": str(hydracept_version),
     }
     path = runtime_binding_path(root)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
     temporary.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    temporary.replace(path)
+    _atomic_replace(temporary, path)
     return payload
+
+
+def _atomic_replace(source: Path, destination: Path, *, retries: int = 8) -> None:
+    """Replace destination with source, retrying transient Windows file locks."""
+    last_error: OSError | None = None
+    for attempt in range(retries):
+        try:
+            source.replace(destination)
+            return
+        except OSError as exc:
+            last_error = exc
+            locked = getattr(exc, "winerror", None) == 32 or exc.errno in {13, 16, 32}
+            if not locked or attempt >= retries - 1:
+                raise
+            time.sleep(0.05 * (attempt + 1))
+    if last_error is not None:
+        raise last_error
 
 
 @dataclass(frozen=True)
@@ -127,8 +220,14 @@ def inspect_runtime_binding(
         pid = int(payload.get("pid") or 0)
     except (TypeError, ValueError):
         pid = 0
-    if not _pid_alive(pid):
-        return RuntimeBindingStatus(False, "stale")
+    started_at = _parse_started_at(payload.get("startedAt"))
+    if not _pid_matches_lease(pid, started_at):
+        status = "pid_reused" if _pid_alive(pid) else "stale"
+        return RuntimeBindingStatus(False, status)
+
+    active_root = str(payload.get("workspaceRoot") or "") or None
+    if active_root and Path(active_root).resolve() != root:
+        return RuntimeBindingStatus(False, "workspace_mismatch")
 
     active_fingerprint = str(payload.get("workspaceFingerprint") or "") or None
     expected_fingerprint = workspace_fingerprint(root)
@@ -148,7 +247,7 @@ def inspect_runtime_binding(
         )
 
     configured_generations = {str(value).strip() for value in expected_generations if str(value).strip()}
-    if configured_generations and generation not in configured_generations:
+    if generation and configured_generations and generation not in configured_generations:
         return RuntimeBindingStatus(
             False, "generation_mismatch", instance, generation, active_fingerprint, active_project, source
         )

@@ -30,6 +30,31 @@ def test_raise_api_status_includes_code() -> None:
         raise AssertionError("expected HydraceptApiError")
 
 
+def test_raise_api_status_flattens_503_recovery() -> None:
+    request = httpx.Request("GET", "https://api.hydracept.com/v1/capabilities")
+    response = httpx.Response(
+        503,
+        request=request,
+        json={
+            "code": "DATABASE_UNAVAILABLE",
+            "message": "Database temporarily unavailable; retry shortly",
+            "retryable": True,
+            "nextAction": "retry_after_backoff",
+            "retryAfterSeconds": 2,
+        },
+    )
+    try:
+        raise_api_status(response)
+    except HydraceptApiError as exc:
+        tool = exc.as_tool_result()
+        assert tool["retryable"] is True
+        assert tool["nextAction"] == "retry_after_backoff"
+        assert tool["retryAfterSeconds"] == 2
+        assert tool["code"] == "DATABASE_UNAVAILABLE"
+    else:
+        raise AssertionError("expected HydraceptApiError")
+
+
 def test_decorate_job_tool_result_poll() -> None:
     payload = decorate_job_tool_result({"jobId": "job_1", "status": "queued"})
     assert payload["nextAction"] == "poll"

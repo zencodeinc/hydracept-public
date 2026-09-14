@@ -59,13 +59,36 @@ def describe_use_contract(descriptor: dict[str, Any]) -> dict[str, Any]:
     pricing_out["byok"] = byok
     if default_estimate is not None:
         pricing_out["defaultEstimate"] = default_estimate
+    features = payload.get("features") if isinstance(payload.get("features"), dict) else {}
     execution_in = payload.get("execution") if isinstance(payload.get("execution"), dict) else {}
     execution_out = dict(execution_in)
     execution_out["mode"] = mode
     payload["execution"] = execution_out
     payload["pricing"] = pricing_out
+    if key.startswith("image."):
+        from hydracept.cli.image_canvas import MIN_PIXELS, MIN_SQUARE
+
+        payload["canvasFloor"] = {
+            "minPixels": MIN_PIXELS,
+            "minimumSquare": f"{MIN_SQUARE}x{MIN_SQUARE}",
+            "note": (
+                f"Smallest square output is {MIN_SQUARE}×{MIN_SQUARE}. "
+                "Omit width/height for defaults, or use --prompt for one-off icons."
+            ),
+        }
+    deferred = bool(features.get("deferredProcessing"))
+    if deferred and mode == "job":
+        execution_out["deferredProcessing"] = True
+        execution_out["latencyNote"] = (
+            "jobs submit may queue before running; invoke/run sync completes immediately when supported."
+        )
+        payload["execution"] = execution_out
     cli = f"python -m hydracept run {key}"
-    if requires_input:
+    if key == "text.translate.v1":
+        cli = 'python -m hydracept run text.translate.v1 --target-locale es --prompt "..." --json'
+    elif key.startswith(("image.", "audio.", "video.")) and not requires_input:
+        cli = f'python -m hydracept run {key} --prompt "..." --json'
+    elif requires_input:
         cli = f"python -m hydracept run {key} --input-file request.json --json"
     next_action: dict[str, Any] = {
         "cli": cli,

@@ -138,6 +138,30 @@ def test_assert_execution_allowed_rejects_mismatch() -> None:
         raise AssertionError("expected ProjectCredentialMismatch")
 
 
+def test_unobserved_identity_trusts_ready_checkout() -> None:
+    from pathlib import Path
+    from unittest.mock import patch
+
+    from hydracept.cli.workspace import ResolvedWorkspace, WorkspaceState
+    from hydracept.context import resolve_hydracept_context
+
+    workspace = ResolvedWorkspace(
+        api_url="https://api.hydracept.com",
+        token="hapt_test",
+        project_id="cpr_checkout",
+        environment="development",
+    )
+    with (
+        patch("hydracept.context.resolve_workspace", return_value=workspace),
+        patch("hydracept.context.workspace_state", return_value=WorkspaceState.READY),
+        patch("hydracept.context.fetch_identity_payloads", return_value=({}, {})),
+    ):
+        ctx = resolve_hydracept_context(Path("."), refresh=True)
+    assert ctx.execution_project_id == "cpr_checkout"
+    assert ctx.ready is True
+    assert ctx.mismatch is None
+
+
 def test_assert_execution_allowed_accepts_matching_project() -> None:
     from unittest.mock import patch
 

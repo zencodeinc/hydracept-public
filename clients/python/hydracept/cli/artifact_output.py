@@ -87,11 +87,16 @@ def resolve_artifact_output(
     return target / filename
 
 
+def is_file_output_target(path: Path) -> bool:
+    """True when ``path`` is a concrete file destination rather than a directory."""
+    if path.exists() and path.is_dir():
+        return False
+    return _looks_like_file(path) or bool(path.suffix)
+
+
 def finalize_single_artifact_path(resolved: Path, artifact_filename: str) -> Path:
     """Turn a resolved directory or file target into a concrete single-artifact file path."""
     filename = Path(str(artifact_filename or "artifact.bin")).name
-    if _looks_like_file(resolved):
-        return resolved
-    if resolved.suffix and not resolved.is_dir():
+    if is_file_output_target(resolved):
         return resolved
     return resolved / filename

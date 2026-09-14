@@ -27,7 +27,12 @@ def register_project_tools(
         try:
             return fn()
         except Exception as exc:  # noqa: BLE001 — keep the MCP session alive
-            return {"error": str(exc)}
+            return {
+                "error": True,
+                "code": exc.__class__.__name__,
+                "message": str(exc),
+                "retryable": False,
+            }
 
     @server.tool()
     def hydracept_project_status() -> dict[str, Any]:
