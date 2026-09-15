@@ -20,6 +20,8 @@ class HydraceptErrorCode(StrEnum):
     PROVIDER_REJECTED = "ProviderRejected"
     PROVIDER_TIMEOUT = "ProviderTimeout"
     EXECUTION_TIMEOUT = "ExecutionTimeout"
+    QUEUE_TIMEOUT = "QueueTimeout"
+    TRANSPORT_AMBIGUOUS = "TRANSPORT_AMBIGUOUS"
     CANCELLED = "Cancelled"
     PAYLOAD_UNAVAILABLE = "PayloadUnavailable"
     STRUCTURED_OUTPUT_INVALID = "StructuredOutputInvalid"

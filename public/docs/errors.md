@@ -120,7 +120,7 @@ When `billingModes` is omitted, the capability is not inference-priced (domain, 
 
 ## Idempotency
 
-Durable job submits accept `idempotencyKey` (minted if omitted). Replaying the same key with a conflicting payload returns `409` instead of creating a second job.
+Durable job submits accept `idempotencyKey` (minted if omitted). Replaying the same key with the same payload returns the existing `jobId` for queued, running, succeeded, and failed jobs — a client poll timeout is not a Hydracept failure. `409 IdempotencyConflict` is only for a **different** normalized payload on that key; those bodies include `jobId`. Follow the job's `nextAction` / `retry.newKeySafe` before minting a new key. `TRANSPORT_AMBIGUOUS` is never new-key-safe.
 
 `409` with `detail.code` `QUOTE_MISMATCH` means a previously sealed `quoteId` no longer matches the job body. Omit `execution.quoteId` and submit with a **new** `idempotencyKey`.
 

@@ -31,6 +31,8 @@ _FOLD_CONSTRAINT_KEYS = (
     ("autoSelect", "auto_select"),
     ("providerPin", "provider_pin"),
     ("maxCostUsd", "max_cost_usd"),
+    ("maxDurationSeconds", "max_duration_seconds"),
+    ("timeoutSeconds", "timeout_seconds"),
 )
 _FOLD_EXECUTION_OPTION_KEYS = (
     ("billingMode", "billing_mode"),
@@ -58,8 +60,35 @@ class ExecutionConstraints(BaseModel):
         alias="budgetEnforcement",
         description="warn (admit over ceiling) or prevent (HTTP 402). Setting maxCostUsd without this is prevent.",
     )
+    max_duration_seconds: int | None = Field(
+        default=None,
+        alias="maxDurationSeconds",
+        ge=5,
+        le=7200,
+        description=(
+            "Provider execution deadline in seconds after the job starts running. "
+            "Does not include queue wait. timeoutSeconds is accepted as an alias."
+        ),
+    )
 
     model_config = {"populate_by_name": True, "extra": "forbid"}
+
+    @model_validator(mode="before")
+    @classmethod
+    def _fold_timeout_alias(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        payload = dict(data)
+        timeout = payload.pop("timeoutSeconds", None)
+        if timeout is None:
+            timeout = payload.pop("timeout_seconds", None)
+        if timeout is None:
+            return payload
+        existing = payload.get("maxDurationSeconds", payload.get("max_duration_seconds"))
+        if existing is not None and existing != timeout:
+            raise ValueError("conflicting timeoutSeconds and maxDurationSeconds")
+        payload["maxDurationSeconds"] = timeout
+        return payload
 
     @field_validator("budget_enforcement")
     @classmethod

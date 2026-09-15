@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.23 — 2026-09-14
+
+- Same-key job submit returns the existing job after a client poll timeout; do not mint a new idempotency key unless `retry.newKeySafe` says so
+
 ## 0.3.22 — 2026-09-14
 
 - MCP workspace resolution attests runtime once per process and caches the resolved checkout (fewer Windows `mcp-runtime.json` locks)

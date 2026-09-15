@@ -82,6 +82,8 @@ If a workflow deliberately binds execution to a previously returned quote, the s
 
 Use jobs for image, audio, 3D mesh, and any generation that may take longer than one HTTP request.
 
+`text.general.fast.v1` still offers `invoke_sync`, but that path is edge-held: about **60 seconds / 2048 `maxOutputTokens`**. Larger completions (including 8192-token title cards) must use `POST /v1/capabilities/text.general.fast.v1/jobs`. Catalog `features.syncInvoke` and `features.durableJob` document those envelopes separately. Durable jobs share the durable-text worker; concurrency is hardware-bounded so one job does not block another of the same variety. `executionConstraints.maxDurationSeconds` is the **provider execution** deadline after the job starts (default **120s**, max **600**), not queue wait. Queue timeout, execution timeout, and post-submit ambiguity are different error codes (`QueueTimeout`, `ExecutionTimeout`, `TRANSPORT_AMBIGUOUS`).
+
 Durable text jobs (`executionModes` includes `job_async`) on eligible models also use **deferred processing**: Hydracept waits for the cheaper latency-tolerant provider tier and charges **50% of standard token rates**. Check `features.deferredProcessing` on the capability descriptor, or read [Deferred processing](../deferred-processing/). Synchronous invoke and stream stay on standard processing.
 
 Audio capabilities (`audio.sfx.generate.v1`, `audio.voice.generate.v1`, `audio.music.generate.v1`) run as durable jobs. Artifacts are **Ogg** (`audio/ogg`) with a `.ogg` filename, not WAV. Set `variantCount` (1–4) in job input to request multiple takes. See [variant selection](../jobs/#select-a-variant) when you need to pick one output before the next pipeline step.

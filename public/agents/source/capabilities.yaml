@@ -5,7 +5,7 @@ capabilities:
   - key: image.edit.v1
     summary: In-place edit of a source PNG via images.edit (source, optional mask, insert graphics).
   - key: text.general.fast.v1
-    summary: Fast text generation through the public capability surface.
+    summary: Fast text generation. Sync invoke is ~60s / 2048 output tokens; larger jobs share hydracept-durable-text with a 120s execution deadline after start and a 2h queue wait.
   - key: text.reasoning.high.v1
     summary: High-reasoning text generation.
   - key: text.reasoning.maximum.v1

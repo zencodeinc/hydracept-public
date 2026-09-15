@@ -18,6 +18,7 @@ Include:
 - `input` — capability-specific payload
 - `execution` — `executionPreference`, `billingMode` (`byok` | `managed`). **Omit `quoteId`** unless the job input is byte-for-byte the sealed quote
 - `idempotencyKey` — optional; the API mints one if missing
+- `execution.executionConstraints.maxDurationSeconds` — optional **provider execution** deadline in seconds after the job starts (not queue wait). `text.general.fast.v1` defaults to 120s (max 600). Queue wait uses a separate deadline. A job that never starts fails with `QueueTimeout`. A job that starts and then exceeds the provider deadline fails with `ExecutionTimeout` only if Hydracept observed the attempt end; after provider submission began, an abandoned wait is `TRANSPORT_AMBIGUOUS`. `timeoutSeconds` is accepted as an alias for the execution deadline.
 
 Example for `image.generate.v1` (BYOK):
 
@@ -70,7 +71,7 @@ Authorization: Bearer <HYDRACEPT_API_KEY>
 
 Jobs move through `queued` and `running` before reaching a terminal status: `succeeded`, `failed`, or `canceled`. A job can also be `awaiting_approval`, `canceling`, or `needs_attention`; handle those states according to your workflow.
 
-Job payloads include `nextAction` (`poll`, `download`, `present_approval`, or `stop`) and `pollAfterSeconds`. If `nextAction` is `poll`, wait that many seconds and `GET` again. Do not busy-loop.
+Job payloads include `nextAction` (`poll`, `download_artifacts`, `retry_new`, `present_approval`, `inspect_error`, or `stop`), `retry` (`sameKey`, `newKeySafe`), and `pollAfterSeconds`. If `nextAction` is `poll`, wait that many seconds and `GET` again. Do not busy-loop. A client poll timeout is not a Hydracept failure: keep `GET /v1/jobs/{jobId}` or `POST` the **same** `idempotencyKey` while status is `queued` or `running`. Minting a new key starts a second job. Same key plus the same payload always returns the existing job, including after `failed`. `409` is only for a different payload on that key. Follow `nextAction`: mint a new key only when it is `retry_new` (`retry.newKeySafe: true`). If the code is `TRANSPORT_AMBIGUOUS`, `newKeySafe` is false — do not start a second provider attempt.
 
 Jobs may include a `variantSet` when the capability accepts `variantCount` in input (image and audio generation). Each variant is a separate artifact with `variantIndex` on the job payload. `variantSet` reports `requestedCount`, `completedCount`, `failedCount`, and `selectedArtifactId`.
 

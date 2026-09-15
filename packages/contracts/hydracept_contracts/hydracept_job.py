@@ -9,7 +9,7 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator, model_serializer, model_validator
 
 from hydracept_contracts.digests import normalize_sha256_digest
-from hydracept_contracts.job_wait import job_wait_hints
+from hydracept_contracts.job_wait import job_retry_guidance
 from hydracept_contracts.pricing import CustomerSavings, HydraceptReceiptPricing
 from hydracept_contracts.routing_policy import RoutingSelection
 
@@ -120,6 +120,7 @@ class HydraceptJob(BaseModel):
     )
     next_action: str | None = Field(default=None, alias="nextAction")
     poll_after_seconds: int | None = Field(default=None, alias="pollAfterSeconds")
+    retry: dict[str, Any] | None = None
     approval: dict[str, Any] | None = Field(
         default=None,
         description="Sanitized human-gate payload. Present only while the job awaits approval.",
@@ -129,12 +130,20 @@ class HydraceptJob(BaseModel):
 
     @model_validator(mode="after")
     def fill_wait_hints(self) -> HydraceptJob:
-        if self.next_action:
+        if self.next_action and self.retry is not None:
             return self
-        hints = job_wait_hints(str(self.status))
-        self.next_action = str(hints["nextAction"])
+        hints = job_retry_guidance(
+            status=str(self.status),
+            error_code=(self.error or {}).get("code") if isinstance(self.error, dict) else None,
+        )
+        if not self.next_action:
+            self.next_action = str(hints["nextAction"])
         poll_after = hints.get("pollAfterSeconds")
-        self.poll_after_seconds = int(poll_after) if poll_after is not None else None
+        if self.poll_after_seconds is None:
+            self.poll_after_seconds = int(poll_after) if poll_after is not None else None
+        if self.retry is None:
+            retry = hints.get("retry")
+            self.retry = dict(retry) if isinstance(retry, dict) else None
         return self
 
 

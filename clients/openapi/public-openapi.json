@@ -7124,6 +7124,20 @@
             ],
             "title": "Budgetenforcement",
             "description": "warn (admit over ceiling) or prevent (HTTP 402). Setting maxCostUsd without this is prevent."
+          },
+          "maxDurationSeconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 7200.0,
+                "minimum": 5.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxdurationseconds",
+            "description": "Provider execution deadline in seconds after the job starts running. Does not include queue wait. timeoutSeconds is accepted as an alias."
           }
         },
         "additionalProperties": false,
@@ -7485,6 +7499,18 @@
               }
             ],
             "title": "Pollafterseconds"
+          },
+          "retry": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retry"
           },
           "approval": {
             "anyOf": [

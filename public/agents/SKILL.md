@@ -50,7 +50,7 @@ with HydraceptWorkspace.open() as hydracept:
 Canonical CLI: `python -m hydracept run image.generate.v1 --input '{"prompt":"..."}'`.
 `python -m hydracept jobs submit` remains expert plumbing. Coding agents bind stdio MCP via `python -m hydracept mcp serve --workspace <abs-root>` (Cursor uses `${workspaceFolder}`).
 4. After init, coding agents use stdio MCP (`python -m hydracept mcp serve --workspace ${workspaceFolder}`) with workspace secrets. If `hydracept_*` tools are **not listed this turn**, skip hosted discovery. Do not copy the workspace key into **Plugins → Configure**. Hosted MCP is for clients with no checkout.
-5. On HTTP 409 `QUOTE_MISMATCH`, omit `execution.quoteId` / `estimateId` and submit with a **new** `idempotencyKey`. A failed idempotency key stays failed — bump it (`…-v5` → `…-v6`).
+5. On HTTP 409 `QUOTE_MISMATCH`, omit `execution.quoteId` / `estimateId` and submit with a **new** `idempotencyKey`. A client poll timeout is not a Hydracept failure — keep polling `GET /v1/jobs/{jobId}` or POST the same key. Same key plus the same payload returns the existing job, including after failed. `409 IdempotencyConflict` is payload mismatch only and includes `jobId`. Follow `nextAction` / `retry.newKeySafe`; do not mint a new key on `TRANSPORT_AMBIGUOUS`.
 6. Sheet & Slice: each slice needs ≥ 655360 px and edges multiple of 16 (minimum 816×816 per slice). A 2×2 sheet must be at least 1632×1632, not 1024×1024.
 7. `image.generate.v1` width/height snap up to multiples of 16. Open Graph 1200×630 becomes 1200×640.
 8. `jobs.run(..., download_dir=...)` compares receipt SHA-256 as hex; `sha256:<hex>` is a prefix, not part of the hash.
