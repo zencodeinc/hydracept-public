@@ -30,6 +30,9 @@ class HydraceptErrorCode(StrEnum):
     IDEMPOTENCY_CONFLICT = "IdempotencyConflict"
     ESTIMATE_UNAVAILABLE = "EstimateUnavailable"
     PROMPT_TOO_LONG = "PromptTooLong"
+    # The provider spent the whole output budget on reasoning and returned no
+    # visible output. Terminal: retrying with the same budget reproduces it.
+    REASONING_BUDGET_EXHAUSTED = "ReasoningBudgetExhausted"
     ESTIMATE_EXCEEDS_MAX_COST = "EstimateExceedsMaxCost"
     FUNDING_REQUIRED = "FundingRequired"
     PROJECT_CREDENTIAL_MISMATCH = "ProjectCredentialMismatch"

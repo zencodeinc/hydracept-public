@@ -170,3 +170,17 @@ def test_doctor_json_warns_when_mcp_reload_required() -> None:
     payload = report.to_json_dict()
     assert payload["passed"] is True
     assert any(item["name"] == "mcp.reload" for item in payload["warnings"])
+
+
+def test_doctor_presents_live_stale_mcp_as_functional() -> None:
+    report = DoctorReport()
+    report.mcp = {
+        "bound": True,
+        "reloadRequired": True,
+        "readiness": "runtime_reload_available",
+        "runtimeStatus": "generation_mismatch",
+    }
+    assert report.sections()["mcp"] == {
+        "status": "ready",
+        "detail": "functional; reload available",
+    }

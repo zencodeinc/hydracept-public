@@ -1,104 +1,50 @@
+"""The API owns capability-descriptor projection; clients must not re-derive it."""
+
 from __future__ import annotations
 
-from hydracept.cli.describe_contract import describe_use_contract
-from hydracept.cli.image_canvas import MIN_PIXELS, MIN_SQUARE
+import pytest
 
 
-def test_describe_omits_fake_default_for_variable_work() -> None:
-    payload = describe_use_contract(
-        {
-            "key": "text.general.fast.v1",
-            "executionModes": ["invoke_sync"],
-            "estimateAvailable": True,
-            "pricing": {"pricingUnit": "per_million_tokens", "catalogUsd": 0.05},
-            "billingModes": {
-                "managed": {"available": True},
-                "byok": {"available": True},
-            },
-        }
-    )
-    assert payload["pricing"]["estimateAvailable"] is True
-    assert payload["pricing"]["requiresInput"] is True
-    assert "defaultEstimate" not in payload["pricing"]
-    assert payload["nextAction"]["cli"] == (
-        "python -m hydracept run text.general.fast.v1 --input-file request.json --json"
-    )
-    assert "use" not in payload
+def test_client_no_longer_ships_a_second_projection() -> None:
+    """One-sided authority: the projection lives only in the API."""
+    with pytest.raises(ImportError):
+        import hydracept.capability_descriptor  # noqa: F401
+
+    with pytest.raises(ImportError):
+        import hydracept.cli.describe_contract  # noqa: F401
 
 
-def test_describe_allows_default_for_fixed_image_unit() -> None:
-    payload = describe_use_contract(
-        {
-            "key": "image.generate.v1",
-            "executionModes": ["job_async"],
-            "estimateAvailable": True,
-            "pricing": {"pricingUnit": "per_image", "defaultEstimate": 0.05},
-            "billingModes": {
-                "managed": {"available": True},
-                "byok": {"available": True},
-            },
-            "features": {"deferredProcessing": True},
-        }
-    )
-    assert payload["pricing"]["defaultEstimate"] == 0.05
-    assert payload["execution"]["mode"] == "job"
-    assert payload["canvasFloor"]["minPixels"] == MIN_PIXELS
-    assert str(MIN_SQUARE) in payload["canvasFloor"]["minimumSquare"]
-    assert payload["execution"]["deferredProcessing"] is True
-    assert payload["nextAction"]["cli"] == (
-        'python -m hydracept run image.generate.v1 --prompt "..." --json'
-    )
+class _Response:
+    is_success = True
+    status_code = 200
+    reason_phrase = "OK"
+    content = b"{}"
+
+    def __init__(self, payload: dict) -> None:
+        self._payload = payload
+        self.request = None
+
+    def json(self) -> dict:
+        return self._payload
 
 
-def test_describe_translate_surfaces_target_locale_cli_hint() -> None:
-    payload = describe_use_contract(
-        {
-            "key": "text.translate.v1",
-            "executionModes": ["invoke_sync", "job_async"],
-            "estimateAvailable": True,
-            "pricing": {"pricingUnit": "per_million_tokens", "catalogUsd": 0.05},
-            "billingModes": {
-                "managed": {"available": True},
-                "byok": {"available": True},
-            },
-        }
-    )
-    assert payload["nextAction"]["cli"] == (
-        'python -m hydracept run text.translate.v1 --target-locale es --prompt "..." --json'
-    )
+_SERVER_PAYLOAD = {
+    "key": "image.generate.v1",
+    "execution": {"mode": "job"},
+    "canvasFloor": {"minPixels": 655360, "minimumSquare": "816x816"},
+    "nextAction": {"cli": 'python -m hydracept run image.generate.v1 --prompt "..." --json'},
+    "serverProjectionMarker": "untouched",
+}
 
 
-def test_describe_keeps_quote_metadata_and_surfaces_example_input() -> None:
-    payload = describe_use_contract(
-        {
-            "key": "text.structured.extraction.v1",
-            "executionModes": ["invoke_sync", "job_async"],
-            "estimateAvailable": True,
-            "pricing": {
-                "pricingUnit": "per_million_tokens",
-                "catalogUsd": 0.05,
-                "quoteEndpoint": "/v1/capabilities/text.structured.extraction.v1/quote",
-                "quote": {"supported": True, "requirements": ["/input/document"]},
-            },
-            "features": {
-                "minimalInput": {
-                    "document": "Invoice 42",
-                    "schema": {"type": "object", "properties": {"id": {"type": "string"}}},
-                }
-            },
-            "inputSchema": {
-                "properties": {
-                    "schema": {
-                        "type": "object",
-                        "description": "JSON Schema describing the extracted object.",
-                    }
-                }
-            },
-        }
-    )
-    assert payload["pricing"]["quoteEndpoint"].endswith("/quote")
-    assert "catalogUsd" not in payload["pricing"]
-    assert payload["nextAction"]["exampleInput"]["document"] == "Invoice 42"
-    assert payload["nextAction"]["exampleInput"]["schema"]["type"] == "object"
-    assert "JSON Schema" in payload["inputSchema"]["properties"]["schema"]["description"]
+def test_mcp_describe_returns_the_server_projection_verbatim(monkeypatch) -> None:
+    from hydracept.mcp import server
 
+    monkeypatch.setattr(server, "_project_root", lambda: None)
+    monkeypatch.setattr(server, "resolve_workspace", lambda *a, **k: None)
+    monkeypatch.setattr(server, "_anonymous_api_url", lambda: "https://api.example")
+    monkeypatch.setattr(server.httpx, "get", lambda *a, **k: _Response(dict(_SERVER_PAYLOAD)))
+
+    described = server.hydracept_capabilities(key="image.generate.v1")
+
+    assert described == _SERVER_PAYLOAD

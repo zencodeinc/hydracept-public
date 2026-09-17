@@ -31,6 +31,10 @@ tools:
     summary: Create a non-binding capability REQUEST. Humans pay commission quotes; never use as execution.quoteId.
     readOnlyHint: false
     destructiveHint: false
+  - name: get_capability_request_quote
+    summary: Read the human-paid commission quote for a capability request. Read-only; never use as execution.quoteId.
+    readOnlyHint: true
+    destructiveHint: false
   - name: hydracept_invoke
     summary: Invoke a synchronous capability such as domain search, DNS list, or TLS retrieve.
     readOnlyHint: true
@@ -45,6 +49,14 @@ tools:
     destructiveHint: false
   - name: hydracept_job_status
     summary: GET /v1/jobs/{jobId} once. If nextAction is poll, wait pollAfterSeconds and call again.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: hydracept_jobs_find
+    summary: Find recent, failed, or reusable jobs in the bound project without asking the human for a job id.
+    readOnlyHint: true
+    destructiveHint: false
+  - name: hydracept_job_inspect
+    summary: Inspect one job's error, diagnostics, receipt summary, request snapshot, and reuse candidate.
     readOnlyHint: true
     destructiveHint: false
   - name: hydracept_get_receipt

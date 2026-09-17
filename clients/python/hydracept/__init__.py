@@ -7,6 +7,7 @@ from pathlib import Path
 
 from hydracept.artifact_naming import DownloadedArtifact
 from hydracept.client import HydraceptClient, iter_invocation_events
+from hydracept.history import find_project_jobs, inspect_job, list_project_jobs
 from hydracept.http_timeout import http_timeout
 from hydracept.job_lifecycle import (
     DEFAULT_POLL_INTERVAL_SECONDS,
@@ -54,7 +55,10 @@ __all__ = [
     "__version__",
     "classify_job",
     "classify_status",
+    "find_project_jobs",
     "http_timeout",
+    "inspect_job",
     "iter_invocation_events",
     "job_wait_contract",
+    "list_project_jobs",
 ]

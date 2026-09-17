@@ -2,7 +2,7 @@
 
 Coding agents can integrate Hydracept from the published docs, OpenAPI, and agent-context endpoints.
 
-Hydracept gives software and agents one stable execution surface for external capabilities including text/reasoning, translation, media generation, domains, and DNS.
+Hydracept gives software and agents one stable execution surface for external capabilities including text/reasoning, translation, media generation, domains, and DNS. Job history is part of that public surface: an agent can find what failed or what already worked without turning the human into a job-ID clipboard.
 
 A single capability call is a supported usage. CI, SDK embedding, provider pinning, and production workflows are later compounding benefits — not an entrance fee.
 
@@ -60,6 +60,11 @@ python -m hydracept consumer-check --strict --json
 
 Hydracept exposes an MCP server for tool-using agents. **In a project checkout, stdio is the default** after `python -m hydracept init`: `python -m hydracept mcp bind` writes `.cursor/mcp.json` and `.mcp.json` so `python -m hydracept mcp serve` uses `.hydracept/secrets.json`. Reload MCP once when init reports `reloadRequired: true`. Do not copy the workspace key into **Plugins → Configure**. Hosted endpoint `https://api.hydracept.com/mcp` is for clients with no checkout. If `hydracept_*` tools are missing, do **not** retry hosted discovery — use stdio or the CLI. Install the latest public package with `pip install -U hydracept`; rely on versioned machine contracts rather than hard-coded patch-version folklore. Hosted MCP cannot apply local project files. Do not treat a cached `.hydracept/agent-context.json` as the capability catalog.
 
+Job recovery tools are available on both stdio and hosted MCP:
+
+- `hydracept_jobs_find` — find recent, failed, or reusable jobs in the bound project
+- `hydracept_job_inspect` — inspect one selected job's error, diagnostics, receipt summary, request snapshot, and reuse candidate
+
 Install into a coding agent:
 
 - **Plugin homepage:** [https://hydracept.com/plugin](https://hydracept.com/plugin)
@@ -87,8 +92,12 @@ After `python -m hydracept init --apply --yes --json`, stdio MCP exposes `hydrac
 8. For image production (Sheet & Slice, transparency, variants), read [Image production](../image-production/). Each slice needs ≥ 655360 px and 16-aligned edges (minimum 816×816 per slice; 2×2 sheets ≥ 1632×1632).
 9. For Unity 6 Editor integration, read [Unity integration](../unity-integration/).
 10. Submit and poll durable jobs per [Jobs](../jobs/) using the public capability contract.
-11. Confirm error / rate-limit handling from [Errors](../errors/) and [Rate limits](../rate-limits/).
-12. For a clean-room consumer audit, run `python -m hydracept consumer-check --strict --json` and require `passed: true`.
+11. If the user says **“the last job failed”**, call `hydracept_jobs_find(intent="failed")` before asking for a job ID, then `hydracept_job_inspect` on the relevant item. Read `error.code`; if retrying, use the `requestSnapshot` input with a new idempotency key.
+12. If the user says **“use the one we picked”** or **“reuse the last good one”**, call `hydracept_jobs_find(intent="reusable", capability_key="...")`, inspect the candidate, and prefer its explicit `selectedArtifactId`. Do not promote, favorite, or approve it implicitly.
+13. Confirm error / rate-limit handling from [Errors](../errors/) and [Rate limits](../rate-limits/).
+14. For a clean-room consumer audit, run `python -m hydracept consumer-check --strict --json` and require `passed: true`.
+
+The project list is intentionally prompt-free. Agents can scan failed and reusable jobs without ingesting every historical request. Prompt/request content appears only after the agent deliberately inspects a single job.
 
 ## If the user asks for game image features
 
@@ -100,6 +109,8 @@ After `python -m hydracept init --apply --yes --json`, stdio MCP exposes `hydrac
 | Sprite sheet / contact sheet → individual frames | `sheet.slice`, `sheet.rows`, `sheet.columns`, optional `sheet.animation` |
 | Unity 6 Editor import with provenance | [Unity integration](../unity-integration/) — `hydracept integrations install unity` |
 | Multiple icon takes to pick from | `variantCount` 2–4 |
+| Recover the last failed generation | `hydracept_jobs_find(intent="failed")` → `hydracept_job_inspect` |
+| Reuse the selected prior artifact | `hydracept_jobs_find(intent="reusable")` → inspect → download/reference `selectedArtifactId` |
 | Automated art pipeline / CI | `POST /v1/capabilities/image.generate.v1/jobs` + artifact download |
 
-Do not invent Studio-only endpoints. Prefer the public capability contract and live catalog.
+Do not invent Studio-only endpoints. Prefer the public capability contract and live catalog. Pinned research runs remain on the pinned-execution contract; project job history does not pretend to be a pinned-run history API.

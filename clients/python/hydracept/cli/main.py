@@ -22,7 +22,7 @@ from hydracept.cli.bootstrap import ConfigureError, run_configure
 from hydracept.cli.console_io import cli_console
 from hydracept.cli.json_file import read_json_file
 from hydracept.cli.doctor import DEFAULT_SMOKE_CAPABILITY, run_doctor
-from hydracept.cli.exit_codes import NOT_READY, SMOKE_FAILED, SUCCESS, USAGE
+from hydracept.cli.exit_codes import NOT_READY, USAGE
 from hydracept.cli.keys_cmd import keys_app
 from hydracept.cli.panels_cmd import panels_app
 from hydracept.cli.project_cmd import project_app
@@ -148,6 +148,32 @@ def _cli_json(response: httpx.Response) -> Any:
     return response.json()
 
 
+def _suggestion_catalog(api: str) -> Any:
+    """Best-effort capability summary for unknown-key suggestions. Never raises."""
+    from hydracept.capability_errors import fetch_catalog_summary
+
+    return fetch_catalog_summary(api)
+
+
+def _raise_capability_status(response: httpx.Response, *, key: str, api: str) -> None:
+    """Raise API errors, upgrading unknown keys to UNKNOWN_CAPABILITY + suggestions."""
+    if response.is_success:
+        return
+    from hydracept.capability_errors import error_payload_for_response
+
+    unknown = error_payload_for_response(
+        response, key=key, catalog=_suggestion_catalog(api)
+    )
+    if unknown is not None:
+        console.print_json(data=unknown)
+        raise typer.Exit(USAGE)
+    try:
+        raise_api_status(response)
+    except HydraceptApiError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(1) from exc
+
+
 def _version_callback(value: bool) -> None:
     if not value:
         return
@@ -198,7 +224,9 @@ def version_cmd(
     consumer = payload.get("consumer")
     if isinstance(consumer, dict):
         console.print(f"mcpBinding={consumer.get('mcpBindingVersion')}")
-        console.print(f"mcpRuntime={consumer.get('mcpRuntimeState')}")
+        console.print(
+            f"mcpRuntime={consumer.get('mcpRuntimeMessage') or consumer.get('mcpRuntimeState')}"
+        )
         console.print(f"apiRevision={consumer.get('apiRevision')}")
         console.print(f"agentPack={consumer.get('agentPack')}")
 
@@ -630,7 +658,7 @@ def context_cmd(
 @app.command("run")
 def run_cmd(
     capability: str = typer.Argument(..., help="Capability key"),
-    prompt: str = typer.Option("", "--prompt", help="Convenience input.prompt for generation capabilities"),
+    prompt: str = typer.Option("", "--prompt", help="Capability-specific quick input when supported"),
     target_locale: str = typer.Option("", "--target-locale", help="BCP 47 target locale for text.translate.v1"),
     input_json: str = typer.Option("", "--input", help="JSON object or prompt string"),
     body: Path | None = _input_file_option(),
@@ -676,8 +704,8 @@ def run_cmd(
 
         if canvas_size(payload) is None:
             console.print(
-                f"note: default image output is at least {MIN_SQUARE}×{MIN_SQUARE} "
-                f"({MIN_PIXELS:,} px)."
+                f"note: image generation uses model-native sizing; minimum canvas is "
+                f"{MIN_SQUARE}×{MIN_SQUARE} ({MIN_PIXELS:,} px) and output may be larger."
             )
     outcome = execute_run(
         project_root,
@@ -1033,11 +1061,11 @@ def capabilities_describe(
     api: str = typer.Option(DEFAULT_API, "--api"),
     json_output: bool = typer.Option(False, "--json", help="No-op; describe is already JSON"),
 ) -> None:
+    """Describe a capability. The server owns the projection; the CLI renders it verbatim."""
     del json_output
-    from hydracept.cli.describe_contract import describe_use_contract
-
     response = httpx.get(f"{api.rstrip('/')}/v1/capabilities/{key}", timeout=30.0)
-    console.print_json(data=describe_use_contract(_cli_json(response)))
+    _raise_capability_status(response, key=key, api=api)
+    console.print_json(data=_cli_json(response))
 
 
 @capabilities_app.command("get")
@@ -1068,6 +1096,7 @@ def capabilities_find(
     console.print_json(data=data)
 
 
+@app.command("quote")
 @capabilities_app.command("quote")
 def capabilities_quote(
     key: str = typer.Argument(...),
@@ -1075,7 +1104,8 @@ def capabilities_quote(
         None,
         help="JSON file path, inline JSON object, or - for stdin",
     ),
-    prompt: str = typer.Option("", "--prompt", help="Convenience input.prompt for generation capabilities"),
+    prompt: str = typer.Option("", "--prompt", help="Capability-specific quick input when supported"),
+    target_locale: str = typer.Option("", "--target-locale", help="BCP 47 target locale for text.translate.v1"),
     input_json: str = typer.Option("", "--input", help="Inline JSON object"),
     body_file: Path | None = _input_file_option(),
     api: str = typer.Option(DEFAULT_API, "--api"),
@@ -1084,6 +1114,8 @@ def capabilities_quote(
     json_output: bool = typer.Option(False, "--json", help="No-op; quote is already JSON"),
 ) -> None:
     del json_output
+    from hydracept.cli.run_input_coercion import InputValidationError, coerce_capability_input
+
     workspace = _execution_workspace(project_root, token=token, api=api)
     if prompt and not (body or input_json or body_file):
         payload: dict[str, Any] = {"prompt": prompt}
@@ -1091,8 +1123,15 @@ def capabilities_quote(
         payload = _load_json_payload(body, input_json, body_file)
         if prompt:
             payload.setdefault("prompt", prompt)
+    if target_locale:
+        payload.setdefault("targetLocale", target_locale)
     if payload.get("prompt") and str(key).startswith("image."):
         payload.setdefault("requestTransparentOutput", True)
+    try:
+        payload = coerce_capability_input(key, payload)
+    except InputValidationError as exc:
+        console.print_json(data=exc.to_payload())
+        raise typer.Exit(USAGE) from exc
     payload = merge_workspace_job_context(payload, workspace)
     from hydracept.cli.image_canvas import preflight_image_canvas
     from hydracept.receipt_cost import present_quote
@@ -1112,7 +1151,8 @@ def capabilities_estimate(
         None,
         help="JSON file path, inline JSON object, or - for stdin",
     ),
-    prompt: str = typer.Option("", "--prompt", help="Convenience input.prompt for generation capabilities"),
+    prompt: str = typer.Option("", "--prompt", help="Capability-specific quick input when supported"),
+    target_locale: str = typer.Option("", "--target-locale", help="BCP 47 target locale for text.translate.v1"),
     input_json: str = typer.Option("", "--input", help="Inline JSON object"),
     body_file: Path | None = _input_file_option(),
     api: str = typer.Option(DEFAULT_API, "--api"),
@@ -1124,6 +1164,7 @@ def capabilities_estimate(
         key,
         body,
         prompt=prompt,
+        target_locale=target_locale,
         input_json=input_json,
         body_file=body_file,
         api=api,
@@ -1188,6 +1229,19 @@ def capability_request_submit(
     resolved = _resolve_token(project_root, token or None)
     client = HydraceptClient(api, resolved)
     console.print_json(data=client.submit_capability_request(request_id))
+
+
+@capability_request_app.command("quote")
+def capability_request_quote(
+    request_id: str = typer.Argument(...),
+    api: str = typer.Option(DEFAULT_API, "--api"),
+    project_root: Path = typer.Option(Path.cwd(), "--project-root"),
+    token: str = typer.Option("", "--token"),
+) -> None:
+    """Show the human-paid commission quote for a capability request (non-binding)."""
+    resolved = _resolve_token(project_root, token or None)
+    client = HydraceptClient(api, resolved)
+    console.print_json(data=client.get_capability_request_quote(request_id))
 
 
 @integrations_install_app.command("unity")

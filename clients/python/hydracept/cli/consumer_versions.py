@@ -27,7 +27,7 @@ def consumer_versions(
     project_root: Path,
     *,
     session: dict[str, Any] | None = None,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """Return independently named version facts a consumer can quote."""
     bind = inspect_workspace_mcp(project_root)
     manifest = read_json(manifest_path(project_root))
@@ -36,11 +36,16 @@ def consumer_versions(
     if isinstance(session, dict):
         api_revision = str(session.get("routeBundleVersion") or session.get("apiRevision") or "").strip()
     binding_version = bind.generation or str(installed_client_version)
+    runtime_state = bind.runtime_state()
     return {
         "installedClient": str(installed_client_version),
         "mcpBindingVersion": binding_version,
         "mcpRuntimeState": bind.readiness(),
+        "mcpRuntimeStatePresentation": str(runtime_state["state"]),
+        "mcpRuntimeSeverity": str(runtime_state["severity"]),
+        "mcpRuntimeMessage": str(runtime_state["message"]),
         "runningMcp": binding_version,
-        "apiRevision": api_revision or "unavailable",
+        "apiRevision": api_revision or None,
+        "apiRevisionState": "fetched" if api_revision else "not_fetched",
         "agentPack": pack or "not_installed",
     }

@@ -154,47 +154,67 @@ public sealed class HydraceptWorkspace : IDisposable
 
     internal static HydraceptRunPricing PricingFrom(JsonElement job, JsonElement? receipt)
     {
-        var estimated = ReadDouble(job, "estimatedCost");
-        var actual = ReadDouble(job, "actualCost");
-        var status = job.TryGetProperty("status", out var st) ? st.GetString() ?? "" : "";
-        if (receipt is { } rec)
+        // Customer charge leads the contract; provider cost is an upstream basis,
+        // never a retail price. Mirrors clients/typescript/src/run-result.ts and
+        // the Python client's RunPricing projection.
+        var source = receipt is { ValueKind: JsonValueKind.Object } rec ? rec : job;
+        var pricing = ObjectOrNull(source, "pricing");
+        var customerCharge = ObjectOrNull(source, "pricing", "charge", "customerCharge");
+        var quote = ObjectOrNull(source, "pricing", "quote", "customerTotal");
+        var reportedCost = ObjectOrNull(source, "pricing", "providerUsage", "reportedCost");
+        var basisActual = ObjectOrNull(source, "pricing", "basisActual");
+        var basisEstimated = ObjectOrNull(source, "pricing", "basisEstimated");
+        var estimatedCharge = ObjectOrNull(source, "pricing", "estimatedCharge");
+
+        var owed = MicrosToUsd(ReadDouble(customerCharge, "amountMicros"))
+            ?? MicrosToUsd(ReadDouble(customerCharge, "customerTotalMicros"));
+        var basis = MicrosToUsd(ReadDouble(basisActual, "amountMicros"))
+            ?? MicrosToUsd(ReadDouble(ObjectOrNull(source, "pricing", "actualCharge"), "amountMicros"))
+            ?? MicrosToUsd(ReadDouble(reportedCost, "amountMicros"));
+        var estimatedBasis = MicrosToUsd(ReadDouble(basisEstimated, "amountMicros"));
+        var estimated = MicrosToUsd(ReadDouble(estimatedCharge, "amountMicros"))
+            ?? MicrosToUsd(ReadDouble(quote, "amountMicros"))
+            ?? ReadDouble(job, "estimatedCost");
+
+        var result = new HydraceptRunPricing
         {
-            if (TryGetPath(rec, out var quote, "pricing", "quote", "customerTotal")
-                && estimated is null)
-            {
-                var micros = ReadDouble(quote, "amountMicros");
-                if (micros is { } quoteMicros)
-                    estimated = quoteMicros / 1_000_000d;
-            }
-            if (TryGetPath(rec, out var charge, "pricing", "charge", "customerCharge"))
-            {
-                var sealedMicros = ReadDouble(charge, "amountMicros");
-                if (sealedMicros is { } micros)
-                    actual = micros / 1_000_000d;
-                else if (!string.Equals(status, "succeeded", StringComparison.OrdinalIgnoreCase))
-                    actual = null;
-            }
-            else if (!string.Equals(status, "succeeded", StringComparison.OrdinalIgnoreCase))
-                actual = null;
-        }
-        else if (!string.Equals(status, "succeeded", StringComparison.OrdinalIgnoreCase)
-            && !string.Equals(status, "failed", StringComparison.OrdinalIgnoreCase))
+            CustomerChargeUsd = owed,
+            ChargeState = owed is null ? null : owed > 0 ? "charged" : "covered",
+            BillingMode = ReadString(pricing, "mode"),
+            ProviderCostUsd = basis,
+            ProviderCostBasis = "upstream-price-basis",
+            EstimatedProviderCostUsd = estimatedBasis,
+            EstimatedCustomerChargeUsd = estimated,
+            Currency = "USD",
+        };
+        if (owed is null && basis is null)
         {
-            actual = null;
+            var legacy = ReadDouble(job, "actualCost");
+            if (legacy is not null)
+                result.LegacyActualCostUsd = legacy;
         }
-        return new HydraceptRunPricing { EstimatedCost = estimated, ActualCost = actual };
+        return result;
     }
 
-    private static bool TryGetPath(JsonElement root, out JsonElement result, params string[] names)
+    private static JsonElement? ObjectOrNull(JsonElement root, params string[] names)
     {
-        result = root;
+        var current = root;
         foreach (var name in names)
         {
-            if (!result.TryGetProperty(name, out result) || result.ValueKind != JsonValueKind.Object)
-                return false;
+            if (current.ValueKind != JsonValueKind.Object
+                || !current.TryGetProperty(name, out var next)
+                || next.ValueKind != JsonValueKind.Object)
+                return null;
+            current = next;
         }
-        return true;
+        return current;
     }
+
+    private static double? MicrosToUsd(double? micros)
+        => micros is { } value ? value / 1_000_000d : null;
+
+    private static double? ReadDouble(JsonElement? element, string name)
+        => element is { } value ? ReadDouble(value, name) : null;
 
     private static double? ReadDouble(JsonElement element, string name)
     {
@@ -269,6 +289,9 @@ public sealed class HydraceptWorkspace : IDisposable
         var text = value.GetString();
         return string.IsNullOrWhiteSpace(text) ? null : text;
     }
+
+    private static string? ReadString(JsonElement? element, string name)
+        => element is { } value ? ReadString(value, name) : null;
 
     public void Dispose()
     {

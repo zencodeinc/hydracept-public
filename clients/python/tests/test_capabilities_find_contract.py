@@ -259,3 +259,28 @@ def test_catalog_match_prefers_generate_over_edit() -> None:
         ],
     )
     assert [item["key"] for item in ordered] == ["image.generate.v1", "image.edit.v1"]
+
+
+def test_domain_search_execution_hint_uses_prompt_shortcut(monkeypatch) -> None:
+    class DomainResponse(_Response):
+        def json(self) -> dict:
+            return {
+                "resolution": "matched",
+                "requirementsSatisfied": True,
+                "matches": [
+                    {
+                        "key": "domain.search.v1",
+                        "title": "Search domains",
+                        "accessDecision": {"runnable": True, "status": "managed"},
+                    }
+                ],
+            }
+
+    monkeypatch.setattr(entrypoint.httpx, "post", lambda *args, **kwargs: DomainResponse())
+    monkeypatch.setattr(entrypoint, "_workspace_headers", lambda api: {})
+    result = CliRunner().invoke(
+        entrypoint.app,
+        ["capabilities", "find", "check a domain", "--json"],
+    )
+    assert result.exit_code == 0, result.output
+    assert '--prompt \\"example.com\\"' in result.output

@@ -4,7 +4,7 @@
 
 Hydracept is an execution control plane for software and agents that need external capabilities. Games and media are important examples.
 
-Discovery, quoting, durable jobs, artifacts, and receipts. BYOK is free; managed inference adds a 6% service fee. Eligible durable text jobs use deferred processing at 50% of standard token rates.
+Discovery, quoting, durable jobs, artifacts, receipts, and recoverable project history. BYOK is free; managed inference adds a 6% service fee. Eligible durable text jobs use deferred processing at 50% of standard token rates.
 
 ## 5-minute path
 
@@ -20,7 +20,7 @@ Pick one:
 
 For coding agents, `interaction_required` is a hard human boundary. If `presentation.agentAction` is `present_and_yield` and stdio MCP exposes `hydracept_interaction_surface`, invoke that surface once with the supplied context and stop the turn. Otherwise present `action.url` verbatim. In either case, stop until the human completes activation; only then run `afterCompletion.command` / `--wait`.
 
-See [Authentication](./authentication/) for workspace files (`.hydracept/project.json`, secrets, lazy BYOK) and CI mode (`init --ci`).
+See [Authentication](./authentication/) for workspace files (`.hydracept/project.json`, secrets, lazy BYOK) and CI mode (`init --apply --yes --json --ci`).
 
 Public API: `https://api.hydracept.com`  
 Configuration directory (CLI): `.hydracept/`  
@@ -37,7 +37,7 @@ pip install -U hydracept
 # Prefer the module form if `hydracept` is not on PATH (common on Windows):
 python -m hydracept init                              # human — opens connect URL when needed
 python -m hydracept init --apply --yes --json         # agents
-python -m hydracept init --ci --json                  # CI (setup grants)
+python -m hydracept init --apply --yes --json --ci    # CI (setup grants)
 python -m hydracept doctor
 python -m hydracept smoke
 python -m hydracept verify
@@ -133,12 +133,31 @@ curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
   https://api.hydracept.com/v1/jobs/$JOB_ID/receipt
 ```
 
-See [Durable Jobs & Receipts](./jobs/) for artifacts and outputs.
+## Find and inspect later
+
+If an agent no longer has the ID—or a user simply says “the last job failed”—query project history instead of asking the human to find it:
+
+```bash
+curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  "https://api.hydracept.com/v1/projects/cpr_.../jobs?outcome=failed&limit=10"
+```
+
+The list is prompt-free. Once the relevant job is identified, intentionally inspect only that job with `GET /v1/jobs/{jobId}`. MCP provides the shorter agent loop:
+
+```text
+hydracept_jobs_find(intent="failed")
+→ hydracept_job_inspect(job_id)
+```
+
+For prior successful outputs use `intent="reusable"`; Hydracept highlights an explicitly selected artifact when one exists. A retry always uses a new idempotency key.
+
+See [Durable Jobs & Receipts](./jobs/) for filters, artifacts, inspection, and outputs.
 
 ## Next
 
 - [5-minute game asset](./five-minute-game-asset/)
 - [Authentication & Activation](./authentication/)
+- [Durable Jobs & Receipts](./jobs/)
 - [Pinned Execution](./pinned-execution/)
 - [Execution provenance](./provenance/)
 - [Research Inference Protocol](./research/)
@@ -150,4 +169,5 @@ See [Durable Jobs & Receipts](./jobs/) for artifacts and outputs.
 - [Coding Agents](./agents/)
 - Plugin homepage: [https://hydracept.com/plugin](https://hydracept.com/plugin)
 - [Cold one-shot benchmark](./one-shot-capability-benchmark/)
+- [Capability requests](./capability-requests/)
 - Public OpenAPI: [https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)

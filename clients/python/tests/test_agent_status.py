@@ -46,7 +46,8 @@ def test_agent_status_exposes_independent_versions(tmp_path: Path) -> None:
     # runningMcp reports the configured binding generation (defaults to installed client).
     assert payload["runningMcpVersion"] == hydracept_version
     assert payload["versions"]["mcpRuntimeState"] == "unbound"
-    assert payload["apiRevision"] == "unavailable"
+    assert payload["apiRevision"] is None
+    assert payload["versions"]["apiRevisionState"] == "not_fetched"
     assert payload["versions"]["agentPack"] == "not_installed"
 
 
@@ -55,3 +56,9 @@ def test_attested_runtime_publishes_mcp_package_version(tmp_path: Path) -> None:
     versions = consumer_versions(tmp_path)
     assert versions["runningMcp"] == hydracept_version
     assert versions["installedClient"] == hydracept_version
+
+
+def test_fetched_api_revision_is_explicit(tmp_path: Path) -> None:
+    versions = consumer_versions(tmp_path, session={"routeBundleVersion": "routes.v23"})
+    assert versions["apiRevision"] == "routes.v23"
+    assert versions["apiRevisionState"] == "fetched"

@@ -43,15 +43,53 @@ class McpBindResult:
     config_generations: tuple[str, ...] = ()
 
     def readiness(self) -> str:
-        if not self.bound:
-            return "unbound"
         if self.config_stale:
             return "bound_stale"
+        if not self.bound:
+            return "unbound"
         if self.runtime is not None and self.runtime.verified:
             return "runtime_current"
         if self.runtime is not None and self.runtime.status == "missing":
             return "runtime_not_started"
-        return "runtime_stale"
+        return "runtime_reload_available"
+
+    def runtime_state(self) -> dict[str, Any]:
+        """Canonical 0.4 runtime presentation.
+
+        Only ``incompatible`` and ``unreachable`` are warning-shaped; a stale but
+        working MCP process must not keep presenting as broken.
+        """
+        readiness = self.readiness()
+        runtime_status = self.runtime.status if self.runtime is not None else ""
+        if runtime_status in {"workspace_mismatch", "project_mismatch"}:
+            state = "incompatible"
+        elif self.config_stale or runtime_status in {"generation_mismatch", "pid_reused"}:
+            state = "reload_available"
+        elif readiness == "runtime_current":
+            state = "current"
+        elif (
+            readiness in {"unbound", "runtime_not_started"}
+            or runtime_status in {"stale", "missing"}
+        ):
+            state = "not_started"
+        else:
+            state = "unreachable"
+        severity = "warning" if state in {"incompatible", "unreachable"} else "info"
+        label = {
+            "current": "functional",
+            "reload_available": "functional · reload available",
+            "incompatible": "incompatible with this workspace",
+            "not_started": "not started (stdio starts on demand)",
+            "unreachable": "unreachable",
+        }[state]
+        return {
+            "state": state,
+            "severity": severity,
+            "warning": severity in {"warning", "error"},
+            "message": f"MCP runtime: {label}",
+            "readiness": readiness,
+            "reloadRequired": self.reload_required,
+        }
 
     def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -60,6 +98,9 @@ class McpBindResult:
             "projectConfig": list(self.project_config),
             "reloadRequired": self.reload_required,
             "readiness": self.readiness(),
+            "runtimeState": self.runtime_state()["state"],
+            "runtimeStateSeverity": self.runtime_state()["severity"],
+            "runtimeStateMessage": self.runtime_state()["message"],
             "hostedUrl": self.hosted_url,
             "useHostedWhen": self.use_hosted_when,
             "generation": self.generation,

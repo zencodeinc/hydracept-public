@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.4.0 — unreleased
+
+**Breaking pricing-contract change — the "retail price" concept is removed.** ADR-022 defines four money truths, and this release names them exactly. `retailPriceUsd`/`retailUsd`/`retailCharge` never existed as a Hydracept concept: the customer-visible provider number is the upstream **price basis** the managed charge is computed from, and Hydracept's own procurement cost (`ProviderUsage.actual_cost`) is private and admin-only.
+
+- Run-result and receipt pricing now expose `customerChargeUsd` (what the customer was charged, 0 when covered) with `chargeState` (`covered`/`charged`/`byok`/`unsettled`) and `billingMode`; `providerCostUsd` (upstream price basis, `providerCostBasis: "upstream-price-basis"`); `estimatedProviderCostUsd` and `estimatedCustomerChargeUsd` (provider basis + Hydracept fee). Nothing is named a retail or list price, and Hydracept's procurement cost is never a customer cost field
+- Removed from consumer payloads: `retailPriceUsd`, `retailUsd`, `retailCharge`, and the promotion of `providerUsage.actual_cost` into `providerCostUsd`. `pricing.charge.customerCharge` keeps Hydracept's own decomposition (`upstreamMicros` + `hydraceptFeeMicros` = `customerTotalMicros`) so the 6% managed fee is visible
+- A receipt-less job's bare `actualCost` is no longer dropped: it is preserved as `legacyActualCostUsd`
+- **Coordinated release required:** `clients/typescript` and `clients/csharp` run-result pricing types changed shape, and the deployed hosted MCP emits the new pricing too. The Python client, both SDKs, and the API must ship together; the `hydracept.run-result.v1` id is unchanged, so an old SDK reading a new payload will see null pricing
+- `clients/python` version bumped to 0.4.0 so the release-identity gate (`assert_pypi_release.py --must-not-exist`) can pass
+- `run --out` is now a hard contract: on success bytes appear at the path, or the run fails with a typed error. Text results write text, `.json` paths write the `hydracept.run-result.v1` envelope, and a non-terminal or persistence-disabled run reports `outputNote` instead of silently no-opping. One helper owns that message for both CLI and MCP
+- Capability-descriptor enrichment is server-owned. `GET /v1/capabilities/{key}` returns `execution.mode`, `pricing.requiresInput`/`estimateAvailable`/`managed`/`byok`, `canvasFloor`, `nextAction` (CLI/SDK/MCP + `exampleInput`), and a `descriptorProjection` marker; the CLI and both MCP servers render it verbatim, so there is no CLI-only enrichment to drift. The projection is idempotent, and `canvasFloor` is derived from the descriptor's own `constraints`
+- `hydracept.cli.describe_contract` is removed, and the client no longer re-derives execution mode (it reads `execution.mode`)
+- `capabilities quote`/`estimate` accept the same ergonomic flags as `run` (`--prompt`, `--target-locale`) and run the same input coercion; MCP `hydracept_quote_capability` does too
+- Commission quotes for capability requests: `capability-request quote <id>` reads the human-paid commission quote, and MCP exposes `get_capability_request_quote`. These are implementation quotes (humans pay); the id is never a valid `execution.quoteId`
+- Missing required input (for example `input.prompt`) is reported as `InvalidInput` with `details.missingInputFields` and a concrete `--prompt` next action instead of a bare 422
+- Unknown capability keys are no longer reported as `WORKSPACE_CAPABILITY_DISABLED`; they return `UNKNOWN_CAPABILITY` (404, with `nearestMatches` and no Connections recovery). `nearestMatches` and the 404 shape are computed against the caller-visible key set, so an anonymous caller cannot discover capabilities hidden from launch marketing
+- `consumer-check` skips generated/scratch/vendor paths (`.hydracept`, caches, `node_modules`, build output) and tags each violation `[code|documentation]` with its line; matched files are line-scanned only for probes that matched the whole text
+- `domain.search.v1 --prompt "example.com"` maps to the structured `domain` input, with explicit quick-input discovery guidance in `capabilities find`
+- MCP artifact download honors `out`, `output_path`, and `outputPath` consistently and rejects conflicting destinations
+- Top-level `hydracept quote` aliases `hydracept capabilities quote`
+- Version provenance distinguishes an unfetched API revision (`null`, `not_fetched`) from an unavailable API
+- Functional stale MCP runtimes are shown once as "reload available" instead of repeated warning-shaped failures
+- Image sizing guidance distinguishes the 816×816 minimum canvas from larger model-native defaults
+
 ## 0.3.23 — 2026-09-14
 
 - Same-key job submit returns the existing job after a client poll timeout; do not mint a new idempotency key unless `retry.newKeySafe` says so

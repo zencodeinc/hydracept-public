@@ -114,8 +114,13 @@ class DoctorReport:
         mcp_detail = "configured" if mcp_status == "ready" else "not checked"
         if isinstance(self.mcp, dict):
             if self.mcp.get("reloadRequired"):
-                mcp_status = "warning"
-                mcp_detail = "configured; start or reload MCP once"
+                readiness = str(self.mcp.get("readiness") or "")
+                runtime = self.mcp.get("runtime") if isinstance(self.mcp.get("runtime"), dict) else {}
+                runtime_status = str(runtime.get("runtimeStatus") or self.mcp.get("runtimeStatus") or "")
+                if readiness == "runtime_reload_available" or runtime_status not in {"", "missing"}:
+                    mcp_detail = "functional; reload available"
+                else:
+                    mcp_detail = "configured; start available"
         environment = {
             "status": "ready" if ws and ws.environment else "unknown",
             "detail": (ws.environment if ws and ws.environment else "not bound"),
@@ -423,26 +428,9 @@ def build_doctor_report(
             next_action=reload_or_start,
         )
     )
-    runtime_status = bind.runtime.status if bind.runtime else "missing"
-    if runtime_status in {
-        "workspace_mismatch",
-        "project_mismatch",
-        "generation_mismatch",
-        "pid_reused",
-        "stale",
-    }:
-        report.add(
-            DoctorCheck(
-                "local.mcp_runtime",
-                False,
-                (
-                    f"stdio MCP runtime is {runtime_status}; CLI still works. "
-                    "Start or reload MCP so the live process matches this checkout."
-                ),
-                fatal=False,
-                next_action="Start or reload Hydracept MCP in the coding agent once, or use python -m hydracept run",
-            )
-        )
+    # A stale live MCP process remains functional. The single mcp.reload projection
+    # below records that a newer binding is available without emitting a second
+    # warning-shaped check for the same state.
 
     pack_manifest = read_json(manifest_path(project_root))
     pack_installed = bool(pack_manifest)
@@ -1117,11 +1105,6 @@ def _finish(report: DoctorReport, console: Console, json_output: bool) -> int:
                 "[bold green]Doctor passed — run[/bold green] "
                 "[bold]python -m hydracept smoke[/bold]"
             )
-            mcp = payload.get("mcp") or {}
-            if mcp.get("reloadRequired"):
-                console.print(
-                    "[yellow]Start or reload MCP once[/yellow] so stdio Hydracept uses this workspace."
-                )
         else:
             console.print("[bold red]Doctor failed — fix checks above before submitting jobs.[/bold red]")
 

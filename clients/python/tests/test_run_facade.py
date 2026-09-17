@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 from unittest.mock import patch
 
@@ -48,7 +49,9 @@ def test_no_wait_returns_running_schema(tmp_path: Path) -> None:
     payload = outcome.payload()
     assert payload["status"] == "running"
     assert payload["artifacts"] == []
-    assert payload["pricing"]["actualCost"] is None
+    assert payload["pricing"]["customerChargeUsd"] is None
+    assert payload["pricing"]["providerCostUsd"] is None
+    assert "actualCost" not in payload["pricing"]
     assert payload["idempotencyKey"]
     assert payload["jobId"] == "wfr_1"
 
@@ -244,6 +247,109 @@ def test_map_api_error_includes_actionable_next_action() -> None:
     payload = mapped.to_dict()
     assert "python -m hydracept" in str(payload.get("nextAction") or "")
     assert payload["recovery"]["cli"].startswith("python -m hydracept")
+
+
+class _TextJobClient:
+    """Durable text job with no remote artifacts — the silent `--out` no-op case."""
+
+    def __init__(self, *, status: str = "succeeded") -> None:
+        self.status = status
+
+    def get_job(self, job_id: str) -> dict:
+        return {
+            "status": self.status,
+            "capabilityKey": "text.general.fast.v1",
+            "typedOutput": {"text": "Hola mundo"},
+            "artifacts": [],
+        }
+
+    def get_job_receipt(self, job_id: str) -> dict:
+        return {"pricing": {"mode": "managed", "charge": {"customerCharge": {"amountMicros": 0}}}}
+
+
+def test_run_out_writes_text_for_artifactless_result(tmp_path: Path) -> None:
+    requested = tmp_path / "answer.txt"
+    with patch("hydracept.cli.run_facade.HydraceptClient", return_value=_TextJobClient()):
+        outcome = recover_job(_workspace(), "wfr_text", project_root=tmp_path, out=requested)
+
+    assert outcome.exit_code == 0
+    assert requested.is_file()
+    assert requested.read_text(encoding="utf-8").strip() == "Hola mundo"
+    diagnostics = outcome.result.diagnostics or {}
+    assert diagnostics["requestedOutputPath"] == str(requested)
+    assert diagnostics["persistedOutputPath"] == str(requested)
+    assert diagnostics["persistedOutputKind"] == "text"
+
+
+def test_run_out_json_suffix_writes_the_canonical_envelope(tmp_path: Path) -> None:
+    requested = tmp_path / "answer.json"
+    with patch("hydracept.cli.run_facade.HydraceptClient", return_value=_TextJobClient()):
+        outcome = recover_job(_workspace(), "wfr_text", project_root=tmp_path, out=requested)
+
+    assert outcome.exit_code == 0
+    written = json.loads(requested.read_text(encoding="utf-8"))
+    assert written["schemaVersion"] == "hydracept.run-result.v1"
+    assert written["capability"] == "text.general.fast.v1"
+
+
+def test_run_out_never_silently_no_ops_for_a_running_job(tmp_path: Path) -> None:
+    requested = tmp_path / "answer.txt"
+    with patch("hydracept.cli.run_facade.HydraceptClient", return_value=_TextJobClient(status="running")):
+        outcome = recover_job(
+            _workspace(), "wfr_text", project_root=tmp_path, out=requested, wait=False
+        )
+
+    diagnostics = outcome.result.diagnostics or {}
+    assert not requested.exists()
+    assert diagnostics["requestedOutputPath"] == str(requested)
+    assert diagnostics["persistedOutputPath"] is None
+    assert "not terminal" in diagnostics["outputNote"]
+
+
+def test_run_out_never_silently_no_ops_when_persistence_is_disabled(tmp_path: Path) -> None:
+    requested = tmp_path / "answer.txt"
+    with patch("hydracept.cli.run_facade.HydraceptClient", return_value=_TextJobClient()):
+        outcome = recover_job(
+            _workspace(), "wfr_text", project_root=tmp_path, out=requested, persist=False
+        )
+
+    diagnostics = outcome.result.diagnostics or {}
+    assert not requested.exists()
+    assert diagnostics["persistedOutputPath"] is None
+    assert "Persistence is disabled" in diagnostics["outputNote"]
+
+
+def test_missing_prompt_validation_error_tells_the_caller_to_pass_a_prompt() -> None:
+    from hydracept.cli.run_facade import _map_api_error
+
+    request = httpx.Request("POST", "https://api.hydracept.com/v1/capabilities/image.generate.v1/jobs")
+    response = httpx.Response(
+        422,
+        request=request,
+        json={
+            "detail": [
+                {
+                    "type": "missing",
+                    "loc": ["body", "input", "prompt"],
+                    "msg": "Field required",
+                }
+            ]
+        },
+    )
+    exc = HydraceptApiError(
+        "422 Unprocessable Entity",
+        request=request,
+        response=response,
+        payload={"detail": [{"type": "missing", "loc": ["body", "input", "prompt"]}]},
+        code="",
+    )
+    payload = _map_api_error(exc, capability="image.generate.v1").to_dict()
+
+    assert payload["code"] == "InvalidInput"
+    assert "prompt" in payload["message"]
+    assert payload["details"]["missingInputFields"] == ["prompt"]
+    assert "--prompt" in payload["recovery"]["nextAction"]
+    assert "image.generate.v1" in payload["recovery"]["nextAction"]
 
 
 def test_run_cli_accepts_prompt_flag(monkeypatch, tmp_path: Path) -> None:

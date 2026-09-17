@@ -6,6 +6,1303 @@
     "description": "Discovery, quoting, durable jobs, artifacts, and receipts. Public integration surface for Hydracept capabilities and jobs. Authenticate with a Hydracept API key (Bearer). Implementation internals are not part of this contract."
   },
   "paths": {
+    "/v1/adapter-aliases": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapter-aliases"
+        ],
+        "summary": "Create Stable Model Adapter Alias",
+        "operationId": "create_alias_v1_adapter_aliases_post",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelAdapterAliasCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Alias V1 Adapter Aliases Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapter-aliases"
+        ],
+        "summary": "List Stable Model Adapter Aliases",
+        "operationId": "list_aliases_v1_adapter_aliases_get",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Environment"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Aliases V1 Adapter Aliases Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/adapter-aliases/{alias_name}": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapter-aliases"
+        ],
+        "summary": "Get Model Adapter Alias",
+        "operationId": "get_alias_v1_adapter_aliases__alias_name__get",
+        "parameters": [
+          {
+            "name": "alias_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Alias Name"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Environment"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Alias V1 Adapter Aliases  Alias Name  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/adapter-aliases/{alias_name}/versions": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapter-aliases"
+        ],
+        "summary": "List Immutable Model Adapter Alias Versions",
+        "operationId": "list_alias_versions_v1_adapter_aliases__alias_name__versions_get",
+        "parameters": [
+          {
+            "name": "alias_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Alias Name"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Environment"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Alias Versions V1 Adapter Aliases  Alias Name  Versions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/adapter-aliases/{alias_name}/promotions": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapter-aliases"
+        ],
+        "summary": "Explicitly Promote Model Adapter Alias",
+        "operationId": "promote_alias_v1_adapter_aliases__alias_name__promotions_post",
+        "parameters": [
+          {
+            "name": "alias_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Alias Name"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Environment"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelAdapterAliasPromote"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Promote Alias V1 Adapter Aliases  Alias Name  Promotions Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/adapter-aliases/{alias_name}/recipe-binding": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapter-aliases"
+        ],
+        "summary": "Pin Alias Version For Project Recipe",
+        "operationId": "bind_alias_for_recipe_v1_adapter_aliases__alias_name__recipe_binding_post",
+        "parameters": [
+          {
+            "name": "alias_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Alias Name"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Environment"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipeBindingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Bind Alias For Recipe V1 Adapter Aliases  Alias Name  Recipe Binding Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/adapter-defaults/{capability_key}": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapter-aliases"
+        ],
+        "summary": "Get Project Model Adapter Default",
+        "operationId": "get_adapter_default_v1_adapter_defaults__capability_key__get",
+        "parameters": [
+          {
+            "name": "capability_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Capability Key"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Environment"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Adapter Default V1 Adapter Defaults  Capability Key  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapter-aliases"
+        ],
+        "summary": "Set Project Model Adapter Default",
+        "operationId": "put_adapter_default_v1_adapter_defaults__capability_key__put",
+        "parameters": [
+          {
+            "name": "capability_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Capability Key"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Environment"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectModelAdapterDefaultSet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Put Adapter Default V1 Adapter Defaults  Capability Key  Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapter-aliases"
+        ],
+        "summary": "Clear Project Model Adapter Default",
+        "operationId": "delete_adapter_default_v1_adapter_defaults__capability_key__delete",
+        "parameters": [
+          {
+            "name": "capability_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Capability Key"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Environment"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Adapter Default V1 Adapter Defaults  Capability Key  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/capabilities/image.generate.v1/estimate": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapters"
+        ],
+        "summary": "Quote Image Generation With Model Adapters",
+        "description": "Use the normal retail estimator, constraining it to adapter-compatible routes.\n\nThe extra routingAlternatives field is explanatory only. The nested pricing\nquote remains the monetary authority used by ordinary admission.",
+        "operationId": "quote_image_with_adapters_v1_capabilities_image_generate_v1_estimate_post",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetailEstimateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": [
+          "service_principal",
+          "human_session",
+          "panel_session"
+        ],
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/capabilities/image.generate.v1/quote": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapters"
+        ],
+        "summary": "Quote Image Generation With Model Adapters",
+        "description": "Use the normal retail estimator, constraining it to adapter-compatible routes.\n\nThe extra routingAlternatives field is explanatory only. The nested pricing\nquote remains the monetary authority used by ordinary admission.",
+        "operationId": "quote_image_with_adapters_v1_capabilities_image_generate_v1_quote_post",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetailEstimateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": [
+          "service_principal",
+          "human_session",
+          "panel_session"
+        ],
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/adapters": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapters"
+        ],
+        "summary": "Register Model Adapter",
+        "operationId": "post_adapter_v1_adapters_post",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelAdapterCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Post Adapter V1 Adapters Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapters"
+        ],
+        "summary": "List Project Model Adapters",
+        "operationId": "get_adapters_v1_adapters_get",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Environment"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Adapters V1 Adapters Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/adapters/upload": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapters"
+        ],
+        "summary": "Upload And Register LoRA Weights",
+        "description": "Upload immutable safetensors weights and register them as one adapter.\n\nThe upload is streamed to disk, structurally validated, then committed using\nthe project's ordinary storage disposition. No generation or paid provider\ncall occurs here.",
+        "operationId": "upload_adapter_v1_adapters_upload_post",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_adapter_v1_adapters_upload_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Upload Adapter V1 Adapters Upload Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/adapters/{adapter_id}/revalidate": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapters"
+        ],
+        "summary": "Revalidate Model Adapter Source",
+        "description": "Refresh source health for the adapter's frozen source identity.\n\nThis never advances a Hugging Face branch/tag, changes an alias target, or\nperforms generation. Repo-only Hugging Face registrations remain catalog-only.",
+        "operationId": "revalidate_adapter_v1_adapters__adapter_id__revalidate_post",
+        "parameters": [
+          {
+            "name": "adapter_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Adapter Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Revalidate Adapter V1 Adapters  Adapter Id  Revalidate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/adapters/{adapter_id}": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapters"
+        ],
+        "summary": "Get Model Adapter",
+        "operationId": "get_adapter_v1_adapters__adapter_id__get",
+        "parameters": [
+          {
+            "name": "adapter_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Adapter Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Adapter V1 Adapters  Adapter Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapters"
+        ],
+        "summary": "Delete Model Adapter",
+        "operationId": "delete_adapter_v1_adapters__adapter_id__delete",
+        "parameters": [
+          {
+            "name": "adapter_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Adapter Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Adapter V1 Adapters  Adapter Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
     "/v1/capabilities/document.verify.v1/invoke": {
       "post": {
         "tags": [
@@ -1276,9 +2573,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Create Capability Request V1 Capability Requests Post"
+                  "$ref": "#/components/schemas/CapabilityRequestView"
                 }
               }
             }
@@ -1333,9 +2628,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Capability Request V1 Capability Requests  Request Id  Get"
+                  "$ref": "#/components/schemas/CapabilityRequestView"
                 }
               }
             }
@@ -1400,9 +2693,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Revise Capability Request V1 Capability Requests  Request Id  Revisions Post"
+                  "$ref": "#/components/schemas/CapabilityRequestView"
                 }
               }
             }
@@ -1457,9 +2748,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Submit Capability Request V1 Capability Requests  Request Id  Submit Post"
+                  "$ref": "#/components/schemas/CapabilityRequestView"
                 }
               }
             }
@@ -5752,6 +7041,7 @@
           "recipes"
         ],
         "summary": "List Project Jobs",
+        "description": "List prompt-free job metadata for one project/environment.\n\n`outcome=reusable` means succeeded with at least one output artifact. `selected=true`\nmeans an explicit variant selection exists. Prompt/request bodies never appear here;\nuse the per-job read surface when the caller intentionally inspects one job.",
         "operationId": "list_project_jobs_v1_projects__project_id__jobs_get",
         "parameters": [
           {
@@ -5789,6 +7079,74 @@
                 }
               ],
               "title": "Cursor"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/HydraceptJobStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "capabilityKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Capabilitykey"
+            }
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "failed",
+                    "reusable"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outcome"
+            }
+          },
+          {
+            "name": "selected",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Selected"
             }
           }
         ],
@@ -5894,6 +7252,24 @@
   },
   "components": {
     "schemas": {
+      "AdapterLicenseStatus": {
+        "type": "string",
+        "enum": [
+          "unknown",
+          "declared",
+          "verified"
+        ],
+        "title": "AdapterLicenseStatus"
+      },
+      "AdapterSourceKind": {
+        "type": "string",
+        "enum": [
+          "hydracept_artifact",
+          "huggingface",
+          "provider_ref"
+        ],
+        "title": "AdapterSourceKind"
+      },
       "ApiKeyCreate": {
         "properties": {
           "name": {
@@ -5962,6 +7338,46 @@
           "billingCurrency"
         ],
         "title": "BillingCurrencyUpdate"
+      },
+      "Body_upload_adapter_v1_adapters_upload_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "displayName": {
+            "type": "string",
+            "title": "Displayname"
+          },
+          "baseModelFamily": {
+            "type": "string",
+            "title": "Basemodelfamily",
+            "default": "flux"
+          },
+          "recommendedWeight": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendedweight"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "displayName"
+        ],
+        "title": "Body_upload_adapter_v1_adapters_upload_post"
       },
       "CapabilityAccessDecision": {
         "properties": {
@@ -6585,6 +8001,91 @@
           "need"
         ],
         "title": "CapabilityRequestBody"
+      },
+      "CapabilityRequestView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "organizationId": {
+            "type": "string",
+            "title": "Organizationid"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projectid"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "currentRevisionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currentrevisionid"
+          },
+          "createdAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdat"
+          },
+          "revision": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Revision"
+          },
+          "requestHash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requesthash"
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedback"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "organizationId",
+          "status"
+        ],
+        "title": "CapabilityRequestView",
+        "description": "Public view of a capability request. Quote/payment authority stays on CapabilityQuoteView."
       },
       "CapabilityResolutionRequest": {
         "properties": {
@@ -8717,6 +10218,243 @@
         ],
         "title": "MaturitySource"
       },
+      "ModelAdapterAliasCreate": {
+        "properties": {
+          "alias": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Alias"
+          },
+          "target": {
+            "$ref": "#/components/schemas/ModelAdapterAliasTarget"
+          },
+          "environment": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Environment"
+          }
+        },
+        "type": "object",
+        "required": [
+          "alias",
+          "target"
+        ],
+        "title": "ModelAdapterAliasCreate"
+      },
+      "ModelAdapterAliasPromote": {
+        "properties": {
+          "target": {
+            "$ref": "#/components/schemas/ModelAdapterAliasTarget"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target"
+        ],
+        "title": "ModelAdapterAliasPromote"
+      },
+      "ModelAdapterAliasTarget": {
+        "properties": {
+          "adapterId": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Adapterid"
+          },
+          "weight": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight"
+          }
+        },
+        "type": "object",
+        "required": [
+          "adapterId"
+        ],
+        "title": "ModelAdapterAliasTarget"
+      },
+      "ModelAdapterCreate": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "lora",
+            "title": "Type",
+            "default": "lora"
+          },
+          "displayName": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Displayname"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ModelAdapterSource"
+          },
+          "environment": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Environment"
+          },
+          "baseModelFamily": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Basemodelfamily"
+          },
+          "compatibleModels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 64,
+            "title": "Compatiblemodels"
+          },
+          "triggerWords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 64,
+            "title": "Triggerwords"
+          },
+          "recommendedWeight": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendedweight"
+          },
+          "licenseName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licensename"
+          },
+          "licenseUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licenseurl"
+          },
+          "licenseStatus": {
+            "$ref": "#/components/schemas/AdapterLicenseStatus",
+            "default": "unknown"
+          },
+          "provenance": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Provenance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "displayName",
+          "source"
+        ],
+        "title": "ModelAdapterCreate"
+      },
+      "ModelAdapterSource": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/AdapterSourceKind"
+          },
+          "ref": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Ref"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "filePath": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filepath"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "ref"
+        ],
+        "title": "ModelAdapterSource"
+      },
       "Money": {
         "properties": {
           "amountMicros": {
@@ -9450,6 +11188,39 @@
             "type": "integer",
             "title": "Artifactcount",
             "default": 0
+          },
+          "errorCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errorcode"
+          },
+          "selectedArtifactId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selectedartifactid"
+          },
+          "receiptId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receiptid"
           }
         },
         "type": "object",
@@ -9487,6 +11258,21 @@
           "items"
         ],
         "title": "ProjectJobListResponse"
+      },
+      "ProjectModelAdapterDefaultSet": {
+        "properties": {
+          "alias": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Alias"
+          }
+        },
+        "type": "object",
+        "required": [
+          "alias"
+        ],
+        "title": "ProjectModelAdapterDefaultSet"
       },
       "ProjectSettingsPatch": {
         "properties": {
@@ -9793,6 +11579,24 @@
         },
         "type": "object",
         "title": "ReceiptQuote"
+      },
+      "RecipeBindingRequest": {
+        "properties": {
+          "versionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Versionid"
+          }
+        },
+        "type": "object",
+        "title": "RecipeBindingRequest"
       },
       "RecipeCompetitorSpec": {
         "properties": {

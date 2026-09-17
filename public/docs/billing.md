@@ -91,7 +91,7 @@ Sales-only. Larger teams, volume commitments, SLA, SSO, private networking, cust
 
 ## API
 
-- `GET /v1/billing/summary` — plan, subscription, and managed inference wallet summary
+- `GET /v1/billing/summary` — plan, subscription, managed inference wallet, and a 30-day usage/spend rollup (`?days=7..90`)
 - `GET /v1/billing/wallet` — wallet balances (available, reserved)
 - `GET /v1/billing/wallet/transactions` — immutable wallet transaction log
 - `POST /v1/billing/wallet/top-up-session` — prepaid wallet top-up (`walletTopUpLive: true`)

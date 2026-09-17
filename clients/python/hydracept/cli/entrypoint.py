@@ -195,15 +195,16 @@ def _add_capabilities_describe_dispatch(root: Any) -> None:
                 timeout=30.0,
             )
             raise_api_status(response)
-            from hydracept.cli.describe_contract import describe_use_contract
-
-            click.echo(json.dumps(describe_use_contract(response.json()), separators=(",", ":")))
+            # The API owns the descriptor projection; the CLI renders it verbatim.
+            click.echo(json.dumps(response.json(), separators=(",", ":")))
 
         command.callback = callback
 
 
 def _execution_hint(key: str) -> str:
     resolved = str(key or "").strip() or "<key>"
+    if resolved == "domain.search.v1":
+        return f'python -m hydracept run {resolved} --prompt "example.com" --json'
     if resolved.startswith(("image.", "audio.", "video.", "text.")):
         return f'python -m hydracept run {resolved} --prompt "..." --json'
     return (

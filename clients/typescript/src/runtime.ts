@@ -149,6 +149,30 @@ export function createHydraceptRuntimeApi(http: HydraceptHttp) {
       return http.fetchJson<T>(`/jobs/${encodeURIComponent(jobId)}/receipt`);
     },
 
+    listProjectJobs<T = unknown>(
+      projectId: string,
+      options: {
+        limit?: number;
+        cursor?: string;
+        status?: string;
+        capabilityKey?: string;
+        outcome?: 'failed' | 'reusable';
+        selected?: boolean;
+      } = {},
+    ): Promise<T> {
+      const params = new URLSearchParams();
+      if (options.limit !== undefined) params.set('limit', String(options.limit));
+      if (options.cursor) params.set('cursor', options.cursor);
+      if (options.status) params.set('status', options.status);
+      if (options.capabilityKey) params.set('capabilityKey', options.capabilityKey);
+      if (options.outcome) params.set('outcome', options.outcome);
+      if (options.selected !== undefined) params.set('selected', String(options.selected));
+      const query = params.toString();
+      return http.fetchJson<T>(
+        `/projects/${encodeURIComponent(projectId)}/jobs${query ? `?${query}` : ''}`,
+      );
+    },
+
     cancelJob<T = unknown>(jobId: string): Promise<T> {
       return http.fetchJson<T>(`/jobs/${encodeURIComponent(jobId)}/cancel`, { method: 'POST' });
     },

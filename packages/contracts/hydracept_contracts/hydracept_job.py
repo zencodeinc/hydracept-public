@@ -128,6 +128,30 @@ class HydraceptJob(BaseModel):
 
     model_config = {"populate_by_name": True}
 
+    @field_validator("error", mode="before")
+    @classmethod
+    def normalize_error(cls, value: object) -> dict[str, Any] | None:
+        """Keep one stable public error shape even when a backend has only a code.
+
+        Job-list history intentionally exposes only ``errorCode``. Once a caller
+        explicitly inspects one job, the public job contract guarantees both a
+        machine-stable code and human-readable message.
+        """
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            normalized = dict(value)
+            code = str(normalized.get("code") or "failed").strip() or "failed"
+            raw_message = normalized.get("message")
+            message = str(raw_message).strip() if raw_message is not None else ""
+            if not message or message == code:
+                message = f"Job failed with error code {code}."
+            normalized["code"] = code
+            normalized["message"] = message
+            return normalized
+        message = str(value).strip() or "Job failed."
+        return {"code": "failed", "message": message}
+
     @model_validator(mode="after")
     def fill_wait_hints(self) -> HydraceptJob:
         if self.next_action and self.retry is not None:

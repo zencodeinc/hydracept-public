@@ -12,6 +12,28 @@ async_jobs:
   - Submit via POST /v1/capabilities/{key}/jobs with idempotencyKey.
   - Poll GET /v1/jobs/{jobId} until status is succeeded, failed, or canceled.
   - Fetch receipt via GET /v1/jobs/{jobId}/receipt.
+history:
+  list: GET /v1/projects/{projectId}/jobs
+  inspect: GET /v1/jobs/{jobId}
+  receipt: GET /v1/jobs/{jobId}/receipt
+  request: requestSnapshot on GET /v1/jobs/{jobId}
+  filters:
+    - status
+    - capabilityKey
+    - outcome=failed
+    - outcome=reusable
+    - selected=true
+  mcp:
+    - hydracept_jobs_find
+    - hydracept_job_inspect
+  rules:
+    - Project history is prompt-free; list items never include prompts, request snapshots, or error messages.
+    - If a user reports a prior failure or asks to reuse prior output, find history before asking for a job id.
+    - Inspect only the specific job whose request/error content is needed.
+    - Re-run with a new idempotencyKey. On QUOTE_MISMATCH omit stale execution.quoteId or estimateId.
+    - Reusable means succeeded with an output artifact. Prefer an explicit selectedArtifactId when present.
+    - Reuse is not favorite, review, approval, or promotion.
+    - Pinned research execution remains separate and by-id.
 verification:
   - Run hydracept doctor after integration changes.
   - Use GET /v1/diagnostics/session to verify auth and bundle version.

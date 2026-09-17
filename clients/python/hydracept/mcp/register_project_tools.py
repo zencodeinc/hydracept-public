@@ -8,6 +8,9 @@ from typing import Any
 
 from mcp.server.mcpserver.server import MCPServer
 
+from hydracept import HydraceptClient
+from hydracept.cli.workspace import require_ready_workspace
+from hydracept.history import find_project_jobs, inspect_job
 from hydracept.mcp.interactions import register_interaction_tools
 from hydracept.mcp.project_mcp import ProjectMcpService
 
@@ -33,6 +36,47 @@ def register_project_tools(
                 "message": str(exc),
                 "retryable": False,
             }
+
+    def history_client() -> HydraceptClient:
+        workspace = require_ready_workspace(project_root_fn())
+        return HydraceptClient(
+            workspace.api_url,
+            workspace.token,
+            workspace=workspace,
+        )
+
+    @server.tool()
+    def hydracept_jobs_find(
+        intent: str = "recent",
+        capability_key: str = "",
+        limit: int = 10,
+    ) -> dict[str, Any]:
+        """Find recent, failed, or reusable jobs in this checkout without asking for a job id."""
+        def _run() -> dict[str, Any]:
+            client = history_client()
+            try:
+                return find_project_jobs(
+                    client,
+                    intent=intent,
+                    capability_key=capability_key.strip() or None,
+                    limit=limit,
+                )
+            finally:
+                client.close()
+
+        return invoke(_run)
+
+    @server.tool()
+    def hydracept_job_inspect(job_id: str) -> dict[str, Any]:
+        """Inspect one job's error, diagnostics, receipt summary, request snapshot, and reuse candidate."""
+        def _run() -> dict[str, Any]:
+            client = history_client()
+            try:
+                return inspect_job(client, job_id)
+            finally:
+                client.close()
+
+        return invoke(_run)
 
     @server.tool()
     def hydracept_project_status() -> dict[str, Any]:

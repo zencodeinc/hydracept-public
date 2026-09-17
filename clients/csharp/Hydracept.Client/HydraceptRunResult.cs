@@ -71,11 +71,39 @@ public sealed class HydraceptRunArtifact
 
 public sealed class HydraceptRunPricing
 {
-    [JsonPropertyName("estimatedCost")]
-    public double? EstimatedCost { get; set; }
+    /// <summary>What this customer was charged. 0 when Hydracept covers the execution.</summary>
+    [JsonPropertyName("customerChargeUsd")]
+    public double? CustomerChargeUsd { get; set; }
 
-    [JsonPropertyName("actualCost")]
-    public double? ActualCost { get; set; }
+    /// <summary>covered | charged | byok | unsettled.</summary>
+    [JsonPropertyName("chargeState")]
+    public string? ChargeState { get; set; }
+
+    /// <summary>managed | byok | platform.</summary>
+    [JsonPropertyName("billingMode")]
+    public string? BillingMode { get; set; }
+
+    /// <summary>Upstream provider price basis the charge was computed from — not a retail price.</summary>
+    [JsonPropertyName("providerCostUsd")]
+    public double? ProviderCostUsd { get; set; }
+
+    [JsonPropertyName("providerCostBasis")]
+    public string ProviderCostBasis { get; set; } = "upstream-price-basis";
+
+    /// <summary>Pre-execution upstream provider price basis.</summary>
+    [JsonPropertyName("estimatedProviderCostUsd")]
+    public double? EstimatedProviderCostUsd { get; set; }
+
+    /// <summary>Pre-execution managed customer charge (provider basis + Hydracept fee).</summary>
+    [JsonPropertyName("estimatedCustomerChargeUsd")]
+    public double? EstimatedCustomerChargeUsd { get; set; }
+
+    /// <summary>Kept only when a receipt-less job reported a bare actual cost.</summary>
+    [JsonPropertyName("legacyActualCostUsd")]
+    public double? LegacyActualCostUsd { get; set; }
+
+    [JsonPropertyName("summary")]
+    public string? Summary { get; set; }
 
     [JsonPropertyName("currency")]
     public string Currency { get; set; } = "USD";

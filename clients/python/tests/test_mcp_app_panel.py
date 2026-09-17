@@ -326,6 +326,38 @@ def test_download_relative_output_dir(tmp_path: Path, monkeypatch) -> None:
     assert target.read_bytes() == _PNG
 
 
+def test_download_tool_honors_out_alias(monkeypatch) -> None:
+    from hydracept.mcp.server import hydracept_download_artifact
+
+    monkeypatch.setattr(
+        "hydracept.mcp.server._download_artifact",
+        lambda job_id, artifact_id, label, output_path: {
+            "jobId": job_id,
+            "artifactId": artifact_id,
+            "path": output_path,
+        },
+    )
+    result = hydracept_download_artifact(
+        "wfr_1",
+        "art_1",
+        out="artifacts/result.png",
+    )
+    assert result["path"] == "artifacts/result.png"
+
+
+def test_download_tool_rejects_conflicting_output_aliases() -> None:
+    from hydracept.mcp.server import hydracept_download_artifact
+
+    result = hydracept_download_artifact(
+        "wfr_1",
+        "art_1",
+        out="a.png",
+        output_path="b.png",
+    )
+    assert result.is_error is True
+    assert result.structured_content["error"] is True
+
+
 def test_panel_tools_are_callable_without_app_visibility() -> None:
     from hydracept.mcp.server import apps, server
 

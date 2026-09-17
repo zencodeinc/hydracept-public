@@ -88,7 +88,7 @@ upgrade CLI → init → find → describe → run → result + artifacts + rece
 7. **Domain / DNS** — `hydracept_invoke` for read-only keys (`domain.search.v1`, `domain.list.v1`, DNS list). Filter `domain.list.v1` with `domain` or `nameContains` (not a raw query body) and read `typedOutput`. `hydracept_submit_job` for `domain.register.v1` / transfers (human price approval). `dns.record.create.v1` upserts an existing ALIAS/conflict; otherwise list records then `dns.record.update.v1` with `recordId`.
 8. **Pin (research)** — MCP `hydracept_pinned_run` / `POST /v1/inference/pinned` when the user needs an exact provider/model/API pin. One logical model execution; Flex-capacity 429s retry inside the admission deadline. No Flex→Standard fallback.
 9. **Poll** — MCP `hydracept_job_status` or `python -m hydracept jobs submit … --watch` (line-flushed).
-10. **Retrieve artifact** — MCP `hydracept_download_artifact` (stdio) or job artifact URLs (hosted).
+10. **Retrieve artifact** — MCP `hydracept_download_artifact(job_id, out="artifacts/result.png")` (stdio; `output_path` also works) or job artifact URLs (hosted).
 11. **Inspect receipt** — MCP `hydracept_get_receipt` (jobs), `hydracept_pinned_get` (pinned), or `python -m hydracept jobs receipt <jobId>`.
 12. **Verify provenance or PNG alpha** — use the lockfile/manifest verification tools for provenance. For a downloaded PNG, use `python -m hydracept verify <path.png> --json`; never infer alpha correctness from a rendered preview.
 

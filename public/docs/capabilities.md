@@ -98,6 +98,10 @@ Discover the live catalog with `GET /v1/capabilities` or `python -m hydracept ag
 
 Use the published capability keys from that catalog in your integrations.
 
+## Missing capability?
+
+If the catalog does not cover the outcome you need, call `POST /v1/capabilities/resolve` first. A `no_match_requestable` result may be filed as a non-binding **capability request**; a human can then quote and commission the implementation. Agents can read the quote but never pay it. See [Capability requests](../capability-requests/).
+
 ## Example: discover image generation
 
 ```bash

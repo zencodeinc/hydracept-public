@@ -266,23 +266,44 @@ def _receipt_summary(receipt: dict[str, Any]) -> dict[str, Any]:
             nested = pricing["charge"].get("customerCharge")
         if isinstance(nested, dict):
             charge = nested
+    mode = pricing.get("mode") if isinstance(pricing, dict) else None
+    charge_state = presented.get("chargeState") or "unavailable"
     return {
         "receiptId": inner.get("receiptId") or inner.get("id") if isinstance(inner, dict) else None,
         "jobId": inner.get("jobId") if isinstance(inner, dict) else None,
-        "customerOwedUsd": presented.get("customerOwedUsd"),
-        "customerChargeUsd": presented.get("customerOwedUsd"),
+        "customerChargeUsd": presented.get("customerChargeUsd"),
+        "customerOwedUsd": presented.get("customerChargeUsd"),
         "customerCharge": charge,
-        "customerChargeNote": "customerCharge is what this customer was charged; retailUsd and providerCostUsd are not substitutes.",
-        "retailUsd": presented.get("retailUsd"),
+        "chargeState": charge_state,
+        "billingMode": presented.get("billingMode"),
+        "managedEquivalentChargeUsd": presented.get("managedEquivalentChargeUsd"),
+        "estimatedCustomerChargeUsd": presented.get("estimatedCustomerChargeUsd"),
         "costUsd": micros_to_usd(surfaced_cost_micros(receipt)),
         "providerCostUsd": presented.get("providerCostUsd"),
+        "providerCostBasis": "upstream-price-basis",
+        "estimatedProviderCostUsd": presented.get("estimatedProviderCostUsd"),
+        "customerChargeNote": (
+            "customerChargeUsd is what this customer was charged; providerCostUsd is the "
+            "upstream provider price basis the charge was computed from, not a retail price. "
+            "Hydracept's procurement cost is never a customer field (ADR-022)."
+        ),
         "pricing": {
             "customerCharge": charge,
-            "mode": pricing.get("mode") if isinstance(pricing, dict) else None,
-            "retailUsd": presented.get("retailUsd"),
+            "customerChargeUsd": presented.get("customerChargeUsd"),
+            "chargeState": charge_state,
+            "mode": mode,
+            "billingMode": str(mode or "").strip().lower() or None,
+            "managedEquivalentChargeUsd": presented.get("managedEquivalentChargeUsd"),
             "providerCostUsd": presented.get("providerCostUsd"),
+            "providerCostBasis": "upstream-price-basis",
+            "estimatedProviderCostUsd": presented.get("estimatedProviderCostUsd"),
+            "estimatedCustomerChargeUsd": presented.get("estimatedCustomerChargeUsd"),
             "providerUsage": pricing.get("providerUsage") if isinstance(pricing, dict) else None,
-            "note": "customerCharge is what this customer was charged; retailUsd and providerUsage are not substitutes.",
+            "note": (
+                "customerChargeUsd is the amount owed; providerCostUsd is a price basis, and "
+                "providerUsage is provider-reported usage, not a substitute for either; "
+                "managedEquivalentChargeUsd is provider cost + 6%, not a retail list price."
+            ),
         },
         "durationMs": inner.get("durationMs") or inner.get("latencyMs") if isinstance(inner, dict) else None,
         "artifacts": inner.get("artifacts") or [] if isinstance(inner, dict) else [],
@@ -368,7 +389,32 @@ def hydracept_capabilities(key: str = "", query: str = "") -> dict[str, Any]:
         if resolved is not None and resolved.token:
             headers["Authorization"] = f"Bearer {resolved.token}"
         if key.strip():
-            response = httpx.get(f"{api}/v1/capabilities/{key.strip()}", headers=headers, timeout=30.0)
+            requested = key.strip()
+            # The API owns the descriptor projection; every MCP surface renders it verbatim.
+            response = httpx.get(
+                f"{api}/v1/capabilities/{requested}", headers=headers, timeout=30.0
+            )
+            if not response.is_success:
+                from hydracept.capability_errors import (
+                    UNKNOWN_CAPABILITY,
+                    classify_capability_error,
+                    fetch_catalog_summary,
+                    unknown_capability_payload,
+                )
+                from hydracept.errors import parse_error_fields
+
+                code, message = parse_error_fields(response.json() if response.content else {})
+                if (
+                    classify_capability_error(
+                        status=response.status_code, code=code, message=message
+                    )
+                    == UNKNOWN_CAPABILITY
+                ):
+                    raise McpToolError(
+                        unknown_capability_payload(
+                            requested, fetch_catalog_summary(api, headers)
+                        )
+                    )
             raise_api_status(response)
             return response.json()
         if query.strip() and resolved is not None and resolved.token:
@@ -450,8 +496,14 @@ def hydracept_quote_capability(
     )
 
     def _run() -> dict[str, Any]:
+        from hydracept.cli.run_input_coercion import InputValidationError, coerce_capability_input
+
         workspace = _execution_workspace()
-        payload = merge_workspace_job_context(dict(body or {}), workspace)
+        try:
+            coerced = coerce_capability_input(key, dict(body or {}))
+        except InputValidationError as exc:
+            raise McpToolError(exc.to_payload()) from exc
+        payload = merge_workspace_job_context(coerced, workspace)
         from hydracept.cli.image_canvas import preflight_image_canvas
 
         blocked = preflight_image_canvas(key, payload)
@@ -491,8 +543,14 @@ def hydracept_invoke(
     )
 
     def _run() -> dict[str, Any]:
+        from hydracept.cli.run_input_coercion import InputValidationError, coerce_capability_input
+
         workspace = _execution_workspace()
-        payload = merge_workspace_job_context(dict(body or {}), workspace)
+        try:
+            coerced = coerce_capability_input(key, dict(body or {}))
+        except InputValidationError as exc:
+            raise McpToolError(exc.to_payload()) from exc
+        payload = merge_workspace_job_context(coerced, workspace)
         invoked = HydraceptClient(workspace.api_url, workspace.token).invoke_capability(
             key, payload
         )
@@ -543,17 +601,23 @@ def hydracept_run(
         job_id = str(payload.get("jobId") or payload.get("executionId") or "")
         if out:
             payload["requestedOutputPath"] = out
-            persisted = ((payload.get("diagnostics") or {}) if isinstance(payload.get("diagnostics"), dict) else {}).get(
-                "persistedOutputPath"
+            diagnostics = (
+                payload.get("diagnostics")
+                if isinstance(payload.get("diagnostics"), dict)
+                else {}
             )
+            for name in ("persistedOutputPath", "persistedMediaType", "persistedSha256"):
+                value = diagnostics.get(name)
+                if value:
+                    payload[name] = value
             artifacts = payload.get("artifacts") if isinstance(payload.get("artifacts"), list) else []
-            if not persisted:
+            if not payload.get("persistedOutputPath"):
                 for item in artifacts:
                     if isinstance(item, dict) and item.get("localPath"):
-                        persisted = item["localPath"]
+                        payload["persistedOutputPath"] = item["localPath"]
+                        payload.setdefault("persistedMediaType", item.get("mediaType"))
+                        payload.setdefault("persistedSha256", item.get("sha256"))
                         break
-            if persisted:
-                payload["persistedOutputPath"] = persisted
         if job_id and status in {"running", "queued", "pending", "submitted"}:
             payload["nextAction"] = "poll"
             payload["pollAfterSeconds"] = 2
@@ -569,9 +633,14 @@ def hydracept_run(
                     "continue with hydracept_job_status."
                 )
             if out and not payload.get("persistedOutputPath"):
+                from hydracept.cli.result_persistence import output_not_persisted_note
+
+                # One helper owns this message; MCP only appends its own transport
+                # hint so the two surfaces cannot disagree.
                 payload["outputNote"] = (
-                    "The durable job is not terminal yet. On success use "
-                    "hydracept_download_artifact with output_path to persist the artifact."
+                    f"{output_not_persisted_note(status=status)} "
+                    "On success use hydracept_download_artifact with output_path to "
+                    "persist the artifact."
                 )
         return _hydrate_result(payload, surface_for_job(payload.get("job") or payload))
 
@@ -597,6 +666,19 @@ def request_capability_quote(body: dict[str, Any] | None = None) -> dict[str, An
             "Commission request only. Humans pay. Never pass the commission quoteId as execution.quoteId.",
         )
     return result
+
+
+@server.tool()
+def get_capability_request_quote(request_id: str) -> dict[str, Any]:
+    """Read the human-paid commission quote for a capability request.
+
+    This quoteId is never an execution.quoteId.
+    """
+
+    def _run() -> dict[str, Any]:
+        return _client().get_capability_request_quote(request_id)
+
+    return _tool_call(_run)
 
 
 def _submit_job_payload(
@@ -709,9 +791,31 @@ def hydracept_download_artifact(
     artifact_id: str = "",
     label: str = "",
     output_path: str = "",
+    out: str = "",
+    outputPath: str = "",
 ) -> dict[str, Any]:
-    """Download a job artifact by id, sheet label, or primaryArtifactId into the workspace."""
-    return _tool_call(lambda: _download_artifact(job_id, artifact_id, label, output_path))
+    """Download an artifact into the workspace; out/output_path select the destination."""
+    return _tool_call(
+        lambda: _download_artifact(
+            job_id,
+            artifact_id,
+            label,
+            _artifact_output_alias(out=out, output_path=output_path, outputPath=outputPath),
+        )
+    )
+
+
+def _artifact_output_alias(*, out: str, output_path: str, outputPath: str) -> str:
+    requested = [
+        value.strip()
+        for value in (out, output_path, outputPath)
+        if value.strip()
+    ]
+    if len(set(requested)) > 1:
+        raise ValueError(
+            "out, output_path, and outputPath must name the same destination when combined"
+        )
+    return requested[0] if requested else ""
 
 
 def _suffix_for_media_type(media_type: str | None) -> str:

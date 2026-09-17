@@ -10,8 +10,18 @@ def _assert_common(payload: dict) -> None:
     assert "capability" in payload
     assert "status" in payload
     assert "pricing" in payload
-    assert "estimatedCost" in payload["pricing"]
-    assert "actualCost" in payload["pricing"]
+    assert "customerChargeUsd" in payload["pricing"]
+    assert "chargeState" in payload["pricing"]
+    assert "billingMode" in payload["pricing"]
+    assert "providerCostUsd" in payload["pricing"]
+    assert payload["pricing"]["providerCostBasis"] == "upstream-price-basis"
+    assert "estimatedProviderCostUsd" in payload["pricing"]
+    assert "estimatedCustomerChargeUsd" in payload["pricing"]
+    # Generic actualCost/estimatedCost are not part of the consumer contract, and
+    # no pricing field is named as a retail/list price (ADR-022).
+    assert "actualCost" not in payload["pricing"]
+    assert "estimatedCost" not in payload["pricing"]
+    assert not [key for key in payload["pricing"] if "retail" in key.lower()]
     assert "summary" in payload["pricing"]
     assert "customerCharge" in payload["pricing"]
     assert "customerTotalMicros" in payload["pricing"]["customerCharge"]
@@ -34,7 +44,8 @@ def test_fixture_sync_text_success() -> None:
     _assert_common(payload)
     assert payload["status"] == "succeeded"
     assert payload["artifacts"] == []
-    assert payload["pricing"]["actualCost"] == 0.000006
+    assert payload["pricing"]["estimatedCustomerChargeUsd"] == 0.000006
+    assert payload["pricing"]["customerChargeUsd"] is None
 
 
 def test_fixture_durable_image_success() -> None:
@@ -76,7 +87,8 @@ def test_fixture_no_wait_running() -> None:
     _assert_common(payload)
     assert payload["status"] == "running"
     assert payload["artifacts"] == []
-    assert payload["pricing"]["actualCost"] is None
+    assert payload["pricing"]["customerChargeUsd"] is None
+    assert payload["pricing"]["providerCostUsd"] is None
 
 
 def test_fixture_terminal_provider_failure() -> None:

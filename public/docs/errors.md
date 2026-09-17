@@ -2,6 +2,8 @@
 
 Failed API calls return an HTTP status code. Structured capability errors return their Hydracept error information in a `detail` object; some standard HTTP errors use a string or validation details in `detail`.
 
+A **job that was successfully admitted and later failed is different**: `GET /v1/jobs/{jobId}` returns the job resource with terminal status `failed` and `error: {code, message}`. Do not confuse an HTTP request error with the error recorded on a durable job.
+
 ## Typical statuses
 
 | Status | Meaning |
@@ -117,6 +119,39 @@ Admission failures from invoke/jobs may return `{code, message, details}` at the
 Quotes and capability discovery do not consume managed first-use capacity. When trial capacity is exhausted, Hydracept does not silently charge an unrelated payment method.
 
 When `billingModes` is omitted, the capability is not inference-priced (domain, DNS, and CPU processing). When `billingModes.managed.available` is `false`, use BYOK or choose another capability — do not rely on submit errors for discovery.
+
+## Terminal job errors
+
+A durable job may be admitted successfully and fail later. Read the job itself:
+
+```http
+GET /v1/jobs/{jobId}
+```
+
+```json
+{
+  "jobId": "wfr_...",
+  "status": "failed",
+  "error": {
+    "code": "PROVIDER_ERROR",
+    "message": "The provider could not complete the job"
+  },
+  "nextAction": "inspect_error"
+}
+```
+
+For automation, branch on `error.code`; `error.message` is explanatory text. Do not parse provider-native strings to infer a stable class.
+
+If the user says “the last job failed” and the ID is no longer in context, do not ask them to retrieve it manually. Use the prompt-free project history first:
+
+```text
+hydracept_jobs_find(intent="failed")
+→ hydracept_job_inspect(job_id)
+```
+
+or `GET /v1/projects/{projectId}/jobs?outcome=failed`. The list exposes only `errorCode`, never the full error message or request prompt. `hydracept_job_inspect` intentionally reads one job and bundles its `error`, diagnostics, request snapshot, and receipt summary.
+
+A retry is a new execution attempt: copy the inspected request input, remove the old `idempotencyKey`, and submit with a new one. On `QUOTE_MISMATCH`, also omit stale `execution.quoteId` / `estimateId`.
 
 ## Idempotency
 

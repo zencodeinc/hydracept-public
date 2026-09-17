@@ -9,8 +9,22 @@ export type HydraceptRunArtifact = {
 };
 
 export type HydraceptRunPricing = {
-  estimatedCost: number | null;
-  actualCost: number | null;
+  /** What this customer was charged. 0 when Hydracept covers the execution. */
+  customerChargeUsd: number | null;
+  /** `covered` | `charged` | `byok` | `unsettled`. */
+  chargeState: string | null;
+  /** `managed` | `byok` | `platform`. */
+  billingMode: string | null;
+  /** Upstream provider price basis the charge was computed from — not a retail price. */
+  providerCostUsd: number | null;
+  providerCostBasis: 'upstream-price-basis';
+  /** Pre-execution upstream provider price basis. */
+  estimatedProviderCostUsd: number | null;
+  /** Pre-execution managed customer charge (provider basis + Hydracept fee). */
+  estimatedCustomerChargeUsd: number | null;
+  /** Kept only when a receipt-less job reported a bare actual cost. */
+  legacyActualCostUsd?: number | null;
+  summary?: string | null;
   currency: string;
 };
 
@@ -45,28 +59,52 @@ function asNumber(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function microsUsd(value: unknown): number | null {
+  const micros = asNumber(value);
+  return micros == null ? null : micros / 1_000_000;
+}
+
 export function pricingFromJob(
   job: Record<string, unknown>,
   receipt: Record<string, unknown> | null | undefined,
 ): HydraceptRunPricing {
-  let estimated = asNumber(job.estimatedCost);
-  let actual = asNumber(job.actualCost);
-  const status = String(job.status || '').toLowerCase();
-  if (receipt) {
-    const pricing = (receipt.pricing as Record<string, unknown> | undefined) || {};
-    const charge = ((pricing.charge as Record<string, unknown> | undefined)?.customerCharge ||
-      {}) as Record<string, unknown>;
-    const quote = ((pricing.quote as Record<string, unknown> | undefined)?.customerTotal ||
-      {}) as Record<string, unknown>;
-    if (estimated == null) {
-      const micros = asNumber(quote.amountMicros);
-      if (micros != null) estimated = micros / 1_000_000;
-    }
-    const sealed = asNumber(charge.amountMicros);
-    if (sealed != null) actual = sealed / 1_000_000;
-    else if (status !== 'succeeded') actual = null;
-  } else if (status !== 'succeeded' && status !== 'failed') {
-    actual = null;
+  const source = (receipt || job) as Record<string, unknown>;
+  const pricing = (source.pricing as Record<string, unknown> | undefined) || {};
+  const charge = (pricing.charge as Record<string, unknown> | undefined) || {};
+  const customerCharge = (charge.customerCharge as Record<string, unknown> | undefined) || {};
+  const basisActual = (pricing.basisActual as Record<string, unknown> | undefined) || {};
+  const basisEstimated = (pricing.basisEstimated as Record<string, unknown> | undefined) || {};
+  const estimatedCharge = (pricing.estimatedCharge as Record<string, unknown> | undefined) || {};
+  const quote = ((pricing.quote as Record<string, unknown> | undefined)?.customerTotal ||
+    {}) as Record<string, unknown>;
+  const providerUsage = (pricing.providerUsage as Record<string, unknown> | undefined) || {};
+  const reportedCost = (providerUsage.reportedCost as Record<string, unknown> | undefined) || {};
+
+  const owed =
+    microsUsd(customerCharge.amountMicros) ?? microsUsd(customerCharge.customerTotalMicros);
+  const basis =
+    microsUsd(basisActual.amountMicros) ??
+    microsUsd((pricing.actualCharge as Record<string, unknown> | undefined)?.amountMicros) ??
+    microsUsd(reportedCost.amountMicros);
+  const estimatedBasis = microsUsd(basisEstimated.amountMicros);
+  const estimated =
+    microsUsd(estimatedCharge.amountMicros) ??
+    microsUsd(quote.amountMicros) ??
+    asNumber(job.estimatedCost);
+
+  const payload: HydraceptRunPricing = {
+    customerChargeUsd: owed,
+    chargeState: owed == null ? null : owed > 0 ? 'charged' : 'covered',
+    billingMode: (pricing.mode as string | undefined) ?? null,
+    providerCostUsd: basis,
+    providerCostBasis: 'upstream-price-basis',
+    estimatedProviderCostUsd: estimatedBasis,
+    estimatedCustomerChargeUsd: estimated,
+    currency: 'USD',
+  };
+  if (owed == null && basis == null) {
+    const legacy = asNumber(job.actualCost);
+    if (legacy != null) payload.legacyActualCostUsd = legacy;
   }
-  return { estimatedCost: estimated, actualCost: actual, currency: 'USD' };
+  return payload;
 }

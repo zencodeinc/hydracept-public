@@ -75,6 +75,8 @@ def test_consumer_version_report_includes_workspace_versions(tmp_path: Path) -> 
     assert payload["version"] == hydracept.__version__
     assert "consumer" in payload
     assert payload["consumer"]["installedClient"] == hydracept.__version__
+    assert payload["consumer"]["apiRevision"] is None
+    assert payload["consumer"]["apiRevisionState"] == "not_fetched"
 
 
 def test_cli_version_command_json() -> None:
