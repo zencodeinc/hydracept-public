@@ -94,8 +94,8 @@ def job_wait_contract() -> dict[str, object]:
             "poll": "Job is still running — call get_job / hydracept_job_status again after intervalSeconds.",
             "download_artifacts": "Job succeeded — download by artifact.label or artifact.filename.",
             "present_approval": "Stop polling. Show the approval URL or quote to the human.",
-            "inspect_error": "Stop polling. Read job.error and job.error.recovery before any resubmit. Do not retry a sealed route that is not routable.",
-            "stop": "Terminal failure or cancel. Do not poll again. Read job.error.recovery before resubmitting.",
+            "inspect_error": "Stop polling. Read job.error.resolution and job.error.recovery before any resubmit. Do not retry a sealed route that is not routable.",
+            "stop": "Terminal failure or cancel. Do not poll again. Read job.error.resolution before resubmitting.",
         },
     }
 

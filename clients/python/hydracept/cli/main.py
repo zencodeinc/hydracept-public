@@ -210,15 +210,62 @@ def _root(
     del json_output, version
 
 
+_PROVENANCE_MIRROR_KEYS = (
+    "installedClient",
+    "mcpBindingVersion",
+    "mcpRuntimeState",
+    "apiRevision",
+    "apiRevisionState",
+    "agentPack",
+)
+
+
 @app.command("version")
 def version_cmd(
     json_output: bool = typer.Option(False, "--json", help="Machine-readable provenance"),
+    refresh: bool = typer.Option(
+        False, "--refresh", help="Fetch the live API revision and session facts (network)."
+    ),
     project_root: Path = typer.Option(Path.cwd(), "--project-root"),
 ) -> None:
-    """Show the installed hydracept package version and where it loaded from."""
+    """Installed version plus consumer provenance (MCP binding, API revision, agent pack)."""
     from hydracept.cli.consumer_versions import consumer_version_report
 
     payload = consumer_version_report(project_root)
+    consumer = payload.get("consumer")
+    if not isinstance(consumer, dict):
+        consumer = {}
+    if refresh:
+        try:
+            from hydracept.cli.agent_status import build_agent_status
+
+            status = build_agent_status(project_root, refresh=True)
+            versions = status.get("versions") if isinstance(status.get("versions"), dict) else {}
+            consumer = {
+                **consumer,
+                **{
+                    name: versions[name]
+                    for name in _PROVENANCE_MIRROR_KEYS
+                    if name in versions
+                },
+                "apiRevision": versions.get("apiRevision"),
+                "apiRevisionState": (
+                    "fetched" if versions.get("apiRevision") else "not_fetched"
+                ),
+            }
+        except Exception as exc:  # noqa: BLE001 - refresh is optional; version must still print
+            payload["refreshError"] = str(exc) or exc.__class__.__name__
+    if consumer:
+        payload["consumer"] = consumer
+        for name in _PROVENANCE_MIRROR_KEYS:
+            if consumer.get(name) is not None:
+                payload.setdefault(name, consumer[name])
+    if "apiRevision" not in payload:
+        payload["apiRevision"] = consumer.get("apiRevision")
+    if "apiRevisionState" not in payload:
+        payload["apiRevisionState"] = consumer.get("apiRevisionState") or "not_fetched"
+    if "agentPack" not in payload:
+        payload["agentPack"] = consumer.get("agentPack") or "not_installed"
     if json_output:
         console.print_json(data=payload)
         return
@@ -226,14 +273,15 @@ def version_cmd(
     console.print(payload["version"])
     console.print(f"path={payload['packagePath']}")
     console.print(f"source={dist.get('source', 'unknown')}")
-    consumer = payload.get("consumer")
-    if isinstance(consumer, dict):
+    if consumer:
         console.print(f"mcpBinding={consumer.get('mcpBindingVersion')}")
         console.print(
             f"mcpRuntime={consumer.get('mcpRuntimeMessage') or consumer.get('mcpRuntimeState')}"
         )
-        console.print(f"apiRevision={consumer.get('apiRevision')}")
+        console.print(f"apiRevision={consumer.get('apiRevision') or 'not_fetched'}")
         console.print(f"agentPack={consumer.get('agentPack')}")
+    if payload.get("refreshError"):
+        console.print(f"refreshError={payload['refreshError']}")
 
 
 def _resolve_token(project_root: Path, token: str | None) -> str:
@@ -718,6 +766,9 @@ def run_cmd(
     max_cost: float | None = typer.Option(None, "--max-cost", help="Admission ceiling (server-enforced)"),
     idempotency_key: str = typer.Option("", "--idempotency-key"),
     out: Path | None = typer.Option(None, "--out"),
+    set_values: list[str] = typer.Option(
+        [], "--set", help="Set a capability input field: key=value (repeatable)"
+    ),
     json_output: bool = typer.Option(False, "--json"),
     project_root: Path = typer.Option(Path.cwd(), "--project-root"),
     token: str = typer.Option("", "--token"),
@@ -740,6 +791,14 @@ def run_cmd(
             }
         )
         raise typer.Exit(USAGE) from exc
+    if set_values:
+        from hydracept.cli.run_input_coercion import InputValidationError, parse_set_values
+
+        try:
+            payload.update(parse_set_values(set_values))
+        except InputValidationError as exc:
+            console.print_json(data=exc.to_payload())
+            raise typer.Exit(USAGE) from exc
     if prompt:
         payload.setdefault("prompt", prompt)
     if target_locale:
@@ -1159,13 +1218,20 @@ def capabilities_quote(
     target_locale: str = typer.Option("", "--target-locale", help="BCP 47 target locale for text.translate.v1"),
     input_json: str = typer.Option("", "--input", help="Inline JSON object"),
     body_file: Path | None = _input_file_option(),
+    set_values: list[str] = typer.Option(
+        [], "--set", help="Set a capability input field: key=value (repeatable)"
+    ),
     api: str = typer.Option(DEFAULT_API, "--api"),
     project_root: Path = typer.Option(Path.cwd(), "--project-root"),
     token: str = typer.Option("", "--token"),
     json_output: bool = typer.Option(False, "--json", help="No-op; quote is already JSON"),
 ) -> None:
     del json_output
-    from hydracept.cli.run_input_coercion import InputValidationError, coerce_capability_input
+    from hydracept.cli.run_input_coercion import (
+        InputValidationError,
+        coerce_capability_input,
+        parse_set_values,
+    )
 
     workspace = _execution_workspace(project_root, token=token, api=api)
     if prompt and not (body or input_json or body_file):
@@ -1174,6 +1240,12 @@ def capabilities_quote(
         payload = _load_json_payload(body, input_json, body_file)
         if prompt:
             payload.setdefault("prompt", prompt)
+    if set_values:
+        try:
+            payload.update(parse_set_values(set_values))
+        except InputValidationError as exc:
+            console.print_json(data=exc.to_payload())
+            raise typer.Exit(USAGE) from exc
     if target_locale:
         payload.setdefault("targetLocale", target_locale)
     if payload.get("prompt") and str(key).startswith("image."):
@@ -1206,6 +1278,9 @@ def capabilities_estimate(
     target_locale: str = typer.Option("", "--target-locale", help="BCP 47 target locale for text.translate.v1"),
     input_json: str = typer.Option("", "--input", help="Inline JSON object"),
     body_file: Path | None = _input_file_option(),
+    set_values: list[str] = typer.Option(
+        [], "--set", help="Set a capability input field: key=value (repeatable)"
+    ),
     api: str = typer.Option(DEFAULT_API, "--api"),
     project_root: Path = typer.Option(Path.cwd(), "--project-root"),
     token: str = typer.Option("", "--token"),
@@ -1218,6 +1293,7 @@ def capabilities_estimate(
         target_locale=target_locale,
         input_json=input_json,
         body_file=body_file,
+        set_values=set_values,
         api=api,
         project_root=project_root,
         token=token,

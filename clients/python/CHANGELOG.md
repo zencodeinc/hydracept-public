@@ -1,6 +1,16 @@
 # Changelog
 
-## 0.4.1 — unreleased
+## 0.4.2 — unreleased
+
+- MCP `hydracept_run`, `hydracept_invoke`, and `hydracept_quote_capability` accept `input` as an alias for `body`. Passing both is a typed `INVALID_ARGUMENT`; neither is silently ignored
+- `{"input": {...}}` is accepted as the capability input by `run`/`quote`/MCP, and an unknown field (for example `query` for `domain.search.v1`) fails with `UNKNOWN_INPUT_FIELD` naming the allowed set instead of surfacing a misleading missing-required error
+- `capabilities find` and resolve matches carry a server-projected `runHint` (cli/sdk/mcp, `requiredInputFields`, and a structured `--input-file` variant), so discovery never suggests `run text.translate.v1 --prompt "..."` without the mandatory `--target-locale`
+- `run`/`quote`/`estimate` accept repeatable `--set key=value` for simple schema properties (for example `--set width=816 --set height=816`), so arbitrary capability inputs no longer require a JSON file
+- `hydracept_status` fails with a typed tool error through the shared call path instead of collapsing into an opaque SDK error
+- `version --json` mirrors `apiRevision`/`apiRevisionState`/`agentPack` at the top level and gains `--refresh` to fetch the live API revision from the same authority `doctor` uses, so full provenance no longer requires a second command
+- `clients/python` version bumped to 0.4.2 so the release-identity gate can distinguish this unreleased change from the published 0.4.1
+
+## 0.4.1 — 2026-09-18 (released)
 
 - `python -m hydracept smoke text` probes a synchronous text capability (default `text.translate.v1`): it invokes through the same public coercion path as `run`, then requires a terminal status, non-empty output, and — when a receipt is retrievable — valid receipt pricing. Previously only `image.generate.v1` had any smoke coverage, so a total text failure was invisible to a consumer with the public CLI
 - `doctor` reports `public_text_capabilities` from the live catalog and names `python -m hydracept smoke text` as the runtime probe (non-fatal; text execution is not a default readiness spend)

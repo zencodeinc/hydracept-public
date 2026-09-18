@@ -351,32 +351,36 @@ def _unresolved_status_payload(message: str) -> dict[str, Any]:
 @server.tool()
 def hydracept_status(refresh: bool = False) -> dict[str, Any]:
     """Local workspace readiness. Set refresh=true for optional network verify."""
-    try:
-        root = _project_root()
-    except WorkspaceNotReadyError as exc:
-        return _unresolved_status_payload(str(exc))
-    payload = build_agent_status(root, refresh=refresh)
-    from hydracept import __version__ as installed_client_version
+    def _run() -> dict[str, Any]:
+        try:
+            root = _project_root()
+        except WorkspaceNotReadyError as exc:
+            return _unresolved_status_payload(str(exc))
+        payload = build_agent_status(root, refresh=refresh)
+        from hydracept import __version__ as installed_client_version
 
-    payload["runningMcpVersion"] = installed_client_version
-    versions = payload.get("versions")
-    if isinstance(versions, dict):
-        versions["runningMcp"] = installed_client_version
-    mcp = payload.get("mcp")
-    if isinstance(mcp, dict):
-        mcp.setdefault(
-            "app",
-            {
-                "uri": "ui://hydracept/app.html",
-                "tool": "hydracept_interaction_surface",
-                "note": "Built-in Hydracept App. hydracept panels list is for custom hosted panels only.",
-            },
-        )
-        mcp.setdefault(
-            "toolCatalogNote",
-            "hydracept_ui_* tools are App iframe adapters. Agent-facing tools match GET /v1/agent-context mcp.tools.",
-        )
-    return payload
+        payload["runningMcpVersion"] = installed_client_version
+        versions = payload.get("versions")
+        if isinstance(versions, dict):
+            versions["runningMcp"] = installed_client_version
+        mcp = payload.get("mcp")
+        if isinstance(mcp, dict):
+            mcp.setdefault(
+                "app",
+                {
+                    "uri": "ui://hydracept/app.html",
+                    "tool": "hydracept_interaction_surface",
+                    "note": "Built-in Hydracept App. hydracept panels list is for custom hosted panels only.",
+                },
+            )
+            mcp.setdefault(
+                "toolCatalogNote",
+                "hydracept_ui_* tools are App iframe adapters. Agent-facing tools match GET /v1/agent-context mcp.tools.",
+            )
+        return payload
+
+    # An advertised primitive must fail typed, never as an opaque SDK error.
+    return _tool_call(_run)
 
 
 @server.tool()
@@ -481,14 +485,33 @@ def estimate_capability(
     return hydracept_quote_capability(key, body)
 
 
+def _capability_body(
+    body: dict[str, Any] | None,
+    input_value: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Accept ``input`` as an alias for ``body``; refuse ambiguous calls loudly.
+
+    Agents reach for ``input`` because the job API nests capability fields under
+    it. Silently ignoring one of the two would validate the wrong object and blame
+    the capability schema.
+    """
+    alias = input_value if isinstance(input_value, dict) else None
+    if body is not None and alias is not None:
+        raise ValueError(
+            "Pass either 'body' or 'input', not both. 'input' is an alias for 'body'."
+        )
+    return dict(body if body is not None else (alias or {}))
+
+
 @server.tool()
 def hydracept_quote_capability(
     capability_key: str = "",
     body: dict[str, Any] | None = None,
     capability: str = "",
     capabilityKey: str = "",
+    input: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """POST /v1/capabilities/{key}/quote — optional preview; does not reserve or charge funds."""
+    """POST /v1/capabilities/{key}/quote — optional preview; does not reserve or charge funds. 'input' is an alias for 'body'."""
     key = resolve_capability_key(
         capability_key=capability_key,
         capability=capability,
@@ -500,7 +523,7 @@ def hydracept_quote_capability(
 
         workspace = _execution_workspace()
         try:
-            coerced = coerce_capability_input(key, dict(body or {}))
+            coerced = coerce_capability_input(key, _capability_body(body, input))
         except InputValidationError as exc:
             raise McpToolError(exc.to_payload()) from exc
         payload = merge_workspace_job_context(coerced, workspace)
@@ -534,8 +557,9 @@ def hydracept_invoke(
     body: dict[str, Any] | None = None,
     capability: str = "",
     capabilityKey: str = "",
+    input: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Invoke a synchronous capability (read-only domain/DNS and text)."""
+    """Invoke a synchronous capability (read-only domain/DNS and text). 'input' is an alias for 'body'."""
     key = resolve_capability_key(
         capability_key=capability_key,
         capability=capability,
@@ -547,7 +571,7 @@ def hydracept_invoke(
 
         workspace = _execution_workspace()
         try:
-            coerced = coerce_capability_input(key, dict(body or {}))
+            coerced = coerce_capability_input(key, _capability_body(body, input))
         except InputValidationError as exc:
             raise McpToolError(exc.to_payload()) from exc
         payload = merge_workspace_job_context(coerced, workspace)
@@ -570,8 +594,9 @@ def hydracept_run(
     out: str = "",
     capability: str = "",
     capabilityKey: str = "",
+    input: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Canonical run. Waits for terminal completion by default; pass wait=false for a continuation."""
+    """Canonical run. Waits for terminal completion by default; pass wait=false for a continuation. 'input' is an alias for 'body'."""
     from hydracept.cli.run_facade import execute_run
 
     key = resolve_capability_key(
@@ -585,7 +610,7 @@ def hydracept_run(
         outcome = execute_run(
             root,
             key,
-            dict(body or {}),
+            _capability_body(body, input),
             wait=wait,
             timeout=timeout,
             max_cost=max_cost,

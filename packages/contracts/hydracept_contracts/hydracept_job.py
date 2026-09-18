@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Mapping, TypedDict
 
 from pydantic import BaseModel, Field, field_validator, model_serializer, model_validator
 
 from hydracept_contracts.digests import normalize_sha256_digest
+from hydracept_contracts.errors import HydraceptErrorCode, RETRYABLE_ERROR_CODES
 from hydracept_contracts.job_wait import job_retry_guidance
 from hydracept_contracts.pricing import CustomerSavings, HydraceptReceiptPricing
 from hydracept_contracts.routing_policy import RoutingSelection
@@ -41,6 +43,25 @@ class HydraceptJobStatus(StrEnum):
     @classmethod
     def human_gate_values(cls) -> tuple[str, ...]:
         return (cls.AWAITING_APPROVAL.value, cls.NEEDS_ATTENTION.value)
+
+
+class HydraceptJobProgress(BaseModel):
+    """Where a durable job has reached, as reported by the activity that owns the work.
+
+    ``updatedAt`` is required whenever progress is present, so a reader can always tell
+    how fresh the projection is. ``percent`` and ``etaSeconds`` are optional on purpose:
+    they are present only when the authority (a provider that reports them) can compute
+    them. The contract forbids fabricating either one (ADR-035), so an unknown value is
+    omitted rather than defaulted to ``0``.
+    """
+
+    phase: str
+    step: str
+    percent: float | None = None
+    eta_seconds: int | None = Field(default=None, alias="etaSeconds")
+    updated_at: datetime = Field(alias="updatedAt")
+
+    model_config = {"populate_by_name": True}
 
 
 class HydraceptJobDiagnostics(BaseModel):
@@ -94,6 +115,255 @@ class HydraceptJobArtifactRef(BaseModel):
         return data
 
 
+@dataclass(frozen=True)
+class JobErrorGuidance:
+    """One row of the public failure taxonomy.
+
+    ``resolution`` is human next-step guidance, not a restatement of the code.
+    ``retryable`` means the same operation may succeed if tried again; ``terminal`` means
+    the outcome is decided and the caller should stop. They are independent: an ambiguous
+    transport failure is neither retryable nor terminal until its outcome is determined.
+    """
+
+    resolution: str
+    retryable: bool
+    terminal: bool
+
+
+def _resolved(resolution: str) -> JobErrorGuidance:
+    return JobErrorGuidance(resolution=resolution, retryable=False, terminal=True)
+
+
+def _transient(resolution: str) -> JobErrorGuidance:
+    return JobErrorGuidance(resolution=resolution, retryable=True, terminal=False)
+
+
+def _undecided(resolution: str) -> JobErrorGuidance:
+    return JobErrorGuidance(resolution=resolution, retryable=False, terminal=False)
+
+
+# Explicitly state when no actionable advice is recorded, rather than inventing some.
+UNKNOWN_JOB_ERROR_RESOLUTION = (
+    "No specific resolution is recorded for this error code. Read message, diagnostics, "
+    "and requestSnapshot; if the cause is unclear, contact the operator with the job id."
+)
+GENERIC_FAILED_ERROR_RESOLUTION = (
+    "No specific resolution is recorded for the generic 'failed' code. Read message, "
+    "diagnostics, and requestSnapshot; retry only if the message names a transient cause."
+)
+NEEDS_ATTENTION_ERROR_RESOLUTION = (
+    "The job finished partially or needs a human decision. Inspect the artifacts and "
+    "message, select a candidate if a selection is required, then resubmit only if the "
+    "output is unusable."
+)
+
+# Single authority mapping an existing error code to a human-actionable resolution.
+# The job payload, the Python SDK, and the CLI all read this shape; the client mirrors
+# it because it ships separately (pinned by a parity test).
+JOB_ERROR_TAXONOMY: Mapping[str, JobErrorGuidance] = {
+    HydraceptErrorCode.AUTHENTICATION_FAILED.value: _resolved(
+        "The API token was missing, expired, or invalid. Re-authenticate and retry with a fresh token."
+    ),
+    HydraceptErrorCode.AUTHORIZATION_FAILED.value: _resolved(
+        "This principal is not permitted to perform the operation. Use a principal with the "
+        "required scope, or have a project owner grant access, then retry."
+    ),
+    HydraceptErrorCode.CAPABILITY_NOT_ALLOWED.value: _resolved(
+        "The capability is disabled for this product or environment. Enable it in the "
+        "product's capability policy, or call an allowed capability."
+    ),
+    HydraceptErrorCode.POLICY_REJECTED.value: _resolved(
+        "A workspace or operations policy rejected the request. Read the message for the "
+        "rule that matched, adjust the request to satisfy it, then submit with a new idempotencyKey."
+    ),
+    HydraceptErrorCode.BUDGET_EXCEEDED.value: _resolved(
+        "The request would exceed the available budget. Reduce the request scope or cost, "
+        "add funds, then submit with a new idempotencyKey."
+    ),
+    HydraceptErrorCode.PAUSED.value: _resolved(
+        "Paid generation is paused by operations. Wait for it to resume or contact the "
+        "operator; do not retry."
+    ),
+    HydraceptErrorCode.RATE_LIMITED.value: _transient(
+        "The provider rate-limited the request. Wait for the Retry-After interval, then "
+        "retry the same request."
+    ),
+    HydraceptErrorCode.PROVIDER_UNAVAILABLE.value: _transient(
+        "The provider is temporarily unavailable. Wait and retry; the platform may reseal "
+        "to an alternate route."
+    ),
+    HydraceptErrorCode.PROVIDER_REJECTED.value: _resolved(
+        "The provider rejected the request as invalid or unsupported. Change the prompt, "
+        "parameters, or model, then submit with a new idempotencyKey."
+    ),
+    HydraceptErrorCode.PROVIDER_TIMEOUT.value: _transient(
+        "The provider did not respond in time. Retry after a short wait; the platform may "
+        "reseal to an alternate route."
+    ),
+    HydraceptErrorCode.EXECUTION_TIMEOUT.value: _resolved(
+        "The execution exceeded its wall-clock budget. Reduce the work or raise the "
+        "timeout, then submit with a new idempotencyKey."
+    ),
+    HydraceptErrorCode.QUEUE_TIMEOUT.value: _resolved(
+        "The job waited too long for a worker slot. Submit a new job with a new "
+        "idempotencyKey; check capacity if this recurs."
+    ),
+    HydraceptErrorCode.TRANSPORT_AMBIGUOUS.value: _undecided(
+        "The request outcome is unknown and may have been received. Do not resubmit "
+        "blindly; inspect the job and receipt (and the provider) to determine whether it "
+        "ran before retrying."
+    ),
+    HydraceptErrorCode.CANCELLED.value: _resolved(
+        "The job was canceled before it completed. Submit a new job with a new "
+        "idempotencyKey if the output is still needed."
+    ),
+    HydraceptErrorCode.PAYLOAD_UNAVAILABLE.value: _resolved(
+        "The stored input or output payload is no longer available. Re-submit the request, "
+        "re-uploading the input artifact if needed."
+    ),
+    HydraceptErrorCode.STRUCTURED_OUTPUT_INVALID.value: _resolved(
+        "The model returned output that did not match the required schema. Adjust the "
+        "prompt or output schema, then retry."
+    ),
+    HydraceptErrorCode.STRUCTURED_OUTPUT_REPAIR_FAILED.value: _resolved(
+        "Automatic repair of the model's output failed. Adjust the prompt or output "
+        "schema, then retry."
+    ),
+    HydraceptErrorCode.RETENTION_VIOLATION.value: _resolved(
+        "The request conflicts with the resource's retention policy. Adjust the request or "
+        "the policy, then retry."
+    ),
+    HydraceptErrorCode.IDEMPOTENCY_CONFLICT.value: _resolved(
+        "The idempotencyKey was already used with a different payload. Submit with a new "
+        "idempotencyKey."
+    ),
+    HydraceptErrorCode.ESTIMATE_UNAVAILABLE.value: _resolved(
+        "A cost estimate could not be produced. Retry once; if it persists, simplify the "
+        "request or contact the operator."
+    ),
+    HydraceptErrorCode.PROMPT_TOO_LONG.value: _resolved(
+        "The prompt exceeds the model's input limit. Shorten the prompt or choose a model "
+        "with a larger context."
+    ),
+    HydraceptErrorCode.REASONING_BUDGET_EXHAUSTED.value: _resolved(
+        "The model spent its whole output budget on reasoning and returned no visible "
+        "output. Raise the output budget or simplify the prompt, then retry."
+    ),
+    HydraceptErrorCode.ESTIMATE_EXCEEDS_MAX_COST.value: _resolved(
+        "The quoted cost is above the authorized maximum. Raise the authorization or "
+        "reduce the request scope, then submit with a new idempotencyKey."
+    ),
+    HydraceptErrorCode.FUNDING_REQUIRED.value: _resolved(
+        "The account has insufficient funds. Add a payment method or credits, then retry."
+    ),
+    HydraceptErrorCode.PROJECT_CREDENTIAL_MISMATCH.value: _resolved(
+        "The stored provider credential does not belong to this project. Reconnect the "
+        "provider with credentials for this project, then retry."
+    ),
+    HydraceptErrorCode.QUOTE_MISMATCH.value: _resolved(
+        "The quote is stale or does not match the server's pricing. Omit quoteId/estimateId "
+        "and submit with a new idempotencyKey to reseal pricing."
+    ),
+    HydraceptErrorCode.ESTIMATE_MISMATCH.value: _resolved(
+        "The estimate is stale or does not match the server's pricing. Request a fresh "
+        "estimate and submit with a new idempotencyKey."
+    ),
+    HydraceptErrorCode.REESTIMATE_REQUIRED.value: _resolved(
+        "Pricing inputs changed and a new estimate is required. Request a fresh estimate, "
+        "then submit with a new idempotencyKey."
+    ),
+    HydraceptErrorCode.COST_LIMIT_EXCEEDED.value: _resolved(
+        "The request exceeds a configured cost limit. Raise the limit or reduce the "
+        "request scope, then retry."
+    ),
+    HydraceptErrorCode.ROUTE_UNAVAILABLE.value: _resolved(
+        "The sealed route is no longer routable. Do not retry this job or reuse its "
+        "idempotencyKey; submit a new job with a new key and, if the same capability is "
+        "still required, pin an alternate provider from error.recovery.alternates."
+    ),
+    HydraceptErrorCode.ROUTE_CASCADE_EXHAUSTED.value: _resolved(
+        "Every sealed route candidate failed. Submit a new job with a new idempotencyKey; "
+        "adjust the model or provider preference, or wait if the last failure was transient."
+    ),
+    HydraceptErrorCode.PRICING_INPUTS_REQUIRED.value: _resolved(
+        "Pricing needs more input before it can quote. Supply the missing inputs, then "
+        "submit with a new idempotencyKey."
+    ),
+    HydraceptErrorCode.INVALID_INPUT.value: _resolved(
+        "The request failed validation. Fix the fields named in the message, then submit "
+        "with a new idempotencyKey."
+    ),
+    HydraceptErrorCode.UNSUPPORTED_TLD.value: _resolved(
+        "The domain extension is not supported. Choose a supported TLD and submit again."
+    ),
+    HydraceptErrorCode.CATALOG_UNAVAILABLE.value: _transient(
+        "The model or provider catalog could not be loaded. Retry after a short wait."
+    ),
+    HydraceptErrorCode.UNKNOWN_EXECUTION_FIELD.value: _resolved(
+        "The request contained an execution field the server does not recognize. Remove or "
+        "correct it, then retry."
+    ),
+    HydraceptErrorCode.CONFLICTING_EXECUTION_CONSTRAINT.value: _resolved(
+        "The request combined execution constraints that cannot both hold. Relax one of "
+        "them, then retry."
+    ),
+    HydraceptErrorCode.INTERNAL_FAILURE.value: _transient(
+        "An internal error occurred. Retry after a short wait; if it persists, contact the "
+        "operator with the job id."
+    ),
+    # Generic codes that carry no specific cause.
+    "failed": _resolved(GENERIC_FAILED_ERROR_RESOLUTION),
+    "needs_attention": _resolved(NEEDS_ATTENTION_ERROR_RESOLUTION),
+}
+
+_JOB_ERROR_CODE_INDEX: dict[str, str] = {code.lower(): code for code in JOB_ERROR_TAXONOMY}
+
+
+class HydraceptJobError(TypedDict):
+    """The public failure projection. ``HydraceptJob.error`` always reads this shape."""
+
+    code: str
+    message: str
+    retryable: bool
+    resolution: str
+    terminal: bool
+
+
+def job_error_guidance(code: str | None) -> JobErrorGuidance:
+    """Resolve one error code to the taxonomy row, case-insensitively.
+
+    Unknown codes get the explicit no-guidance row instead of invented advice.
+    """
+    key = str(code or "").strip() or "failed"
+    entry = JOB_ERROR_TAXONOMY.get(key)
+    if entry is None:
+        entry = JOB_ERROR_TAXONOMY.get(_JOB_ERROR_CODE_INDEX.get(key.lower(), ""))
+    return entry or JobErrorGuidance(
+        resolution=UNKNOWN_JOB_ERROR_RESOLUTION, retryable=False, terminal=True
+    )
+
+
+def project_job_error(
+    *,
+    code: str | None,
+    message: str,
+    extra: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build the typed public error projection from one existing error code.
+
+    ``extra`` preserves richer producer payloads (for example route recovery alternates).
+    """
+    resolved_code = str(code or "failed").strip() or "failed"
+    guidance = job_error_guidance(resolved_code)
+    projected: dict[str, Any] = dict(extra or {})
+    projected["code"] = resolved_code
+    projected["message"] = message
+    projected["retryable"] = guidance.retryable
+    projected["resolution"] = guidance.resolution
+    projected["terminal"] = guidance.terminal
+    return projected
+
+
 class HydraceptJob(BaseModel):
     job_id: str = Field(alias="jobId")
     capability_key: str = Field(alias="capabilityKey")
@@ -112,6 +382,10 @@ class HydraceptJob(BaseModel):
     typed_output: Any | None = Field(default=None, alias="typedOutput")
     warnings: list[dict[str, Any]] = Field(default_factory=list)
     error: dict[str, Any] | None = None
+    progress: HydraceptJobProgress | None = Field(
+        default=None,
+        description="Latest projection of the job's job.progress events; absent until one exists.",
+    )
     diagnostics: HydraceptJobDiagnostics | None = None
     request_snapshot: dict[str, Any] | None = Field(
         default=None,
@@ -131,11 +405,13 @@ class HydraceptJob(BaseModel):
     @field_validator("error", mode="before")
     @classmethod
     def normalize_error(cls, value: object) -> dict[str, Any] | None:
-        """Keep one stable public error shape even when a backend has only a code.
+        """Project every backend failure onto the one typed public error shape.
 
         Job-list history intentionally exposes only ``errorCode``. Once a caller
-        explicitly inspects one job, the public job contract guarantees both a
-        machine-stable code and human-readable message.
+        explicitly inspects one job, the public job contract guarantees
+        ``{code, message, retryable, resolution, terminal}`` (ADR-035), with any richer
+        producer keys such as ``recovery`` preserved. ``resolution`` comes from the
+        taxonomy in this module, so the same failure reads the same way everywhere.
         """
         if value is None:
             return None
@@ -146,11 +422,9 @@ class HydraceptJob(BaseModel):
             message = str(raw_message).strip() if raw_message is not None else ""
             if not message or message == code:
                 message = f"Job failed with error code {code}."
-            normalized["code"] = code
-            normalized["message"] = message
-            return normalized
+            return project_job_error(code=code, message=message, extra=normalized)
         message = str(value).strip() or "Job failed."
-        return {"code": "failed", "message": message}
+        return project_job_error(code="failed", message=message)
 
     @model_validator(mode="after")
     def fill_wait_hints(self) -> HydraceptJob:

@@ -74,7 +74,11 @@ class HydraceptApiError(httpx.HTTPStatusError):
             payload["retryable"] = True
             payload.setdefault("nextAction", "retry_after_backoff")
             payload.setdefault("retryAfterSeconds", 2)
-        return payload
+        # One failure taxonomy across the job payload, the SDK, and the CLI. Only known
+        # codes are enriched; an unknown code keeps its raw payload.
+        from hydracept.job_error import attach_error_projection
+
+        return attach_error_projection(payload)
 
 
 class RunAdmissionError(Exception):

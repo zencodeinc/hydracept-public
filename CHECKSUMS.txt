@@ -12,8 +12,8 @@ clients/csharp/Hydracept.Client/HydraceptSseReader.cs	1747
 clients/csharp/Hydracept.Client/HydraceptWorkspace.cs	12590
 clients/csharp/Hydracept.Client/IHydraceptClient.cs	6016
 clients/csharp/Hydracept.Client/README.md	843
-clients/openapi/public-openapi.json	340510
-clients/python/CHANGELOG.md	12985
+clients/openapi/public-openapi.json	356986
+clients/python/CHANGELOG.md	14432
 clients/python/README.md	2071
 clients/python/hydracept/__init__.py	1845
 clients/python/hydracept/__main__.py	183
@@ -43,7 +43,7 @@ clients/python/hydracept/cli/consumer_versions.py	2095
 clients/python/hydracept/cli/doctor.py	42748
 clients/python/hydracept/cli/doctor_fix.py	3034
 clients/python/hydracept/cli/dotenv.py	889
-clients/python/hydracept/cli/entrypoint.py	14002
+clients/python/hydracept/cli/entrypoint.py	14780
 clients/python/hydracept/cli/exit_codes.py	188
 clients/python/hydracept/cli/funding.py	8273
 clients/python/hydracept/cli/identity/__init__.py	598
@@ -60,7 +60,7 @@ clients/python/hydracept/cli/keys_cmd.py	6183
 clients/python/hydracept/cli/local_project_context.py	6850
 clients/python/hydracept/cli/login_flow.py	3837
 clients/python/hydracept/cli/machine.py	1234
-clients/python/hydracept/cli/main.py	63843
+clients/python/hydracept/cli/main.py	66762
 clients/python/hydracept/cli/mcp_bind.py	20007
 clients/python/hydracept/cli/onboarding_next.py	937
 clients/python/hydracept/cli/package_provenance.py	4513
@@ -79,7 +79,7 @@ clients/python/hydracept/cli/receipt_validation.py	3077
 clients/python/hydracept/cli/result_persistence.py	4085
 clients/python/hydracept/cli/run_capability.py	8779
 clients/python/hydracept/cli/run_facade.py	30041
-clients/python/hydracept/cli/run_input_coercion.py	6058
+clients/python/hydracept/cli/run_input_coercion.py	11264
 clients/python/hydracept/cli/run_output_preview.py	1216
 clients/python/hydracept/cli/schemas/init.v1.json	4153
 clients/python/hydracept/cli/schemas/quickstart.v1.json	1843
@@ -119,10 +119,11 @@ clients/python/hydracept/data/agents/templates/cursor/assets/logo.png	38487
 clients/python/hydracept/data/agents/templates/cursor/hooks/hooks.json	25
 clients/python/hydracept/data/agents/templates/cursor/mcp.json	241
 clients/python/hydracept/data/hydracept-consumer-exceptions.yaml	172
-clients/python/hydracept/errors.py	3589
+clients/python/hydracept/errors.py	3836
 clients/python/hydracept/history.py	6812
 clients/python/hydracept/http_timeout.py	703
-clients/python/hydracept/job_lifecycle.py	4275
+clients/python/hydracept/job_error.py	12124
+clients/python/hydracept/job_lifecycle.py	4288
 clients/python/hydracept/job_progress.py	1840
 clients/python/hydracept/job_wait.py	4796
 clients/python/hydracept/jobs.py	6282
@@ -136,7 +137,7 @@ clients/python/hydracept/mcp/presentation.py	8616
 clients/python/hydracept/mcp/project_mcp.py	7922
 clients/python/hydracept/mcp/register_project_tools.py	4424
 clients/python/hydracept/mcp/runtime_binding.py	9605
-clients/python/hydracept/mcp/server.py	56748
+clients/python/hydracept/mcp/server.py	57943
 clients/python/hydracept/mcp/surface_contract.py	11855
 clients/python/hydracept/mcp/ui/app.html	445011
 clients/python/hydracept/mcp/ui/hydracept-mark.png	3654
@@ -190,6 +191,7 @@ clients/python/tests/test_integrations_unity.py	1543
 clients/python/tests/test_interaction_hydration.py	11045
 clients/python/tests/test_interaction_surfaces.py	19404
 clients/python/tests/test_job_context.py	3577
+clients/python/tests/test_job_error_taxonomy_parity.py	2735
 clients/python/tests/test_job_history.py	2748
 clients/python/tests/test_job_lifecycle.py	2774
 clients/python/tests/test_job_wait_contract_parity.py	1442
@@ -199,6 +201,7 @@ clients/python/tests/test_local_identity_adapters.py	6064
 clients/python/tests/test_local_identity_client.py	4621
 clients/python/tests/test_mcp_app_panel.py	21986
 clients/python/tests/test_mcp_bind.py	11424
+clients/python/tests/test_mcp_input_alias.py	3384
 clients/python/tests/test_mcp_job_status.py	2310
 clients/python/tests/test_mcp_lazy_secrets.py	1279
 clients/python/tests/test_mcp_runtime_state.py	3124
@@ -222,7 +225,7 @@ clients/python/tests/test_receipt_validation.py	2381
 clients/python/tests/test_resolved_context.py	6028
 clients/python/tests/test_run_capability.py	4447
 clients/python/tests/test_run_facade.py	14083
-clients/python/tests/test_run_input_coercion.py	4331
+clients/python/tests/test_run_input_coercion.py	7736
 clients/python/tests/test_run_output_preview.py	923
 clients/python/tests/test_run_result_v1.py	5881
 clients/python/tests/test_sdk_workspace.py	837
@@ -242,6 +245,7 @@ clients/python/tests/test_truthful_run_contracts.py	3427
 clients/python/tests/test_value_level_recovery.py	2119
 clients/python/tests/test_verify_cli.py	1509
 clients/python/tests/test_version.py	2895
+clients/python/tests/test_version_provenance.py	3412
 clients/python/tests/test_workspace.py	3912
 clients/python/tests/test_workspace_attest_once.py	807
 clients/python/tests/test_workspace_bind.py	1162
@@ -266,7 +270,7 @@ clients/typescript/tsconfig.json	343
 packages/contracts/hydracept_contracts/capability_descriptor.py	5543
 packages/contracts/hydracept_contracts/capability_invoke.py	13440
 packages/contracts/hydracept_contracts/errors.py	4468
-packages/contracts/hydracept_contracts/hydracept_job.py	13223
+packages/contracts/hydracept_contracts/hydracept_job.py	26146
 packages/contracts/hydracept_contracts/input_constraints.py	8405
 packages/elements/.gitignore	20
 packages/elements/CHANGELOG.md	806
@@ -364,7 +368,7 @@ packages/unity/Tests/Editor.meta	172
 packages/unity/Tests.meta	172
 packages/unity/package.json	659
 packages/unity/package.json.meta	163
-public/.well-known/agent-context.json	219491
+public/.well-known/agent-context.json	220373
 public/.well-known/hydracept.json	4177
 public/.well-known/mcp-registry-auth	67
 public/.well-known/security.txt	150

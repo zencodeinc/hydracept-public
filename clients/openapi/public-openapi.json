@@ -4270,6 +4270,449 @@
         ]
       }
     },
+    "/v1/delivery-endpoints": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "delivery"
+        ],
+        "summary": "Create Delivery Endpoint",
+        "operationId": "create_delivery_endpoint_v1_delivery_endpoints_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryEndpointCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Delivery Endpoint V1 Delivery Endpoints Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": [
+          "service_principal",
+          "human_session"
+        ],
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "delivery"
+        ],
+        "summary": "List Delivery Endpoints",
+        "operationId": "list_delivery_endpoints_v1_delivery_endpoints_get",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Delivery Endpoints V1 Delivery Endpoints Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": [
+          "service_principal",
+          "human_session"
+        ],
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/delivery-endpoints/{endpoint_id}": {
+      "patch": {
+        "tags": [
+          "public_api",
+          "external",
+          "delivery"
+        ],
+        "summary": "Update Delivery Endpoint",
+        "operationId": "update_delivery_endpoint_v1_delivery_endpoints__endpoint_id__patch",
+        "parameters": [
+          {
+            "name": "endpoint_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Endpoint Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryEndpointUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Update Delivery Endpoint V1 Delivery Endpoints  Endpoint Id  Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": [
+          "service_principal",
+          "human_session"
+        ],
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/delivery-endpoints/{endpoint_id}/disable": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "delivery"
+        ],
+        "summary": "Disable Delivery Endpoint",
+        "operationId": "disable_delivery_endpoint_v1_delivery_endpoints__endpoint_id__disable_post",
+        "parameters": [
+          {
+            "name": "endpoint_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Endpoint Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Disable Delivery Endpoint V1 Delivery Endpoints  Endpoint Id  Disable Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": [
+          "service_principal",
+          "human_session"
+        ],
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/deliveries": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "delivery"
+        ],
+        "summary": "List Deliveries",
+        "description": "Delivery attempts for a project, newest first. Mirrors the job event cursor shape.",
+        "operationId": "list_deliveries_v1_deliveries_get",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          },
+          {
+            "name": "endpointId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Endpointid"
+            }
+          },
+          {
+            "name": "jobId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Jobid"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pass nextCursor (an eventId) from the previous page.",
+              "title": "Cursor"
+            },
+            "description": "Pass nextCursor (an eventId) from the previous page."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Deliveries V1 Deliveries Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": [
+          "service_principal",
+          "human_session"
+        ],
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/deliveries/{delivery_id}/replay": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "delivery"
+        ],
+        "summary": "Replay Delivery",
+        "description": "Re-deliver an attempt. The spine event id and stored body are unchanged.",
+        "operationId": "replay_delivery_v1_deliveries__delivery_id__replay_post",
+        "parameters": [
+          {
+            "name": "delivery_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Delivery Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Replay Delivery V1 Deliveries  Delivery Id  Replay Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": [
+          "service_principal",
+          "human_session"
+        ],
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
     "/v1/agent-context": {
       "get": {
         "tags": [
@@ -7925,6 +8368,19 @@
               }
             ]
           },
+          "runHint": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runhint",
+            "description": "Shortest valid way to run this match, projected from the same server-side descriptor as GET /v1/capabilities/{key} (cli/sdk/mcp, requiredInputFields, and a structured --input-file variant when simple sugar cannot express the input). Discovery output must never hand out a command the capability rejects."
+          },
           "accessDecision": {
             "anyOf": [
               {
@@ -8610,6 +9066,100 @@
         ],
         "title": "DataClassification"
       },
+      "DeliveryEndpointCreate": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "secret": {
+            "type": "string",
+            "title": "Secret"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projectid"
+          },
+          "eventTypes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Eventtypes"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "url",
+          "secret"
+        ],
+        "title": "DeliveryEndpointCreate"
+      },
+      "DeliveryEndpointUpdate": {
+        "properties": {
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret"
+          },
+          "eventTypes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eventtypes"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          }
+        },
+        "type": "object",
+        "title": "DeliveryEndpointUpdate"
+      },
       "EnvironmentPatch": {
         "properties": {
           "id": {
@@ -9044,6 +9594,17 @@
             ],
             "title": "Error"
           },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HydraceptJobProgress"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Latest projection of the job's job.progress events; absent until one exists."
+          },
           "diagnostics": {
             "anyOf": [
               {
@@ -9267,6 +9828,53 @@
           "backendId"
         ],
         "title": "HydraceptJobDiagnostics"
+      },
+      "HydraceptJobProgress": {
+        "properties": {
+          "phase": {
+            "type": "string",
+            "title": "Phase"
+          },
+          "step": {
+            "type": "string",
+            "title": "Step"
+          },
+          "percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent"
+          },
+          "etaSeconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etaseconds"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phase",
+          "step",
+          "updatedAt"
+        ],
+        "title": "HydraceptJobProgress",
+        "description": "Where a durable job has reached, as reported by the activity that owns the work.\n\n``updatedAt`` is required whenever progress is present, so a reader can always tell\nhow fresh the projection is. ``percent`` and ``etaSeconds`` are optional on purpose:\nthey are present only when the authority (a provider that reports them) can compute\nthem. The contract forbids fabricating either one (ADR-035), so an unknown value is\nomitted rather than defaulted to ``0``."
       },
       "HydraceptJobResult": {
         "properties": {

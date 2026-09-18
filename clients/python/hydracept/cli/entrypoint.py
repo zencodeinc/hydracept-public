@@ -175,6 +175,9 @@ def _compact_capability(item: dict[str, Any]) -> dict[str, Any]:
             for name in ("mode", "estimateRequired", "pricingContext")
             if price.get(name) is not None
         }
+    run_hint = item.get("runHint")
+    if isinstance(run_hint, dict) and run_hint:
+        compact["runHint"] = run_hint
     return {k: v for k, v in compact.items() if v is not None}
 
 
@@ -202,10 +205,20 @@ def _add_capabilities_describe_dispatch(root: Any) -> None:
 
 
 def _execution_hint(key: str) -> str:
+    """Fallback hint when the server did not supply a descriptor projection.
+
+    The authoritative command comes from the match's ``runHint`` (the same
+    projection ``GET /v1/capabilities/{key}`` returns); this only covers catalog
+    fallbacks that carry no descriptor.
+    """
     resolved = str(key or "").strip() or "<key>"
     if resolved == "domain.search.v1":
         return f'python -m hydracept run {resolved} --prompt "example.com" --json'
-    if resolved.startswith(("image.", "audio.", "video.", "text.")):
+    if resolved == "text.translate.v1":
+        return (
+            f'python -m hydracept run {resolved} --target-locale es --prompt "..." --json'
+        )
+    if resolved.startswith(("image.", "audio.", "video.")):
         return f'python -m hydracept run {resolved} --prompt "..." --json'
     return (
         f"python -m hydracept capabilities describe {resolved} --json && "
@@ -251,7 +264,14 @@ def _add_capabilities_find_dispatch(root: Any) -> None:
         from hydracept.cli.catalog_match import prefer_intent_matches
 
         candidates = prefer_intent_matches(query, candidates)
-        top_key = str((candidates[0] or {}).get("key") or "") if candidates else ""
+        top = candidates[0] if candidates else {}
+        top_key = str((top or {}).get("key") or "")
+        top_run_hint = (top or {}).get("runHint")
+        execution = (
+            str(top_run_hint.get("cli") or "")
+            if isinstance(top_run_hint, dict)
+            else ""
+        )
         click.echo(
             json.dumps(
                 {
@@ -264,7 +284,7 @@ def _add_capabilities_find_dispatch(root: Any) -> None:
                     "requirementsSatisfied": (
                         payload.get("requirementsSatisfied") if isinstance(payload, dict) else None
                     ),
-                    "execution": _execution_hint(top_key),
+                    "execution": execution or _execution_hint(top_key),
                 },
                 separators=(",", ":"),
             )
