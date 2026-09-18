@@ -936,6 +936,22 @@ def build_doctor_report(
                     bucket="capabilities",
                 )
             )
+        text_keys = sorted(key for key in cap_keys if key.startswith("text."))
+        report.add(
+            DoctorCheck(
+                "public_text_capabilities",
+                bool(text_keys),
+                (
+                    f"{len(text_keys)} text capabilities listed; probe one with "
+                    "`python -m hydracept smoke text`"
+                    if text_keys
+                    else "no text capabilities listed in GET /v1/capabilities"
+                ),
+                fatal=False,
+                bucket="capabilities",
+                next_action="python -m hydracept smoke text" if text_keys else None,
+            )
+        )
     except httpx.HTTPError as exc:
         report.add(
             DoctorCheck(

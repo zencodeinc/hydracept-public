@@ -1988,6 +1988,94 @@
         ]
       }
     },
+    "/v1/jobs/{job_id}/events": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "capabilities"
+        ],
+        "summary": "List Job Events",
+        "description": "Append-only lifecycle stream for a job (ADR-035).\n\nThis is the authority for what happened, in order. Progress history, delivery, and\nretention project this stream; none of them re-derive lifecycle facts from mutable\nstate. Ordering is by the monotonic event id, which is also the cursor.",
+        "operationId": "list_job_events_v1_jobs__job_id__events_get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pass nextCursor from the previous page.",
+              "title": "Cursor"
+            },
+            "description": "Pass nextCursor from the previous page."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Job Events V1 Jobs  Job Id  Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": [
+          "service_principal",
+          "panel_session"
+        ],
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
     "/v1/jobs": {
       "get": {
         "tags": [

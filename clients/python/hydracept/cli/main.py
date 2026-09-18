@@ -37,9 +37,14 @@ from hydracept.cli.setup_grant_cmd import setup_grant_app
 from hydracept.cli.session_store import DEFAULT_APP_BASE_URL
 from hydracept.cli.smoke_runner import (
     DEFAULT_SMOKE_PROMPT,
+    DEFAULT_TEXT_SMOKE_CAPABILITY,
+    DEFAULT_TEXT_SMOKE_PROMPT,
+    DEFAULT_TEXT_SMOKE_TARGET_LOCALE,
     SmokeError,
+    TextSmokeResult,
     run_sheet_smoke,
     run_smoke,
+    run_text_smoke,
 )
 from hydracept.cli.verify import (
     DEFAULT_LOCKFILE,
@@ -510,7 +515,7 @@ def smoke_root(
     poll_seconds: int = typer.Option(90, "--poll-seconds"),
     json_output: bool = typer.Option(False, "--json", help="Machine-readable output"),
 ) -> None:
-    """Submit the launch smoke job. Default is `image`."""
+    """Submit the launch smoke job. Subcommands: `image` (default), `sheet`, `text`."""
     ctx.obj = {
         "api": api,
         "project_root": project_root,
@@ -567,6 +572,52 @@ def smoke_sheet_cmd(
         _print_smoke_error(exc, json_output=json_output)
         raise typer.Exit(exc.exit_code) from exc
     _print_smoke(result, json_output=json_output)
+
+
+def _print_text_smoke(result: TextSmokeResult, *, json_output: bool) -> None:
+    if json_output:
+        console.print_json(data=result.to_json())
+        return
+    display = (result.to_json().get("pricing") or {}).get("display") or {}
+    console.print(f"[green]Text smoke succeeded[/green] capability={result.capability}")
+    if result.execution_id:
+        console.print(f"executionId={result.execution_id}")
+    if result.output_preview:
+        console.print(f"output={result.output_preview}")
+    if display.get("cost"):
+        console.print(f"Cost: {display['cost']}")
+    if display.get("paidFrom"):
+        console.print(f"Paid from: {display['paidFrom']}")
+
+
+@smoke_app.command("text")
+def smoke_text_cmd(
+    ctx: typer.Context,
+    capability: str = typer.Option(
+        DEFAULT_TEXT_SMOKE_CAPABILITY,
+        "--capability",
+        help="Text capability to probe (synchronous invoke).",
+    ),
+    prompt: str = typer.Option(DEFAULT_TEXT_SMOKE_PROMPT, "--prompt"),
+    target_locale: str = typer.Option(DEFAULT_TEXT_SMOKE_TARGET_LOCALE, "--target-locale"),
+    json_output: bool = typer.Option(False, "--json", help="Machine-readable output"),
+) -> None:
+    """Text smoke: synchronous invoke, non-empty output, receipt pricing."""
+    opts = ctx.obj or {}
+    json_output = json_output or bool(opts.get("json_output"))
+    try:
+        result = run_text_smoke(
+            opts["project_root"],
+            api_url=opts["api"],
+            token=opts["token"] or None,
+            capability=capability,
+            prompt=prompt,
+            target_locale=target_locale,
+        )
+    except SmokeError as exc:
+        _print_smoke_error(exc, json_output=json_output)
+        raise typer.Exit(exc.exit_code) from exc
+    _print_text_smoke(result, json_output=json_output)
 
 
 @app.command("doctor")

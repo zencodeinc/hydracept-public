@@ -10,6 +10,7 @@ from typing import Any
 
 from hydracept import HydraceptClient
 from hydracept.cli.exit_codes import NOT_READY, SMOKE_FAILED
+from hydracept.cli.job_context import merge_workspace_job_context
 from hydracept.cli.receipt_validation import (
     CUSTOMER_CHARGE_PATH,
     ReceiptValidationError,
@@ -25,6 +26,9 @@ DEFAULT_SMOKE_PROMPT = (
     "centered, simple silhouette, request transparent background"
 )
 DEFAULT_SMOKE_POLL_SECONDS = 300
+DEFAULT_TEXT_SMOKE_CAPABILITY = "text.translate.v1"
+DEFAULT_TEXT_SMOKE_PROMPT = "Hello world"
+DEFAULT_TEXT_SMOKE_TARGET_LOCALE = "es"
 SHEET_MIN_CELL_PX = 816
 SHEET_EDGE_ALIGNMENT = 16
 SHEET_SMOKE_ROWS = 2
@@ -537,3 +541,177 @@ def run_sheet_smoke(project_root: Path, **kwargs: Any) -> SmokeResult:
     kwargs["require_sheet_cells"] = SHEET_SMOKE_ROWS * SHEET_SMOKE_COLUMNS
     kwargs["smoke_kind"] = "sheet"
     return run_smoke(project_root, **kwargs)
+
+
+@dataclass
+class TextSmokeResult:
+    """Synchronous text capability smoke: execution, output, receipt pricing."""
+
+    capability: str
+    execution_id: str = ""
+    status: str = "succeeded"
+    output_preview: str = ""
+    pricing_ok: bool = False
+    receipt_id: str = ""
+    receipt: dict[str, Any] | None = None
+
+    def to_json(self) -> dict[str, Any]:
+        return {
+            "status": "ok",
+            "execution": {
+                "status": "succeeded",
+                "jobId": self.execution_id or None,
+                "receiptId": self.receipt_id or None,
+            },
+            "validation": {"status": "passed", "pricingOk": self.pricing_ok},
+            "pricing": _pricing_payload(self.receipt),
+            "capability": self.capability,
+            "outputPreview": self.output_preview,
+            "output": self.output_preview,
+            "jobId": self.execution_id or None,
+            "receiptId": self.receipt_id or None,
+            "pricingOk": self.pricing_ok,
+            "exitCode": 0,
+        }
+
+
+def _flatten_text(value: Any) -> str:
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, dict):
+        for key in ("translation", "text", "content", "output", "items"):
+            if key in value:
+                text = _flatten_text(value[key])
+                if text:
+                    return text
+        return ""
+    if isinstance(value, list):
+        parts = [_flatten_text(item) for item in value]
+        return " ".join(part for part in parts if part).strip()
+    return ""
+
+
+def _text_output_preview(invoked: dict[str, Any]) -> str:
+    """Best-effort human-readable text from a synchronous text response."""
+    for candidate in (invoked.get("output"), invoked.get("typedOutput"), invoked.get("text")):
+        text = _flatten_text(candidate)
+        if text:
+            return text
+    return ""
+
+
+def run_text_smoke(
+    project_root: Path,
+    *,
+    api_url: str | None = None,
+    token: str | None = None,
+    capability: str = DEFAULT_TEXT_SMOKE_CAPABILITY,
+    prompt: str = DEFAULT_TEXT_SMOKE_PROMPT,
+    target_locale: str = DEFAULT_TEXT_SMOKE_TARGET_LOCALE,
+    extra_input: dict[str, Any] | None = None,
+) -> TextSmokeResult:
+    """Invoke one synchronous text capability and validate output + receipt pricing.
+
+    Text capabilities get no coverage from the image smoke, so a total text
+    routing failure was previously invisible to a consumer with only the public
+    CLI. This probe makes that failure loud without source access.
+    """
+    try:
+        workspace = require_ready_workspace(
+            project_root,
+            overrides=CliOverrides(token=token, api_url=api_url),
+        )
+    except WorkspaceNotReadyError as exc:
+        raise SmokeError(
+            str(exc),
+            exit_code=NOT_READY,
+            status="workspace_not_ready",
+            execution_status="not_started",
+        ) from exc
+
+    from hydracept.cli.run_input_coercion import InputValidationError, coerce_capability_input
+
+    input_body: dict[str, Any] = {"prompt": prompt}
+    if target_locale:
+        input_body["targetLocale"] = target_locale
+    if extra_input:
+        input_body.update(extra_input)
+    try:
+        normalized = coerce_capability_input(capability, dict(input_body))
+    except InputValidationError as exc:
+        raise SmokeError(
+            f"Text smoke input rejected: {exc.message}",
+            status="contract_failed",
+            validation_error=str(exc),
+            validation_code="text_smoke_input_invalid",
+        ) from exc
+
+    payload = merge_workspace_job_context({"input": normalized}, workspace)
+    payload["idempotencyKey"] = _smoke_idempotency_key(kind="text")
+    client = HydraceptClient(workspace.api_url, workspace.token)
+
+    try:
+        invoked = client.invoke_capability(capability, payload)
+    except Exception as exc:  # noqa: BLE001
+        raise SmokeError(
+            f"Text smoke invocation failed: {exc}",
+            status="execution_failed",
+            suggested_action=f"python -m hydracept capabilities describe {capability} --json",
+        ) from exc
+
+    status = str(invoked.get("status") or "succeeded")
+    execution_id = str(invoked.get("executionId") or invoked.get("id") or "")
+    embedded_receipt = invoked.get("receipt") if isinstance(invoked.get("receipt"), dict) else None
+    if status.lower() in {"failed", "canceled", "cancelled"}:
+        error = invoked.get("error") if isinstance(invoked.get("error"), dict) else {}
+        raise SmokeError(
+            f"Text smoke ended with status={status}: {error.get('message') or invoked}",
+            job_id=execution_id,
+            status="execution_failed",
+            execution_status=status,
+            receipt=embedded_receipt,
+        )
+
+    preview = _text_output_preview(invoked)
+    if not preview:
+        raise SmokeError(
+            "Text smoke returned empty output",
+            job_id=execution_id,
+            status="contract_failed",
+            execution_status=status,
+            validation_error="empty text output",
+            validation_code="text_output_empty",
+            receipt=embedded_receipt,
+        )
+
+    receipt = embedded_receipt
+    if receipt is None and execution_id:
+        try:
+            receipt = client.get_job_receipt(execution_id)
+        except Exception:  # noqa: BLE001
+            receipt = None
+    receipt_id = _receipt_id(receipt)
+    if receipt is not None:
+        try:
+            validate_terminal_receipt_pricing(receipt)
+        except ReceiptValidationError as exc:
+            raise SmokeError(
+                "Text smoke receipt pricing invalid: " + str(exc),
+                job_id=execution_id,
+                receipt_id=receipt_id,
+                status="contract_failed",
+                execution_status=status,
+                validation_error=str(exc),
+                validation_code="receipt_pricing_validation_failed",
+                failing_path=CUSTOMER_CHARGE_PATH if CUSTOMER_CHARGE_PATH in str(exc) else "",
+                receipt=receipt,
+            ) from exc
+    return TextSmokeResult(
+        capability=capability,
+        execution_id=execution_id,
+        status=status,
+        output_preview=preview[:500],
+        pricing_ok=receipt is not None,
+        receipt_id=receipt_id,
+        receipt=receipt,
+    )

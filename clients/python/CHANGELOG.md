@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.4.0 — unreleased
+## 0.4.1 — unreleased
+
+- `python -m hydracept smoke text` probes a synchronous text capability (default `text.translate.v1`): it invokes through the same public coercion path as `run`, then requires a terminal status, non-empty output, and — when a receipt is retrievable — valid receipt pricing. Previously only `image.generate.v1` had any smoke coverage, so a total text failure was invisible to a consumer with the public CLI
+- `doctor` reports `public_text_capabilities` from the live catalog and names `python -m hydracept smoke text` as the runtime probe (non-fatal; text execution is not a default readiness spend)
+- `clients/python` version bumped to 0.4.1 so the release-identity gate can distinguish this unreleased change from the published 0.4.0
+
+## 0.4.0 — 2026-09-17 (released)
 
 **Breaking pricing-contract change — the "retail price" concept is removed.** ADR-022 defines four money truths, and this release names them exactly. `retailPriceUsd`/`retailUsd`/`retailCharge` never existed as a Hydracept concept: the customer-visible provider number is the upstream **price basis** the managed charge is computed from, and Hydracept's own procurement cost (`ProviderUsage.actual_cost`) is private and admin-only.
 

@@ -12,8 +12,8 @@ clients/csharp/Hydracept.Client/HydraceptSseReader.cs	1747
 clients/csharp/Hydracept.Client/HydraceptWorkspace.cs	12590
 clients/csharp/Hydracept.Client/IHydraceptClient.cs	6016
 clients/csharp/Hydracept.Client/README.md	843
-clients/openapi/public-openapi.json	337883
-clients/python/CHANGELOG.md	12209
+clients/openapi/public-openapi.json	340510
+clients/python/CHANGELOG.md	12985
 clients/python/README.md	2071
 clients/python/hydracept/__init__.py	1845
 clients/python/hydracept/__main__.py	183
@@ -40,7 +40,7 @@ clients/python/hydracept/cli/catalog_match.py	3908
 clients/python/hydracept/cli/connections_cmd.py	6170
 clients/python/hydracept/cli/console_io.py	1427
 clients/python/hydracept/cli/consumer_versions.py	2095
-clients/python/hydracept/cli/doctor.py	42084
+clients/python/hydracept/cli/doctor.py	42748
 clients/python/hydracept/cli/doctor_fix.py	3034
 clients/python/hydracept/cli/dotenv.py	889
 clients/python/hydracept/cli/entrypoint.py	14002
@@ -60,7 +60,7 @@ clients/python/hydracept/cli/keys_cmd.py	6183
 clients/python/hydracept/cli/local_project_context.py	6850
 clients/python/hydracept/cli/login_flow.py	3837
 clients/python/hydracept/cli/machine.py	1234
-clients/python/hydracept/cli/main.py	61874
+clients/python/hydracept/cli/main.py	63843
 clients/python/hydracept/cli/mcp_bind.py	20007
 clients/python/hydracept/cli/onboarding_next.py	937
 clients/python/hydracept/cli/package_provenance.py	4513
@@ -88,7 +88,7 @@ clients/python/hydracept/cli/session_client.py	8327
 clients/python/hydracept/cli/session_store.py	1920
 clients/python/hydracept/cli/setup_grant_cmd.py	2207
 clients/python/hydracept/cli/smoke_contract.py	3509
-clients/python/hydracept/cli/smoke_runner.py	21708
+clients/python/hydracept/cli/smoke_runner.py	28260
 clients/python/hydracept/cli/storage_cmd.py	2267
 clients/python/hydracept/cli/structured_output_guard.py	1269
 clients/python/hydracept/cli/surface_cmd.py	7640
@@ -230,6 +230,7 @@ clients/python/tests/test_session_client.py	776
 clients/python/tests/test_session_store.py	1237
 clients/python/tests/test_skill_cli_floor.py	678
 clients/python/tests/test_smoke_runner.py	12212
+clients/python/tests/test_smoke_text.py	3551
 clients/python/tests/test_stdio.py	621
 clients/python/tests/test_suggested_project_name.py	876
 clients/python/tests/test_surface_apply.py	8230
