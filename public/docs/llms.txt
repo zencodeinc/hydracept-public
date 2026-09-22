@@ -122,8 +122,6 @@ Bootstrap: python -m hydracept init --apply --yes --json
 - https://hydracept.com/music-generation
 - https://hydracept.com/godot-ai-assets
 - https://hydracept.com/unreal-ai-assets
-- https://hydracept.com/benchmarks/zero-knowledge
-- https://hydracept.com/benchmarks/cold-one-shot
 
 ## Image production (image.generate.v1)
 - Transparent PNG output (`requestTransparentOutput`)

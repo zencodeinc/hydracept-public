@@ -28,7 +28,7 @@ Commission quotes are the opposite of execution quotes: they fund **implementati
 | `POST` | `/v1/capability-requests/{id}/submit` | Submit the current revision for review |
 | `GET` | `/v1/capability-requests/{id}/quote` | Read the commission quote (human-paid) |
 
-Internal operator surfaces under `/v1/operator/capability-requests*` and `/v1/operator/capability-commissions/{id}/*` are not part of the public contract.
+Operator-only surfaces are not part of the public contract.
 
 ## Create a request
 

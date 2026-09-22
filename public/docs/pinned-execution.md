@@ -11,13 +11,13 @@ POST /v1/inference/pinned/bulk
 GET  /v1/inference/pinned/bulk/{bulk_id}
 ```
 
-`POST /v1/inference/pinned/bulk` accepts a shared pin plus an `items` array. Each item is an independent pinned execution with its own receipt — concurrent ordinary pins, not a provider-native Batch API. Pins stay on **standard processing** unless the caller sets `processing: "deferred"` on an eligible OpenAI Responses pin (`service_tier=flex`, 50% of standard token rates) — same pin, one logical model execution, no truncation rewrite, no Flex→Standard fallback. Pre-inference capacity 429s and connection refusals may retry inside the admission deadline and are recorded on the receipt. Tenant identity is the customer **project**, same as `POST /v1/inference/pinned`: a project-bound API key is enough; an unbound key must send `context.projectId`. Organization is derived from that project. A client-supplied `organizationId` is not authorization. The bulk itself is a durable Temporal job on `hydracept-durable-bulk`: submit persists the bulk, starts `PinnedBulkWorkflow`, and returns `accepted` with `nextAction: poll`. Poll `GET /v1/inference/pinned/bulk/{bulk_id}` until `nextAction` is `stop` (`succeeded`, `partial`, or `failed`). The API process does not run bulk items; a replica restart or `/readyz` blip cannot cancel in-flight work. Sibling items do not share a provider attempt; a failure on one item does not retry or cancel the others. Concurrency is a sliding window: a hung in-flight item does not block later items from starting. When Flex capacity rejections spike, later submissions reduce concurrency instead of hammering the same ceiling.
+`POST /v1/inference/pinned/bulk` accepts a shared pin plus an `items` array. Each item is an independent pinned execution with its own receipt — concurrent ordinary pins, not a provider-native Batch API. Pins stay on **standard processing** unless the caller sets `processing: "deferred"` on an eligible OpenAI Responses pin (`service_tier=flex`, 50% of standard token rates) — same pin, one logical model execution, no truncation rewrite, no Flex→Standard fallback. Pre-inference capacity 429s and connection refusals may retry inside the admission deadline and are recorded on the receipt. Tenant identity is the customer **project**, same as `POST /v1/inference/pinned`: a project-bound API key is enough; an unbound key must send `context.projectId`. Organization is derived from that project. A client-supplied `organizationId` is not authorization. The bulk is durable: submit returns `accepted` with `nextAction: poll`. Poll `GET /v1/inference/pinned/bulk/{bulk_id}` until `nextAction` is `stop` (`succeeded`, `partial`, or `failed`). In-flight items survive a service restart. Sibling items do not share a provider attempt; a failure on one item does not retry or cancel the others. Concurrency is a sliding window: a hung in-flight item does not block later items from starting. When capacity rejections spike, later submissions reduce concurrency instead of hammering the same ceiling.
 
 Hydracept distinguishes three clocks:
 
-1. **Execution timeout** — `limits.timeoutSeconds` (or top-level `timeoutSeconds`) is the **wall-clock** budget for one admitted provider HTTP attempt. Default and platform maximum 600s (`HYDRACEPT_PINNED_PROVIDER_TIMEOUT_SECONDS`). Trickling/thinking tokens do not extend this deadline. `processing: "deferred"` with an omitted timeout uses that same 600s max. Callers may set a lower value; a value above the platform maximum is rejected with `422`. Minimum is 30s. Connect/write/pool timeouts remain underneath as transport protections.
+1. **Execution timeout** — `limits.timeoutSeconds` (or top-level `timeoutSeconds`) is the **wall-clock** budget for one admitted provider HTTP attempt. Default and platform maximum 600s. Trickling/thinking tokens do not extend this deadline. `processing: "deferred"` with an omitted timeout uses that same 600s max. Callers may set a lower value; a value above the platform maximum is rejected with `422`. Minimum is 30s. Connect/write/pool timeouts remain underneath as transport protections.
 2. **Admission/retry deadline** — `limits.admissionDeadlineSeconds` is how long Hydracept may keep trying to get the request accepted after Flex-capacity 429s or connection refusal. Default 120s on standard pins and 900s on deferred pins. `0` means one HTTP submission. Maximum 1800s. Ambiguous failures after send (execution deadline, cancelled in-flight POST) are never retried. A durable dispatch boundary is persisted before each paid POST; unknown submission state is sealed as `TRANSPORT_AMBIGUOUS` rather than retried.
-3. **Queue wait** — bulk Temporal `scheduleToStart` (default 20 minutes) plus time spent behind earlier in-flight items at the current concurrency. Recorded as `schedulerWaitMs` when known. This does not consume the execution timeout.
+3. **Queue wait** — time waiting to start (default bulk start window 20 minutes) plus time spent behind earlier in-flight items at the current concurrency. Recorded as `schedulerWaitMs` when known. This does not consume the execution timeout.
 
 Connect/write/pool stay short so a failure before send is `providerSubmission: not_attempted`. A timeout or network error after send is `providerSubmission: ambiguous` and is never advertised as safely retryable. Receipts record `logicalAttempts=1` plus `providerSubmissions`, `capacityRejections`, `retryWaitMs`, `providerExecutionMs`, and `wallClockMs`. `safelyRetryable: false` means do not POST the sealed pin again. This per-item provider timeout is distinct from `bulkWait.timeoutSeconds` (client poll of the whole bulk, default 3600s).
 
@@ -33,7 +33,7 @@ Connect/write/pool stay short so a failure before send is `providerSubmission: n
 - The request is sent as specified, without silent model substitutions
 - Correlation metadata never enters the prompt
 - Missing execution evidence **fails** the request rather than producing an incomplete record
-- Catalog workspace keys may run every registered capability, including `inference.pinned`. Membership is the registry, not a YAML allowlist. Admission uses the same BYOK / managed / platform path as other inference. Owner-org platform keys are enough; a per-project provider connection is not required.
+- Catalog workspace keys may run every registered capability, including `inference.pinned`. Admission uses the same BYOK / managed / platform path as other inference. Owner-org platform keys are enough; a per-project provider connection is not required.
 - Capacity class: lightweight inference. Plan guardrails still apply
 
 ## Receipts
@@ -134,19 +134,14 @@ CLI: `python -m hydracept pinned run body.json`, `python -m hydracept pinned bul
 
 ## Verification
 
-To run the local protocol and integrity checks:
+Pinned receipts are immutable after completion, so you can verify a run after the fact:
 
 ```bash
-python -m pytest packages/contracts/tests/test_pinned_deepseek.py packages/contracts/tests/test_pinned_output_byte_identity.py apps/api/tests/test_pinned_protocol.py apps/api/tests/test_pinned_integrity.py apps/api/tests/test_pinned_native_response.py
+python -m hydracept pinned get <receipt_id>
+python -m hydracept verify
 ```
 
-An optional live comparison checks that the native request sent directly to OpenAI matches the request sent through Hydracept:
-
-```bash
-python scripts/run_pinned_live_conformance.py
-```
-
-It requires `HYDRACEPT_API_URL`, `HYDRACEPT_API_KEY`, and a connected OpenAI key.
+Related receipts can be grouped into a run manifest, and a stable pin can be emitted as an AI lockfile. See [Execution provenance](../provenance/).
 
 ## Related
 

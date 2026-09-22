@@ -229,6 +229,11 @@ JOB_ERROR_TAXONOMY: Mapping[str, JobErrorGuidance] = {
         "Automatic repair of the model's output failed. Adjust the prompt or output "
         "schema, then retry."
     ),
+    HydraceptErrorCode.OUTPUT_LIMIT_REACHED.value: _resolved(
+        "The model's response was cut off at the output limit before it finished, so it "
+        "could not be validated. Retry with a new idempotencyKey; if it recurs, reduce the "
+        "requested output size or split the work."
+    ),
     HydraceptErrorCode.RETENTION_VIOLATION.value: _resolved(
         "The request conflicts with the resource's retention policy. Adjust the request or "
         "the policy, then retry."

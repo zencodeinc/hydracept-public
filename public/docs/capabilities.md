@@ -82,7 +82,7 @@ If a workflow deliberately binds execution to a previously returned quote, the s
 
 Use jobs for image, audio, 3D mesh, and any generation that may take longer than one HTTP request.
 
-`text.general.fast.v1` still offers `invoke_sync`, but that path is edge-held: about **60 seconds / 2048 `maxOutputTokens`**. Larger completions (including 8192-token title cards) must use `POST /v1/capabilities/text.general.fast.v1/jobs`. Catalog `features.syncInvoke` and `features.durableJob` document those envelopes separately. Durable jobs share the durable-text worker; concurrency is hardware-bounded so one job does not block another of the same variety. `executionConstraints.maxDurationSeconds` is the **provider execution** deadline after the job starts (default **120s**, max **600**), not queue wait. Queue timeout, execution timeout, and post-submit ambiguity are different error codes (`QueueTimeout`, `ExecutionTimeout`, `TRANSPORT_AMBIGUOUS`).
+`text.general.fast.v1` still offers `invoke_sync`, but that path is edge-held: about **60 seconds / 2048 `maxOutputTokens`**. Larger completions must use `POST /v1/capabilities/text.general.fast.v1/jobs`. For durable jobs the effective output cap is **derived by the platform** from the model, the context window, and the response schema, so callers do not need to compute a token budget; `maxOutputTokens` is an optional hint. Catalog `features.syncInvoke` and `features.durableJob` document those envelopes separately. Durable jobs share the durable-text worker; concurrency is hardware-bounded so one job does not block another of the same variety. `executionConstraints.maxDurationSeconds` is the **provider execution** deadline after the job starts (default **120s**, max **600**), not queue wait. Queue timeout, execution timeout, and post-submit ambiguity are different error codes (`QueueTimeout`, `ExecutionTimeout`, `TRANSPORT_AMBIGUOUS`).
 
 Durable text jobs (`executionModes` includes `job_async`) on eligible models also use **deferred processing**: Hydracept waits for the cheaper latency-tolerant provider tier and charges **50% of standard token rates**. Check `features.deferredProcessing` on the capability descriptor, or read [Deferred processing](../deferred-processing/). Synchronous invoke and stream stay on standard processing.
 
@@ -94,7 +94,7 @@ Audio capabilities (`audio.sfx.generate.v1`, `audio.voice.generate.v1`, `audio.m
 
 ## Available capabilities
 
-Discover the live catalog with `GET /v1/capabilities` or `python -m hydracept agent-context`. Launch scope is the launch gate, not a frozen README list.
+Discover the live catalog with `GET /v1/capabilities` or `python -m hydracept agent-context`. The live catalog is the source of truth, not a frozen list in this page.
 
 Use the published capability keys from that catalog in your integrations.
 

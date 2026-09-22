@@ -200,11 +200,11 @@ Hydracept stores them encrypted, validates them, and binds them to projects/envi
 
 Before connecting BYOK, run `python -m hydracept smoke` once to verify your setup. Then connect a provider for production jobs. The [5-minute game asset](../five-minute-game-asset/) tutorial walks through this end to end.
 
-## Managed trial and abuse
+## Managed trial and funding
 
-Authentication and Hydracept-funded inference are separate decisions. Successfully proving a developer identity may connect the workspace even when managed-trial policy reduces or denies free inference.
+Authentication and Hydracept-funded inference are separate decisions. Proving a developer identity may connect the workspace even when managed-trial allowance is reduced or exhausted.
 
-This keeps ordinary authentication fast while allowing Hydracept to address repeated trial abuse using server-side account, machine, usage, and velocity signals rather than making every legitimate developer repeat browser authentication.
+When managed first-use allowance is unavailable, the capability is still ready — connect BYOK or fund managed execution. See [Billing & plans](../billing/) and [Capabilities](../capabilities/).
 
 ## Verify
 

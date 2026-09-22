@@ -19,6 +19,11 @@ class HydraceptErrorCode(StrEnum):
     PROVIDER_UNAVAILABLE = "ProviderUnavailable"
     PROVIDER_REJECTED = "ProviderRejected"
     PROVIDER_TIMEOUT = "ProviderTimeout"
+    # A paid provider request may have been issued but its outcome could not be
+    # established (crash between request and response). Terminal for the attempt: the
+    # system must not blindly re-issue a paid call, so it fails closed for operator
+    # reconciliation instead of retrying.
+    PROVIDER_SUBMISSION_UNKNOWN = "ProviderSubmissionUnknown"
     EXECUTION_TIMEOUT = "ExecutionTimeout"
     QUEUE_TIMEOUT = "QueueTimeout"
     TRANSPORT_AMBIGUOUS = "TRANSPORT_AMBIGUOUS"
@@ -33,6 +38,12 @@ class HydraceptErrorCode(StrEnum):
     # The provider spent the whole output budget on reasoning and returned no
     # visible output. Terminal: retrying with the same budget reproduces it.
     REASONING_BUDGET_EXHAUSTED = "ReasoningBudgetExhausted"
+    # The provider returned visible output that was cut off at the output limit
+    # (finish_reason=length / incomplete_details.reason=max_output_tokens). The
+    # result is structurally incomplete, so it is classified as an output-limit
+    # outcome, not a JSON syntax error, and repair is skipped because a repair
+    # call under the same budget reproduces the truncation.
+    OUTPUT_LIMIT_REACHED = "OutputLimitReached"
     ESTIMATE_EXCEEDS_MAX_COST = "EstimateExceedsMaxCost"
     FUNDING_REQUIRED = "FundingRequired"
     PROJECT_CREDENTIAL_MISMATCH = "ProjectCredentialMismatch"

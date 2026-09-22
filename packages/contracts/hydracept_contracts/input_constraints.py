@@ -14,6 +14,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_serializer
 
 from hydracept_contracts.errors import HydraceptErrorCode
+from hydracept_contracts.token_estimate import approximate_token_count
 
 TTS_DEFAULT_CHARACTER_LIMIT = 10_000
 TTS_MODEL_CHARACTER_LIMITS: dict[str, int] = {
@@ -220,8 +221,25 @@ def enforce_input_constraints(
         maximum, overflow = constraint.resolve(resolved_model)
         if maximum is None:
             continue
+        if constraint.measurement == ConstraintMeasurement.TOKENS:
+            if overflow == OverflowPolicy.PRUNE and not constraint.semantic:
+                continue
+            for pointer, value in lookup_input_strings(input_data, field):
+                actual = approximate_token_count(value)
+                if actual > maximum:
+                    raise PromptTooLongError(
+                        field=pointer,
+                        actual=actual,
+                        maximum=maximum,
+                        capability_key=capability_key,
+                        provider=provider,
+                        measurement=constraint.measurement,
+                        overflow=overflow,
+                        model_id=resolved_model,
+                    )
+            continue
         if constraint.measurement != ConstraintMeasurement.CHARACTERS:
-            # Token-budget admission is not yet measured at the HTTP boundary.
+            # Other measurements are not enforced at the HTTP boundary yet.
             continue
         if overflow == OverflowPolicy.PRUNE and not constraint.semantic:
             continue

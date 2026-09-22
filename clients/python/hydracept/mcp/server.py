@@ -475,14 +475,15 @@ def estimate_capability(
     body: dict[str, Any] | None = None,
     capability: str = "",
     capabilityKey: str = "",
+    input: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """HTTP alias of hydracept_quote_capability. Same 0.3 retail quote (pricing.quote)."""
+    """HTTP alias of hydracept_quote_capability. Same 0.3 retail quote (pricing.quote). 'input' is an alias for 'body'."""
     key = resolve_capability_key(
         capability_key=capability_key,
         capability=capability,
         capabilityKey=capabilityKey,
     )
-    return hydracept_quote_capability(key, body)
+    return hydracept_quote_capability(key, body, input=input)
 
 
 def _capability_body(
@@ -667,6 +668,20 @@ def hydracept_run(
                     "On success use hydracept_download_artifact with output_path to "
                     "persist the artifact."
                 )
+        if str(payload.get("status") or "").lower() in {"succeeded", "partial"}:
+            # An ordinary successful run needs no human decision, so the App
+            # interaction/presentation envelope is noise: keep the leading contract
+            # (status, typedOutput/artifacts, pricing, jobId, receiptId, nextAction)
+            # and leave the sealed receipt and provenance to hydracept_get_receipt
+            # and hydracept_job_inspect.
+            receipt = payload.get("receipt")
+            if isinstance(receipt, dict):
+                payload.setdefault("receiptId", receipt.get("receiptId") or receipt.get("id"))
+            payload.setdefault(
+                "nextAction",
+                "download_artifacts" if payload.get("artifacts") else "stop",
+            )
+            return payload
         return _hydrate_result(payload, surface_for_job(payload.get("job") or payload))
 
     return _tool_call(_run)
@@ -735,14 +750,17 @@ def hydracept_submit_job(
     idempotency_key: str = "",
     capability: str = "",
     capabilityKey: str = "",
+    input: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Submit a capability job. Omit quoteId; the API seals pricing at admission. Eligible durable text jobs use deferred processing at 50% of standard token rates. Returns nextAction."""
+    """Submit a capability job. Omit quoteId; the API seals pricing at admission. Eligible durable text jobs use deferred processing at 50% of standard token rates. Returns nextAction. 'input' is an alias for 'body'."""
     key = resolve_capability_key(
         capability_key=capability_key,
         capability=capability,
         capabilityKey=capabilityKey,
     )
-    return _tool_call(lambda: _submit_job_payload(key, body, idempotency_key))
+    return _tool_call(
+        lambda: _submit_job_payload(key, _capability_body(body, input), idempotency_key)
+    )
 
 
 @apps.tool(resource_uri=APP_URI)

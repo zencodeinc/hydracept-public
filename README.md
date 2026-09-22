@@ -8,7 +8,7 @@ Discovery, quoting, durable jobs, artifacts, receipts, and recoverable project h
 
 ## 5-minute path
 
-For one asset: `python -m hydracept run image.generate.v1 --prompt "..." --json` (composes init). For a full walkthrough, see [5-minute game asset](./five-minute-game-asset/). One-off tasks are supported — see [Cold one-shot benchmark](./one-shot-capability-benchmark/).
+For one asset: `python -m hydracept run image.generate.v1 --prompt "..." --json` (composes init). For a full walkthrough, see [5-minute game asset](./five-minute-game-asset/). One-off tasks are supported — a single capability call does not require an integration commitment.
 
 ## Activate
 
@@ -168,6 +168,5 @@ See [Durable Jobs & Receipts](./jobs/) for filters, artifacts, inspection, and o
 - [Rate limits & quotas](./rate-limits/)
 - [Coding Agents](./agents/)
 - Plugin homepage: [https://hydracept.com/plugin](https://hydracept.com/plugin)
-- [Cold one-shot benchmark](./one-shot-capability-benchmark/)
 - [Capability requests](./capability-requests/)
 - Public OpenAPI: [https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)

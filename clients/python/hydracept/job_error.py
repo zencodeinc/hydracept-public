@@ -113,6 +113,11 @@ JOB_ERROR_TAXONOMY: dict[str, dict[str, Any]] = {
         "Automatic repair of the model's output failed. Adjust the prompt or output "
         "schema, then retry."
     ),
+    "OutputLimitReached": _resolved(
+        "The model's response was cut off at the output limit before it finished, so it "
+        "could not be validated. Retry with a new idempotencyKey; if it recurs, reduce the "
+        "requested output size or split the work."
+    ),
     "RetentionViolation": _resolved(
         "The request conflicts with the resource's retention policy. Adjust the request or "
         "the policy, then retry."
