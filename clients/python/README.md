@@ -1,5 +1,7 @@
 # hydracept
 
+mcp-name: com.hydracept/hydracept
+
 Python client for the Hydracept public API — an execution control plane for software and agents that need external capabilities.
 
 ```bash

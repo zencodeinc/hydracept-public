@@ -1,7 +1,7 @@
-README.md	7095
+README.md	4835
 architecture/hydracept-consumer-exceptions.yaml	172
 architecture/hydracept-integration-policy.yaml	4446
-clients/csharp/Hydracept.Client/Hydracept.Client.csproj	1328
+clients/csharp/Hydracept.Client/Hydracept.Client.csproj	1435
 clients/csharp/Hydracept.Client/HydraceptApiException.cs	710
 clients/csharp/Hydracept.Client/HydraceptClient.cs	18679
 clients/csharp/Hydracept.Client/HydraceptClientOptions.cs	630
@@ -14,7 +14,7 @@ clients/csharp/Hydracept.Client/IHydraceptClient.cs	6016
 clients/csharp/Hydracept.Client/README.md	843
 clients/openapi/public-openapi.json	356986
 clients/python/CHANGELOG.md	14432
-clients/python/README.md	2071
+clients/python/README.md	2106
 clients/python/hydracept/__init__.py	1845
 clients/python/hydracept/__main__.py	183
 clients/python/hydracept/artifact_naming.py	2974
@@ -155,7 +155,7 @@ clients/python/hydracept/run_result.py	7267
 clients/python/hydracept/stdio.py	1718
 clients/python/hydracept/workspace.py	2955
 clients/python/hydracept/workspace_bind.py	942
-clients/python/pyproject.toml	1078
+clients/python/pyproject.toml	1857
 clients/python/tests/conftest.py	287
 clients/python/tests/test_agent_pack.py	2094
 clients/python/tests/test_agent_status.py	2649
@@ -395,7 +395,7 @@ public/agents/source/skills/hydracept-inspect/SKILL.md	2588
 public/agents/source/skills/hydracept-setup/SKILL.md	3017
 public/agents/source/skills/hydracept-sheet/SKILL.md	1551
 public/agents/source/skills/hydracept-smoke/SKILL.md	1568
-public/docs/README.md	7095
+public/docs/README.md	7113
 public/docs/agent-plugin-distribution.md	2634
 public/docs/agents.md	10334
 public/docs/authentication.md	9936

@@ -9,7 +9,22 @@ description = "Python client and CLI for the Hydracept public API — execution 
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "Zencode" }]
+authors = [{ name = "Zencode Consulting Inc." }]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 keywords = [
   "hydracept",
   "mcp",
@@ -32,8 +47,10 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://hydracept.com"
-Documentation = "https://hydracept.com/docs"
+Documentation = "https://docs.hydracept.com"
 Repository = "https://github.com/zencodeinc/hydracept-public"
+Issues = "https://github.com/zencodeinc/hydracept-public/issues"
+Changelog = "https://github.com/zencodeinc/hydracept-public/blob/main/clients/python/CHANGELOG.md"
 
 [project.scripts]
 hydracept = "hydracept.cli.entrypoint:app"
