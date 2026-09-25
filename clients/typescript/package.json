@@ -1,7 +1,7 @@
 {
   "name": "@hydracept/sdk",
   "version": "0.3.5",
-  "description": "TypeScript client for the Hydracept public API — execution control plane for software and agents.",
+  "description": "TypeScript client for Hydracept — production-ready game assets, with a receipt for every run.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

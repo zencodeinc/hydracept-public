@@ -1,6 +1,21 @@
 # Changelog
 
-## 0.4.2 — unreleased
+## 0.4.4 — 2026-09-25 (unreleased)
+
+- PyPI README carries the Official MCP Registry ownership line (`mcp-name: com.hydracept/hydracept`, matching `hydracept-plugin` `mcp-registry/server.json`); package metadata adds classifiers and project URLs (docs, public source, issues, hosted MCP, registry manifest)
+- `connections adopt --from-env-file` resolves absolute paths outside the project root instead of looking up a bare filename under `--project-root`
+- `setup-grant create` prints the issued token when not using `--json`
+
+## 0.4.3 — 2026-09-22 (released)
+
+- Platform-owned structured output budget. Callers no longer need to compute `maxOutputTokens`: the runtime derives an explicit cap from the chosen model's limits and the context window, with a per-schema floor, and enforces the response schema on the transport where the provider supports it. A provider length stop is classified `OutputLimitReached` (terminal, not repaired), and per-attempt `finish_reason` plus provider diagnostics are retained
+- The public catalog no longer advertises a durable-job token budget
+- The deployed hosted MCP now accepts `input` as an alias for `body` on `hydracept_quote_capability`, `estimate_capability`, `hydracept_invoke`, `hydracept_run`, and `hydracept_submit_job`, matching the stdio client. Passing both is a typed `INVALID_ARGUMENT`, so a mis-shaped envelope can no longer be reported as a capability-schema error
+- stdio `estimate_capability` and `hydracept_submit_job` accept the same `input` alias (stdio `run`/`invoke`/`quote` had it in 0.4.2)
+- A terminal-successful stdio `hydracept_run` is slim: leading fields (`status`, `typedOutput`/`artifacts`, `pricing`, `jobId`, `receiptId`, `nextAction`) without the App `interaction`/`presentation` envelope. The sealed receipt and full provenance stay on `hydracept_get_receipt` / `hydracept_job_inspect`, and the App still attaches on non-terminal jobs, human gates, and `hydracept_ui_*`
+- `clients/python` version bumped to 0.4.3 so the release-identity gate can distinguish this release from the published 0.4.2
+
+## 0.4.2 — 2026-09-18 (released)
 
 - MCP `hydracept_run`, `hydracept_invoke`, and `hydracept_quote_capability` accept `input` as an alias for `body`. Passing both is a typed `INVALID_ARGUMENT`; neither is silently ignored
 - `{"input": {...}}` is accepted as the capability input by `run`/`quote`/MCP, and an unknown field (for example `query` for `domain.search.v1`) fails with `UNKNOWN_INPUT_FIELD` naming the allowed set instead of surfacing a misleading missing-required error
@@ -8,7 +23,7 @@
 - `run`/`quote`/`estimate` accept repeatable `--set key=value` for simple schema properties (for example `--set width=816 --set height=816`), so arbitrary capability inputs no longer require a JSON file
 - `hydracept_status` fails with a typed tool error through the shared call path instead of collapsing into an opaque SDK error
 - `version --json` mirrors `apiRevision`/`apiRevisionState`/`agentPack` at the top level and gains `--refresh` to fetch the live API revision from the same authority `doctor` uses, so full provenance no longer requires a second command
-- `clients/python` version bumped to 0.4.2 so the release-identity gate can distinguish this unreleased change from the published 0.4.1
+- `clients/python` version bumped to 0.4.2 so the release-identity gate can distinguish this release from the published 0.4.1
 
 ## 0.4.1 — 2026-09-18 (released)
 

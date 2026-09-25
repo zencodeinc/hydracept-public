@@ -2,7 +2,7 @@
 
 Use **`hydracept-agent-plugin`** to give coding agents access to Hydracept capabilities, job submission, and result records.
 
-The CLI (`python -m hydracept agents install --auto`) is the universal local install. Host plugins are also published from the public catalog at [github.com/zencodeinc/hydracept-agent-plugins](https://github.com/zencodeinc/hydracept-agent-plugins).
+The CLI (`python -m hydracept agents install --auto`) is the universal local install. The canonical Cursor plugin repo is [github.com/zencodeinc/hydracept-plugin](https://github.com/zencodeinc/hydracept-plugin) (v0.1.8).
 
 ## What agents can do
 
@@ -39,8 +39,8 @@ python -m hydracept agents install --auto
 |------|---------|
 | Plugin homepage | [https://hydracept.com/plugin](https://hydracept.com/plugin) |
 | CLI (all hosts) | `python -m hydracept agents install --auto` |
-| Cursor | Cursor Marketplace listing of `zencodeinc/hydracept-agent-plugins`, or enable `plugins/cursor` |
-| Claude Code | `/plugin marketplace add zencodeinc/hydracept-agent-plugins` then `/plugin install hydracept@hydracept` |
+| Cursor | Not in the Cursor Marketplace yet — install from `zencodeinc/hydracept-plugin` (tag v0.1.8) or `python -m hydracept agents install --auto` |
+| Claude Code | `github.com/zencodeinc/hydracept-plugin` (v0.1.8) or `python -m hydracept agents install --auto` |
 | MCP Registry | `com.hydracept/mcp` at `https://api.hydracept.com/mcp` |
 
 The marketplace name (`hydracept`) participates in the Claude install command.

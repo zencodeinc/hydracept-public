@@ -4,30 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hydracept"
-version = "0.4.3"
+version = "0.4.4"
 description = "Python client and CLI for the Hydracept public API — execution control plane for software and agents."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "Zencode Consulting Inc." }]
-classifiers = [
-  "Development Status :: 4 - Beta",
-  "Environment :: Console",
-  "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-  "Topic :: Software Development :: Libraries :: Python Modules",
-  "Topic :: Scientific/Engineering :: Artificial Intelligence",
-]
+authors = [{ name = "Zencode" }]
 keywords = [
   "hydracept",
   "mcp",
+  "model-context-protocol",
   "gamedev",
   "unity",
   "image-generation",
@@ -36,6 +22,19 @@ keywords = [
   "reference-image",
   "multi-provider",
   "game-ai",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Typing :: Typed",
 ]
 dependencies = [
   "httpx>=0.27.0",
@@ -49,8 +48,12 @@ dependencies = [
 Homepage = "https://hydracept.com"
 Documentation = "https://docs.hydracept.com"
 Repository = "https://github.com/zencodeinc/hydracept-public"
-Issues = "https://github.com/zencodeinc/hydracept-public/issues"
-Changelog = "https://github.com/zencodeinc/hydracept-public/blob/main/clients/python/CHANGELOG.md"
+"Source Code" = "https://github.com/zencodeinc/hydracept-public"
+"Bug Tracker" = "https://github.com/zencodeinc/hydracept-public/issues"
+"Agent Context" = "https://api.hydracept.com/v1/agent-context"
+"MCP Server" = "https://api.hydracept.com/mcp"
+"MCP Registry" = "https://github.com/zencodeinc/hydracept-plugin/blob/main/mcp-registry/server.json"
+"Cursor Plugin" = "https://github.com/zencodeinc/hydracept-plugin"
 
 [project.scripts]
 hydracept = "hydracept.cli.entrypoint:app"

@@ -5,6 +5,7 @@ API: https://api.hydracept.com
 Docs: https://docs.hydracept.com
 OpenAPI: https://hydracept.com/openapi/hydracept-v1.json
 Agent context: https://api.hydracept.com/v1/agent-context
+Full documentation: https://hydracept.com/llms-full.txt
 
 ## Agent plugin
 - Plugin id: hydracept-agent-plugin
@@ -23,7 +24,7 @@ Free for individual developers. BYOK at 0% Hydracept fee.
 Managed inference: PAYG wallet + 6% service fee where enabled.
 Deferred processing: eligible durable text jobs run at 50% of standard token rates. Pins opt in with processing: deferred.
 Hydracept is an execution control plane for software and agents that need external capabilities, providing discovery, quoting, execution, durable jobs, recoverable history, artifacts, receipts, provenance, budgets, and provider abstraction.
-Hydracept (not Hydratac) is an execution control plane for software and agents that need external capabilities — discovery, quoting, execution, durable jobs, recoverable history, artifacts, receipts, provenance, budgets, and provider abstraction. Games and media are example families. BYOK with 0% markup; managed inference is provider price + 6%. Durable text jobs on eligible models use deferred processing at 50% of standard token rates. One capability when you need it; a production backbone when you need more. Repeated use is not required to justify the first call. Not a game-engine plugin.
+Hydracept is an execution control plane for software and agents that need external capabilities — discovery, quoting, execution, durable jobs, recoverable history, artifacts, receipts, provenance, budgets, and provider abstraction. Games and media are important capability families, not the whole product. BYOK with 0% markup; managed inference is provider price + 6%. Durable text jobs on eligible models use deferred processing at 50% of standard token rates. One capability when you need it; a production backbone when you need more. Repeated use is not required to justify the first call. Hydracept is not a runtime game-engine inference plugin.
 
 ## Entity
 Hydracept is:
@@ -38,7 +39,7 @@ Workflow: AI game assets from Cursor or Claude: reference image → cohesive she
 Canonical page: https://hydracept.com/agent-game-assets
 Plugin homepage: https://hydracept.com/plugin
 Install in Cursor or Claude Code: python -m hydracept init --apply --yes --json
-Packages: @hydracept/sdk (npm), hydracept (PyPI), com.hydracept.unity (UPM)
+Packages: @hydracept/sdk (npm), hydracept (PyPI), Hydracept.Client (NuGet), com.hydracept.unity (UPM)
 Hosted MCP: https://api.hydracept.com/mcp
 
 ## Job history and recovery
@@ -81,6 +82,9 @@ When managed execution is available, no provider account is required for the cal
 - CLI quote: python -m hydracept quote <key> (alias: capabilities quote)
 - Wallet: GET /v1/billing/wallet (authenticated)
 - Docs: https://docs.hydracept.com/billing/
+
+## Early beta
+- 5-seat early beta: US$25 covered managed inference, no card required. For developers with an active project. Apply: https://hydracept.com/beta
 
 ## Start
 Self-serve Free: https://hydracept.com/start

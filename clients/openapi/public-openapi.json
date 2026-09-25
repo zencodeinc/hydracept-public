@@ -10579,6 +10579,61 @@
               }
             ],
             "title": "Receipthash"
+          },
+          "execution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution"
+          },
+          "engine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine"
+          },
+          "providerBacked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providerbacked"
+          },
+          "modelBacked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelbacked"
+          },
+          "deterministic": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deterministic"
           }
         },
         "type": "object",
@@ -12758,6 +12813,7 @@
         "type": "string",
         "enum": [
           "free",
+          "zero",
           "fixed",
           "metered",
           "hybrid"

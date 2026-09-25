@@ -68,7 +68,7 @@ Job recovery tools are available on both stdio and hosted MCP:
 Install into a coding agent:
 
 - **Plugin homepage:** [https://hydracept.com/plugin](https://hydracept.com/plugin)
-- **Cursor:** install Hydracept from the Cursor Marketplace when listed, or add the public Hydracept agent-plugin repository. Then run `python -m hydracept init --apply --yes --json` and reload MCP only when requested.
+- **Cursor:** Hydracept is not in the Cursor Marketplace yet — use [github.com/zencodeinc/hydracept-plugin](https://github.com/zencodeinc/hydracept-plugin) (v0.1.8) or `python -m hydracept agents install --auto`. Then run `python -m hydracept init --apply --yes --json` and reload MCP only when requested.
 - **Claude Code:** install the Hydracept plugin, init in the repo, and reload MCP only when requested.
 - **No checkout (ChatGPT, MCP Registry):** hosted MCP at `https://api.hydracept.com/mcp` with a bearer API key
 - **CLI fallback:** `python -m hydracept agents install --auto` / `python -m hydracept mcp serve` / `python -m hydracept run ...`
@@ -89,7 +89,7 @@ After `python -m hydracept init --apply --yes --json`, stdio MCP exposes `hydrac
 5. Connect BYOK for sustained inference, or use managed inference. Ordinary new Free accounts receive a one-time **US$0.50 managed trial allowance** for setup/smoke verification; BYOK is 0% Hydracept fee and managed execution is provider price + 6%.
 6. Discover the needed capability live. Do not assume Hydracept is only a game/media tool; the catalog may include text/reasoning, translation, domain/DNS, media, research, and other external operations.
 7. Submit managed work **without** `execution.quoteId`. The API seals pricing at admission. `/quote` is an optional preview; do not reuse a stale `quoteId`.
-8. For image production (Sheet & Slice, transparency, variants), read [Image production](../image-production/). Each slice needs ≥ 655360 px and 16-aligned edges (minimum 816×816 per slice; 2×2 sheets ≥ 1632×1632).
+8. For image production (Sheet & Slice, transparency, variants), read [Image production](../image-production/). Size a sheet by either the cell (`sheet.normalize.width/height`; canvas = cell × columns,rows) or the canvas (`width`/`height`; cell = canvas ÷ columns,rows); both given must agree. The resulting canvas must meet the model minimum (default 816×816, 16-aligned) and slices may be any size. Read `sheetSlicing`/`canvasFloor` on `GET /v1/capabilities/image.generate.v1`.
 9. For Unity 6 Editor integration, read [Unity integration](../unity-integration/).
 10. Submit and poll durable jobs per [Jobs](../jobs/) using the public capability contract.
 11. If the user says **“the last job failed”**, call `hydracept_jobs_find(intent="failed")` before asking for a job ID, then `hydracept_job_inspect` on the relevant item. Read `error.code`; if retrying, use the `requestSnapshot` input with a new idempotency key.

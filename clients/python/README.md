@@ -1,8 +1,10 @@
 # hydracept
 
-mcp-name: com.hydracept/hydracept
+<!-- mcp-name: com.hydracept/hydracept -->
 
 Python client for the Hydracept public API — an execution control plane for software and agents that need external capabilities.
+
+Official MCP Registry `name` matches [hydracept-plugin `mcp-registry/server.json`](https://github.com/zencodeinc/hydracept-plugin/blob/main/mcp-registry/server.json) (`com.hydracept/hydracept`, domain-verified on hydracept.com). Cursor plugin distribution: [github.com/zencodeinc/hydracept-plugin](https://github.com/zencodeinc/hydracept-plugin) (v0.1.8).
 
 ```bash
 pip install hydracept

@@ -1,102 +1,172 @@
-# Hydracept
+# Quick Start
 
-Hydracept is an execution control plane for software and AI agents that need external capabilities—text, reasoning, image, audio, video, 3D, domains, and compute—through one API with discovery, quotes, durable jobs, artifacts, receipts, budgets, and BYOK. Games and media are common examples; a headline workflow is AI game assets from Cursor or Claude Code into Unity ([workflow overview](https://hydracept.com/agent-game-assets)).
+<!-- docs:marker:quick-start -->
 
-**Pricing (summary):** Free for individual developers; BYOK at 0% Hydracept fee; managed inference is provider price + 6% service fee where enabled; eligible durable text jobs can use deferred processing at 50% of standard token rates. Details: [hydracept.com/pricing](https://hydracept.com/pricing) and [Billing docs](https://docs.hydracept.com/billing/).
+Hydracept is an execution control plane for software and agents that need external capabilities. Games and media are important examples.
 
-## Install
+Discovery, quoting, durable jobs, artifacts, receipts, and recoverable project history. BYOK is free; managed inference adds a 6% service fee. Eligible durable text jobs use deferred processing at 50% of standard token rates.
 
-| Surface | Command |
-|--------|---------|
-| Python CLI & SDK | `pip install -U hydracept` |
-| TypeScript | `npm install @hydracept/sdk` |
-| .NET | `dotnet add package Hydracept.Client` |
-| Unity (UPM) | `com.hydracept.unity` — see [Unity integration](https://docs.hydracept.com/unity-integration/) |
+## 5-minute path
 
-Public HTTP API: `https://api.hydracept.com` · OpenAPI: [hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json) · Agent context: `GET https://api.hydracept.com/v1/agent-context`
+For one asset: `python -m hydracept run image.generate.v1 --prompt "..." --json` (composes init). For a full walkthrough, see [5-minute game asset](./five-minute-game-asset/). One-off tasks are supported — a single capability call does not require an integration commitment.
 
-## Bootstrap
+## Activate
+
+Pick one:
+
+1. **CLI bootstrap (recommended):** `pip install -U hydracept` then `python -m hydracept init --apply --yes --json`. Init infers the current git/workspace project when you are already signed in. Browser project selection is only required when that inference is ambiguous.
+2. **Studio (browser):** [app.hydracept.com/login](https://app.hydracept.com/login) — sign in with GitHub or Google, complete onboarding, then generate in Studio. Manage plans at [Studio Billing](https://app.hydracept.com/studio/billing).
+3. **Agents / headless:** `python -m hydracept init --apply --yes --json` (or use an existing key out of band with `HYDRACEPT_API_KEY`).
+
+For coding agents, `interaction_required` is a hard human boundary. If `presentation.agentAction` is `present_and_yield` and stdio MCP exposes `hydracept_interaction_surface`, invoke that surface once with the supplied context and stop the turn. Otherwise present `action.url` verbatim. In either case, stop until the human completes activation; only then run `afterCompletion.command` / `--wait`.
+
+See [Authentication](./authentication/) for workspace files (`.hydracept/project.json`, secrets, lazy BYOK) and CI mode (`init --apply --yes --json --ci`).
+
+Public API: `https://api.hydracept.com`  
+Configuration directory (CLI): `.hydracept/`  
+Environment variables: `HYDRACEPT_API_URL`, `HYDRACEPT_API_KEY`, `HYDRACEPT_PROJECT`, `HYDRACEPT_ENVIRONMENT`
+
+**BYOK:** Your Hydracept API key authenticates your application, while your provider key pays for inference. Run `python -m hydracept smoke` (trial budget or BYOK — a real image job) before connecting BYOK — see [Connections / BYOK](./connections/) and [Billing & plans](./billing/).
+
+<!-- docs:if packages.cli.releasePublished -->
+## CLI
 
 ```bash
 pip install -U hydracept
-python -m hydracept init --apply --yes --json
+
+# Prefer the module form if `hydracept` is not on PATH (common on Windows):
+python -m hydracept init                              # human — opens connect URL when needed
+python -m hydracept init --apply --yes --json         # agents
+python -m hydracept init --apply --yes --json --ci    # CI (setup grants)
 python -m hydracept doctor
+python -m hydracept smoke
+python -m hydracept verify
+python -m hydracept agent-context
 ```
 
-Studio (browser): [app.hydracept.com/login](https://app.hydracept.com/login). For CI or headless use, set `HYDRACEPT_API_KEY` and run the same init command with `--ci` when you need setup grants. Workspace files live under `.hydracept/` — see [Authentication](https://docs.hydracept.com/authentication/).
+`configure` and `quickstart` are deprecated aliases for `init`. Device login (`python -m hydracept login`) still works for advanced flows.
+<!-- docs:endif -->
 
-## Minimal example
+## SDKs
 
-One-shot image generation (composes init when the workspace can be bootstrapped):
+The Python SDK and CLI are available now:
 
 ```bash
-python -m hydracept run image.generate.v1 --prompt "transparent 1024x1024 blue slime icon" --json
+pip install -U hydracept
+python -m hydracept --help
 ```
 
-Python SDK (after init binds the workspace):
+The TypeScript SDK is also available:
 
-```python
-from hydracept.client import HydraceptClient
+```bash
+npm install @hydracept/sdk
+```
 
-client = HydraceptClient.from_workspace()
-job = client.submit_capability_job(
-    "image.generate.v1",
-    {
-        "input": {"prompt": "cute slime icon, flat game art"},
-        "execution": {"executionPreference": "automatic"},
-        "idempotencyKey": "demo-1",
+<!-- docs:if packages.csharp.registryPublished -->
+## .NET SDK
+
+<!-- docs:if packages.csharp.registryPublished -->
+```bash
+dotnet add package Hydracept.Client
+```
+<!-- docs:endif -->
+<!-- docs:endif -->
+
+<!-- docs:if !packages.typescript.registryPublished&!packages.python.registryPublished&!packages.csharp.registryPublished -->
+## HTTP-first integration
+
+Registry packages are still rolling out. Until yours is available, use the public HTTP API and [OpenAPI](https://hydracept.com/openapi/hydracept-v1.json). The curl flow below is the supported clean-room path.
+<!-- docs:endif -->
+
+## Discover capabilities
+
+```bash
+curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  https://api.hydracept.com/v1/capabilities
+```
+
+The live catalog is `GET /v1/capabilities` (or `python -m hydracept agent-context`). Do not freeze a launch-key list from this README.
+
+See [Capabilities](./capabilities/) for how capability keys work.
+
+For image production (Sheet & Slice, transparent output, variants), see [Image production](./image-production/).
+
+For Unity 6 Editor integration (generate, sheet slice, import with provenance), see [Unity integration](./unity-integration/).
+
+## Submit a durable job
+
+```bash
+JOB_JSON=$(curl -sS -X POST \
+  -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "context": {
+      "productId": "my-product",
+      "projectId": "cpr_...",
+      "environment": "development"
     },
-)
-finished = client.wait_for_job(job["jobId"])
-receipt = client.get_job_receipt(job["jobId"])
+    "input": { "prompt": "cute slime icon" },
+    "execution": { "executionPreference": "automatic" },
+    "idempotencyKey": "demo-1"
+  }' \
+  https://api.hydracept.com/v1/capabilities/image.generate.v1/jobs)
+
+echo "$JOB_JSON"
+JOB_ID=$(printf '%s' "$JOB_JSON" | python -c "import sys,json; print(json.load(sys.stdin)['jobId'])")
 ```
 
-Discover capabilities live (do not hard-code keys from this README):
+The submit response is a `HydraceptJob` object. Use `jobId` from that payload for poll and receipt calls.
+
+## Poll the job
 
 ```bash
-python -m hydracept capabilities find "generate an image"
-curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" https://api.hydracept.com/v1/capabilities
+curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  https://api.hydracept.com/v1/jobs/$JOB_ID
 ```
 
-More examples: [public/examples/](https://github.com/zencodeinc/hydracept-public/tree/main/public/examples).
+Poll until status is `succeeded`, `failed`, or `canceled`.
 
-## MCP (Cursor & Claude Code)
-
-In a project checkout, stdio MCP is the default after init:
+## Fetch the receipt
 
 ```bash
-python -m hydracept init --apply --yes --json   # binds MCP to workspace secrets; reload MCP if prompted
-python -m hydracept mcp serve                   # stdio server
-python -m hydracept agents install --auto       # Cursor / Claude Code plugin + hooks
+curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  https://api.hydracept.com/v1/jobs/$JOB_ID/receipt
 ```
 
-- **Plugin & install links:** [hydracept.com/plugin](https://hydracept.com/plugin)
-- **Hosted MCP (no repo checkout):** `https://api.hydracept.com/mcp` with bearer `HYDRACEPT_API_KEY`
-- **MCP Registry name:** `com.hydracept/hydracept`
+## Find and inspect later
 
-Do not paste workspace API keys into IDE plugin config when stdio bind is available. Full agent guide: [Coding Agents](https://docs.hydracept.com/agents/).
+If an agent no longer has the ID—or a user simply says “the last job failed”—query project history instead of asking the human to find it:
 
-## Documentation
+```bash
+curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  "https://api.hydracept.com/v1/projects/cpr_.../jobs?outcome=failed&limit=10"
+```
 
-| Topic | Link |
-|-------|------|
-| Docs home | [docs.hydracept.com](https://docs.hydracept.com/) |
-| Quick start (detailed) | [Quick Start](https://docs.hydracept.com/) |
-| Capabilities & jobs | [Capabilities](https://docs.hydracept.com/capabilities/), [Jobs & receipts](https://docs.hydracept.com/jobs/) |
-| Image production | [Image production](https://docs.hydracept.com/image-production/) |
-| Unity | [Unity integration](https://docs.hydracept.com/unity-integration/) |
-| BYOK & billing | [Connections / BYOK](https://docs.hydracept.com/connections/), [Billing](https://docs.hydracept.com/billing/) |
-| LLM-oriented summary | [hydracept.com/llms.txt](https://hydracept.com/llms.txt) |
-| Product manifest | [/.well-known/hydracept.json](https://hydracept.com/.well-known/hydracept.json) |
+The list is prompt-free. Once the relevant job is identified, intentionally inspect only that job with `GET /v1/jobs/{jobId}`. MCP provides the shorter agent loop:
 
-## Repository layout
+```text
+hydracept_jobs_find(intent="failed")
+→ hydracept_job_inspect(job_id)
+```
 
-- `clients/python` — PyPI package `hydracept` (CLI, SDK, local MCP)
-- `clients/typescript` — npm `@hydracept/sdk`
-- `clients/csharp` — NuGet `Hydracept.Client`
-- `packages/unity` — Unity Editor package
-- `public/docs` — source for [docs.hydracept.com](https://docs.hydracept.com/) (Quick Start content; this root README is the GitHub front door)
+For prior successful outputs use `intent="reusable"`; Hydracept highlights an explicitly selected artifact when one exists. A retry always uses a new idempotency key.
 
-## License
+See [Durable Jobs & Receipts](./jobs/) for filters, artifacts, inspection, and outputs.
 
-MIT — see [LICENSE](./LICENSE). Package metadata on PyPI, npm, and NuGet also lists MIT.
+## Next
+
+- [5-minute game asset](./five-minute-game-asset/)
+- [Authentication & Activation](./authentication/)
+- [Durable Jobs & Receipts](./jobs/)
+- [Pinned Execution](./pinned-execution/)
+- [Execution provenance](./provenance/)
+- [Research Inference Protocol](./research/)
+- [Billing & plans](./billing/)
+- [Deferred processing](./deferred-processing/)
+- [Connections / BYOK](./connections/)
+- [Errors](./errors/)
+- [Rate limits & quotas](./rate-limits/)
+- [Coding Agents](./agents/)
+- Plugin homepage: [https://hydracept.com/plugin](https://hydracept.com/plugin)
+- [Capability requests](./capability-requests/)
+- Public OpenAPI: [https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)

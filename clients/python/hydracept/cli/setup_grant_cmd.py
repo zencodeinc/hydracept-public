@@ -60,4 +60,7 @@ def setup_grant_create(
         return
     out.print("[green]Setup grant issued[/green]")
     out.print("Export [bold]HYDRACEPT_SETUP_GRANT[/bold] from the token below for CI.")
+    token = str(payload.get("setupGrant") or "").strip()
+    if token:
+        out.print(token)
     out.print("Use [bold]--json[/bold] to print the grant in machine-readable form.")

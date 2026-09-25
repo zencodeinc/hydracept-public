@@ -494,6 +494,14 @@ class HydraceptReceiptProvenance(BaseModel):
     bundle_hash: str | None = Field(default=None, alias="bundleHash")
     policy_hash: str | None = Field(default=None, alias="policyHash")
     receipt_hash: str | None = Field(default=None, alias="receiptHash")
+    # Execution-backend provenance. Present for provider-free local execution so
+    # a receipt can state, without inferring from the route, that nothing was
+    # model-backed or provider-backed and that the result is deterministic.
+    execution: str | None = None
+    engine: str | None = None
+    provider_backed: bool | None = Field(default=None, alias="providerBacked")
+    model_backed: bool | None = Field(default=None, alias="modelBacked")
+    deterministic: bool | None = None
 
     model_config = {"populate_by_name": True}
 

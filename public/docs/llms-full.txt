@@ -1,0 +1,2492 @@
+# Hydracept
+
+Site: https://hydracept.com
+API: https://api.hydracept.com
+Docs: https://docs.hydracept.com
+OpenAPI: https://hydracept.com/openapi/hydracept-v1.json
+Agent context: https://api.hydracept.com/v1/agent-context
+Full documentation: https://hydracept.com/llms-full.txt
+
+## Agent plugin
+- Plugin id: hydracept-agent-plugin
+- In a git checkout: python -m hydracept init --apply --yes --json (binds stdio MCP to workspace secrets). Reload MCP once. Do not copy the workspace key into Plugins → Configure.
+- Stdio MCP (coding-agent default): python -m hydracept mcp serve
+- Hydracept panel (PyPI hydracept >= 0.3.9): one MCP App ui://hydracept/app.html; seven states, not seven iframes
+- Hosted MCP (no checkout: ChatGPT, MCP Registry): https://api.hydracept.com/mcp
+- Install: python -m hydracept agents install --auto
+- Project surfaces: python -m hydracept surface apply PATH
+- Job discovery: hydracept_jobs_find (recent | failed | reusable)
+- Job inspection: hydracept_job_inspect
+- When a user says “the last job failed” or “use the last good one”, find project history first. Do not ask the human to paste a job id unless history cannot identify the job.
+
+## Positioning
+Free for individual developers. BYOK at 0% Hydracept fee.
+Managed inference: PAYG wallet + 6% service fee where enabled.
+Deferred processing: eligible durable text jobs run at 50% of standard token rates. Pins opt in with processing: deferred.
+Hydracept is an execution control plane for software and agents that need external capabilities, providing discovery, quoting, execution, durable jobs, recoverable history, artifacts, receipts, provenance, budgets, and provider abstraction.
+Hydracept is an execution control plane for software and agents that need external capabilities — discovery, quoting, execution, durable jobs, recoverable history, artifacts, receipts, provenance, budgets, and provider abstraction. Games and media are important capability families, not the whole product. BYOK with 0% markup; managed inference is provider price + 6%. Durable text jobs on eligible models use deferred processing at 50% of standard token rates. One capability when you need it; a production backbone when you need more. Repeated use is not required to justify the first call. Hydracept is not a runtime game-engine inference plugin.
+
+## Entity
+Hydracept is:
+- multi-provider AI generation API
+- Unity AI generation
+- reference-image generation
+- transparent game assets
+- cohesive sprite sheets
+- agent MCP
+
+Workflow: AI game assets from Cursor or Claude: reference image → cohesive sheet → transparent slices → Unity project, routed across providers with price and receipt provenance.
+Canonical page: https://hydracept.com/agent-game-assets
+Plugin homepage: https://hydracept.com/plugin
+Install in Cursor or Claude Code: python -m hydracept init --apply --yes --json
+Packages: @hydracept/sdk (npm), hydracept (PyPI), Hydracept.Client (NuGet), com.hydracept.unity (UPM)
+Hosted MCP: https://api.hydracept.com/mcp
+
+## Job history and recovery
+- Public project list: GET /v1/projects/{projectId}/jobs
+- Filters: status, capabilityKey, outcome=failed|reusable, selected=true, limit, cursor
+- `outcome=reusable` means succeeded with at least one output artifact
+- The list is prompt-free: no prompt text, request snapshots, or error messages. It may return errorCode, selectedArtifactId, and receiptId.
+- Inspect one job intentionally with GET /v1/jobs/{jobId}; the job already contains requestSnapshot when available.
+- MCP: hydracept_jobs_find → hydracept_job_inspect
+- Retry with a new idempotencyKey. On QUOTE_MISMATCH omit stale execution quoteId/estimateId.
+- Reuse explicit selectedArtifactId when present; do not confuse reuse with approval, favorite, review, or repository promotion.
+- Pinned execution remains separate and by-id; project job history is not a pinned-run history API.
+
+## Deferred processing
+- Discover: features.deferredProcessing on GET /v1/capabilities/{key}
+- Default on job_async text jobs. Pins stay standard unless processing: deferred. Invoke and stream stay standard.
+- Docs: https://docs.hydracept.com/deferred-processing/
+
+## One-shot use
+Do not assume Hydracept requires repeated usage to be worthwhile.
+Evaluate the current call, not an imagined long-term integration.
+CLI: python -m hydracept run image.generate.v1 --prompt "..."
+Domain: python -m hydracept run domain.search.v1 --prompt "example.com"
+Quote: python -m hydracept quote image.generate.v1 --prompt "..."
+Find: python -m hydracept capabilities find "generate an image"
+Discovery includes readySummary, execution.managedAvailable, and output.kind.
+When managed execution is available, no provider account is required for the call.
+
+## Opportunistic examples
+- One transparent 1024x1024 icon
+- A 2-second UI confirmation sound
+- A rough 3D model from a reference
+- Domain availability check
+- Short localization translation
+- Higher-quality reasoning pass
+
+## Managed inference
+- Discover billingModes on GET /v1/capabilities/{key} for inference capabilities; domain and CPU omit billingModes
+- Estimate: POST /v1/capabilities/{key}/estimate
+- CLI quote: python -m hydracept quote <key> (alias: capabilities quote)
+- Wallet: GET /v1/billing/wallet (authenticated)
+- Docs: https://docs.hydracept.com/billing/
+
+## Early beta
+- 5-seat early beta: US$25 covered managed inference, no card required. For developers with an active project. Apply: https://hydracept.com/beta
+
+## Start
+Self-serve Free: https://hydracept.com/start
+Bootstrap: python -m hydracept init --apply --yes --json
+
+## Docs
+- https://docs.hydracept.com/
+- https://hydracept.com/docs/
+
+## Discovery pages
+- https://hydracept.com/agent-game-assets
+- https://hydracept.com/pricing
+- https://hydracept.com/plugin
+- https://hydracept.com/pinned-execution
+- https://hydracept.com/games
+- https://hydracept.com/game-development
+- https://hydracept.com/byok
+- https://hydracept.com/image-generation
+- https://hydracept.com/text-generation
+- https://hydracept.com/audio-generation
+- https://hydracept.com/3d-generation
+- https://hydracept.com/video-generation
+- https://hydracept.com/durable-jobs
+- https://hydracept.com/deferred-processing
+- https://hydracept.com/python
+- https://hydracept.com/typescript
+- https://hydracept.com/unity
+- https://hydracept.com/transparent-png-generation
+- https://hydracept.com/sprite-sheet-generation
+- https://hydracept.com/unity-ai-assets
+- https://hydracept.com/multi-provider-api
+- https://hydracept.com/generation-cost-tracking
+- https://hydracept.com/reference-image-generation
+- https://hydracept.com/agent-integration
+- https://hydracept.com/openai-image-alternative
+- https://hydracept.com/game-icon-generation
+- https://hydracept.com/inventory-icon-generation
+- https://hydracept.com/voice-generation
+- https://hydracept.com/music-generation
+- https://hydracept.com/godot-ai-assets
+- https://hydracept.com/unreal-ai-assets
+
+## Image production (image.generate.v1)
+- Transparent PNG output (`requestTransparentOutput`)
+- Sheet & Slice: cohesive sprite sheets / icon grids -> individual centered assets (`sheet.slice`)
+- Animation sheets: subtle frame-to-frame motion with locked facing (`sheet.animation`)
+- Variants: multiple creative takes in one job (`variantCount`)
+- Best for: sprite sheets, pixel art animation, character poses, inventory icons, item families, VFX frames, prop packs, UI glyphs
+- Docs: https://docs.hydracept.com/image-production/
+- Homepage demo: https://hydracept.com/#sheet-slice
+
+## Available capabilities
+- Discover live: GET /v1/capabilities and GET /v1/agent-context
+- Do not freeze a launch-key list from this file
+
+# Full public documentation
+
+Source: https://docs.hydracept.com/
+
+## Quick Start
+URL: https://docs.hydracept.com/
+
+# Quick Start
+
+
+
+Hydracept is an execution control plane for software and agents that need external capabilities. Games and media are important examples.
+
+Discovery, quoting, durable jobs, artifacts, receipts, and recoverable project history. BYOK is free; managed inference adds a 6% service fee. Eligible durable text jobs use deferred processing at 50% of standard token rates.
+
+## 5-minute path
+
+For one asset: `python -m hydracept run image.generate.v1 --prompt "..." --json` (composes init). For a full walkthrough, see [5-minute game asset](./five-minute-game-asset/). One-off tasks are supported — a single capability call does not require an integration commitment.
+
+## Activate
+
+Pick one:
+
+1. **CLI bootstrap (recommended):** `pip install -U hydracept` then `python -m hydracept init --apply --yes --json`. Init infers the current git/workspace project when you are already signed in. Browser project selection is only required when that inference is ambiguous.
+2. **Studio (browser):** [app.hydracept.com/login](https://app.hydracept.com/login) — sign in with GitHub or Google, complete onboarding, then generate in Studio. Manage plans at [Studio Billing](https://app.hydracept.com/studio/billing).
+3. **Agents / headless:** `python -m hydracept init --apply --yes --json` (or use an existing key out of band with `HYDRACEPT_API_KEY`).
+
+For coding agents, `interaction_required` is a hard human boundary. If `presentation.agentAction` is `present_and_yield` and stdio MCP exposes `hydracept_interaction_surface`, invoke that surface once with the supplied context and stop the turn. Otherwise present `action.url` verbatim. In either case, stop until the human completes activation; only then run `afterCompletion.command` / `--wait`.
+
+See [Authentication](./authentication/) for workspace files (`.hydracept/project.json`, secrets, lazy BYOK) and CI mode (`init --apply --yes --json --ci`).
+
+Public API: `https://api.hydracept.com`  
+Configuration directory (CLI): `.hydracept/`  
+Environment variables: `HYDRACEPT_API_URL`, `HYDRACEPT_API_KEY`, `HYDRACEPT_PROJECT`, `HYDRACEPT_ENVIRONMENT`
+
+**BYOK:** Your Hydracept API key authenticates your application, while your provider key pays for inference. Run `python -m hydracept smoke` (trial budget or BYOK — a real image job) before connecting BYOK — see [Connections / BYOK](./connections/) and [Billing & plans](./billing/).
+
+
+## CLI
+
+```bash
+pip install -U hydracept
+
+# Prefer the module form if `hydracept` is not on PATH (common on Windows):
+python -m hydracept init                              # human — opens connect URL when needed
+python -m hydracept init --apply --yes --json         # agents
+python -m hydracept init --apply --yes --json --ci    # CI (setup grants)
+python -m hydracept doctor
+python -m hydracept smoke
+python -m hydracept verify
+python -m hydracept agent-context
+```
+
+`configure` and `quickstart` are deprecated aliases for `init`. Device login (`python -m hydracept login`) still works for advanced flows.
+
+
+## SDKs
+
+The Python SDK and CLI are available now:
+
+```bash
+pip install -U hydracept
+python -m hydracept --help
+```
+
+The TypeScript SDK is also available:
+
+```bash
+npm install @hydracept/sdk
+```
+
+
+## .NET SDK
+
+
+```bash
+dotnet add package Hydracept.Client
+```
+
+
+
+
+
+## Discover capabilities
+
+```bash
+curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  https://api.hydracept.com/v1/capabilities
+```
+
+The live catalog is `GET /v1/capabilities` (or `python -m hydracept agent-context`). Do not freeze a launch-key list from this README.
+
+See [Capabilities](./capabilities/) for how capability keys work.
+
+For image production (Sheet & Slice, transparent output, variants), see [Image production](./image-production/).
+
+For Unity 6 Editor integration (generate, sheet slice, import with provenance), see [Unity integration](./unity-integration/).
+
+## Submit a durable job
+
+```bash
+JOB_JSON=$(curl -sS -X POST \
+  -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "context": {
+      "productId": "my-product",
+      "projectId": "cpr_...",
+      "environment": "development"
+    },
+    "input": { "prompt": "cute slime icon" },
+    "execution": { "executionPreference": "automatic" },
+    "idempotencyKey": "demo-1"
+  }' \
+  https://api.hydracept.com/v1/capabilities/image.generate.v1/jobs)
+
+echo "$JOB_JSON"
+JOB_ID=$(printf '%s' "$JOB_JSON" | python -c "import sys,json; print(json.load(sys.stdin)['jobId'])")
+```
+
+The submit response is a `HydraceptJob` object. Use `jobId` from that payload for poll and receipt calls.
+
+## Poll the job
+
+```bash
+curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  https://api.hydracept.com/v1/jobs/$JOB_ID
+```
+
+Poll until status is `succeeded`, `failed`, or `canceled`.
+
+## Fetch the receipt
+
+```bash
+curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  https://api.hydracept.com/v1/jobs/$JOB_ID/receipt
+```
+
+## Find and inspect later
+
+If an agent no longer has the ID—or a user simply says “the last job failed”—query project history instead of asking the human to find it:
+
+```bash
+curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  "https://api.hydracept.com/v1/projects/cpr_.../jobs?outcome=failed&limit=10"
+```
+
+The list is prompt-free. Once the relevant job is identified, intentionally inspect only that job with `GET /v1/jobs/{jobId}`. MCP provides the shorter agent loop:
+
+```text
+hydracept_jobs_find(intent="failed")
+→ hydracept_job_inspect(job_id)
+```
+
+For prior successful outputs use `intent="reusable"`; Hydracept highlights an explicitly selected artifact when one exists. A retry always uses a new idempotency key.
+
+See [Durable Jobs & Receipts](./jobs/) for filters, artifacts, inspection, and outputs.
+
+## Next
+
+- [5-minute game asset](./five-minute-game-asset/)
+- [Authentication & Activation](./authentication/)
+- [Durable Jobs & Receipts](./jobs/)
+- [Pinned Execution](./pinned-execution/)
+- [Execution provenance](./provenance/)
+- [Research Inference Protocol](./research/)
+- [Billing & plans](./billing/)
+- [Deferred processing](./deferred-processing/)
+- [Connections / BYOK](./connections/)
+- [Errors](./errors/)
+- [Rate limits & quotas](./rate-limits/)
+- [Coding Agents](./agents/)
+- Plugin homepage: [https://hydracept.com/plugin](https://hydracept.com/plugin)
+- [Capability requests](./capability-requests/)
+- Public OpenAPI: [https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)
+
+## 5-minute game asset
+URL: https://docs.hydracept.com/five-minute-game-asset/
+
+# 5-minute game asset
+
+Generate your first game asset through Hydracept in about five minutes.
+
+**For a free test:** Run `python -m hydracept smoke` to verify your setup. For ongoing production use, connect your own OpenAI, ElevenLabs, or Meshy key; Hydracept adds no inference markup.
+
+## 1. Activate
+
+### Option A — Browser (fastest)
+
+1. Open [https://hydracept.com/start](https://hydracept.com/start)
+2. Sign in with GitHub or Google
+3. Save the printed API key — click **Copy setup for coding agent** if an agent will continue
+
+### Option B — CLI (humans)
+
+```bash
+pip install -U hydracept
+python -m hydracept init --apply --yes --wait
+```
+
+Sign in on the connect page, choose workspace and project, then approve. Use **Use a different account** if you have multiple GitHub or Google logins.
+
+### Option C — Agents / headless (API key paste)
+
+```bash
+pip install -U hydracept
+```bash
+python -m hydracept init --apply --yes --json
+python -m hydracept smoke
+```
+```
+
+Legacy path (still supported): `login --token` → `init --apply --yes` → `doctor` → `smoke`.  
+Browser connect without API key: `init --apply --yes --json` → human opens connect URL → `init --apply --yes --json --wait`.
+
+## 2. Verify
+
+```bash
+python -m hydracept doctor
+```
+
+Doctor prints **Next** actions when something is missing (PATH tip, BYOK URL, smoke command).
+
+## 3. First image (smoke test or BYOK)
+
+```bash
+python -m hydracept smoke
+```
+
+Or submit manually:
+
+```bash
+export HYDRACEPT_API_URL=https://api.hydracept.com
+# keys from activation / .hydracept/local.env
+JOB_JSON=$(curl -sS -X POST \
+  -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"context\": {
+      \"productId\": \"demo-game\",
+      \"projectId\": \"$HYDRACEPT_PROJECT\",
+      \"environment\": \"$HYDRACEPT_ENVIRONMENT\"
+    },
+    \"input\": { \"prompt\": \"cute slime enemy icon, flat game art\" },
+    \"execution\": { \"executionPreference\": \"automatic\" },
+    \"idempotencyKey\": \"five-minute-slime-1\"
+  }" \
+  "$HYDRACEPT_API_URL/v1/capabilities/image.generate.v1/jobs")
+```
+
+## 4. Connect BYOK (recommended for production)
+
+Open the BYOK form from activation (**Configure BYOK**), or visit:
+
+`https://api.hydracept.com/v1/onboarding/byok?organizationId=…&projectId=…&environment=development`
+
+Paste an OpenAI, ElevenLabs, or Meshy key — Hydracept encrypts and binds it. See [Connections / BYOK](../connections/).
+
+## What you have now
+
+- Your Hydracept workspace is authenticated
+- Your first game asset job has run successfully
+- Your provider billing stays on your account through BYOK
+
+## Next
+
+- [Quick Start](../)
+- [Authentication](../authentication/)
+- [Connections / BYOK](../connections/)
+- [Jobs](../jobs/)
+- [Agent context](https://api.hydracept.com/v1/agent-context)
+
+## 5-minute 3D asset
+URL: https://docs.hydracept.com/five-minute-3d-asset/
+
+# 5-minute 3D asset
+
+Generate a game-ready GLB mesh through Hydracept in about five minutes.
+
+**BYOK:** 3D generation uses **Meshy** for mesh conversion. The `model.generate.3d.from-image.v1` pipeline also uses **OpenAI** for turnaround views. Connect both keys before running production jobs.
+
+Hydracept is **not** a Unity/Unreal plugin. Integrate from tools and backends.
+
+## 1. Activate
+
+Same as the [5-minute game asset](../five-minute-game-asset/) flow:
+
+```bash
+pip install -U hydracept
+python -m hydracept init --apply --yes --wait
+python -m hydracept doctor
+```
+
+## 2. Connect BYOK
+
+Open **Configure BYOK** from activation, or visit:
+
+`https://api.hydracept.com/v1/onboarding/byok?organizationId=…&projectId=…&environment=development`
+
+Paste:
+
+- **OpenAI** — concept images and turnaround sheets (`model.generate.3d.from-image.v1`)
+- **Meshy** — multi-image-to-3d conversion (`model.generate.3d.v1`)
+
+See [Connections / BYOK](../connections/).
+
+## 3. Path A — single image to GLB
+
+Best for a first smoke when you already have a concept PNG from `image.generate.v1`:
+
+```bash
+export HYDRACEPT_API_URL=https://api.hydracept.com
+# Submit image.generate.v1 first, then use the returned artifact id as baseArtifactId.
+JOB_JSON=$(curl -sS -X POST \
+  -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"context\": {
+      \"productId\": \"demo-game\",
+      \"projectId\": \"$HYDRACEPT_PROJECT\",
+      \"environment\": \"$HYDRACEPT_ENVIRONMENT\"
+    },
+    \"input\": {
+      \"baseArtifactId\": \"$BASE_ARTIFACT_ID\",
+      \"meshProfile\": \"toy_default\",
+      \"turnaroundMode\": \"sheet2x2\"
+    },
+    \"execution\": { \"executionPreference\": \"automatic\" },
+    \"idempotencyKey\": \"five-minute-3d-from-image-1\"
+  }" \
+  "$HYDRACEPT_API_URL/v1/capabilities/model.generate.3d.from-image.v1/jobs")
+```
+
+Poll `GET /v1/jobs/{jobId}` until the status is `succeeded`, then fetch the receipt for GLB artifact download paths.
+
+By default, public jobs **auto-approve** the turnaround sheet and continue straight to Meshy. Set `"requireTurnaroundApproval": true` when you want a review pause (Hydracept Studio / panels use this path).
+
+## 4. Path B — turnaround views to GLB
+
+When you already have 1–4 orthographic view images (front/left/right/back):
+
+```bash
+JOB_JSON=$(curl -sS -X POST \
+  -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"context\": {
+      \"productId\": \"demo-game\",
+      \"projectId\": \"$HYDRACEPT_PROJECT\",
+      \"environment\": \"$HYDRACEPT_ENVIRONMENT\"
+    },
+    \"input\": {
+      \"inputArtifactIds\": [\"$VIEW_FRONT\", \"$VIEW_LEFT\", \"$VIEW_RIGHT\", \"$VIEW_BACK\"],
+      \"meshProfile\": \"toy_default\"
+    },
+    \"execution\": { \"executionPreference\": \"automatic\" },
+    \"idempotencyKey\": \"five-minute-3d-mesh-1\"
+  }" \
+  "$HYDRACEPT_API_URL/v1/capabilities/model.generate.3d.v1/jobs")
+```
+
+## Mesh profiles
+
+| Profile | Use when |
+|---------|----------|
+| `draft_fast` | Quick iteration, lower polycount |
+| `toy_default` | Stylized game toys and props |
+| `clean_game_mesh` | Cleaner topology for rigging |
+| `hero_hd` | Higher-detail hero assets |
+| `enhanced_retry` | Retry with enhanced Meshy settings |
+
+## What you proved
+
+- Hydracept authenticated your caller
+- Durable 3D jobs produce receipted GLB artifacts
+- Provider billing stays on your OpenAI and Meshy accounts
+
+## Next
+
+- [Capabilities](../capabilities/)
+- [Connections / BYOK](../connections/)
+- [Jobs](../jobs/)
+- [5-minute game asset](../five-minute-game-asset/)
+
+## Authentication & Activation
+URL: https://docs.hydracept.com/authentication/
+
+# Authentication & Activation
+
+Hydracept has two kinds of credentials: who you are (Hydracept identity) and who pays for inference (provider keys). Keep them separate.
+
+## Human login
+
+Humans can activate in the browser or through the CLI connect flow.
+
+### Studio (recommended for creators)
+
+1. Visit [https://app.hydracept.com/login](https://app.hydracept.com/login)
+2. Sign in with GitHub or Google
+3. Complete onboarding (project name and use case)
+4. Generate in Studio; connect BYOK under **Connections**; upgrade under **Billing**
+
+If you use multiple GitHub or Google accounts, pick the account that owns your Hydracept workspace when signing in.
+
+### Browser API activation
+
+1. Visit [https://hydracept.com/start](https://hydracept.com/start)
+2. Sign in with GitHub or Google
+3. Save the one-time API key shown on the completion page
+
+### CLI connect flow (recommended for local projects)
+
+```bash
+pip install -U hydracept
+python -m hydracept init --apply --yes --json
+```
+
+Hydracept first checks whether the workspace already has a valid Hydracept login. If not, it can use an already-authenticated GitHub CLI (`gh`) or Google Cloud CLI (`gcloud`) user account to establish identity automatically.
+
+If GitHub CLI is already authenticated, Hydracept may reuse the active `github.com` identity for local activation. If `gcloud` is already authenticated as a human user account, Hydracept may reuse that Google identity. Provider/API credentials are not read from GitHub or Google Cloud and remain separate. `gh` has one active `github.com` account at a time; `gcloud` has one active user account. Change them with `gh auth switch` / `gcloud config set account` before `python -m hydracept init`.
+
+When both CLIs are logged in, Hydracept tries GitHub first, then Google. Browser OAuth is not required merely because two supported developer logins exist.
+
+The foreign credential is handled only inside the Hydracept CLI process and sent to the pinned first-party Hydracept identity endpoint for server-side verification. `HYDRACEPT_APP_URL` cannot redirect that credential. It is not exposed to the coding agent, MCP panel, project files, or normal command output, and Hydracept does not change your GitHub or Google login state.
+
+The resulting Hydracept human session is kept process-local until the existing bootstrap completion authority succeeds. It is never sent to a custom `HYDRACEPT_API_URL`; custom/local/staging origins use explicit authentication instead.
+
+When there is a usable `gh` or `gcloud` user login, ordinary production setup can therefore continue without opening a browser. A leftover expired `~/.hydracept/session.json` is discarded so it cannot skip that path. Hydracept then infers the current project from the workspace and git repository (folder name, git root, and GitHub remote) and defaults a new workspace to `development`. If several organizations exist, a unique folder name is created in the home/last-used organization. Browser project selection is a fallback for genuine ambiguity — not a mandatory step on the normal path.
+
+If automatic identity is unavailable or the account/project choice is ambiguous, `init` returns the existing `interaction_required.action.url`. The JSON includes `identity` and `projectResolution` so agents can tell a signed-in user apart from a failed login. Open that exact URL and finish the choice in the browser; the pending bootstrap session is reused.
+
+Typical unattended result:
+
+1. Identity is already authenticated (GitHub CLI / Google Cloud CLI / Hydracept session)
+2. The workspace maps to one existing project, or Hydracept creates that project in `development`
+3. Init writes `.hydracept/project.json`, installs the workspace API key, and configures MCP
+4. Status is `ready`, with `project.resolution` describing how the project was chosen
+
+Browser interaction is required only when:
+
+- you are not signed in yet and neither `gh` nor `gcloud` is logged in
+- several existing projects match the same repository
+- several organizations are equally plausible and there is no home/last-used organization
+- the inferred project is inaccessible
+- you are rebinding in a way that needs confirmation
+
+To change the automatic binding later:
+
+```bash
+python -m hydracept project use <project-id-or-name>
+python -m hydracept init --apply --yes --json --project <project-id-or-name>
+```
+
+Agent / scripted flow:
+
+```bash
+python -m hydracept init --apply --yes --json
+# If status is interaction_required, present action.url to the human.
+python -m hydracept init --apply --yes --json --wait
+```
+
+The CLI reuses `.hydracept/bootstrap-session.json` so repeated runs and panel polls keep the same connect session. If `gh` or `gcloud` is logged in, those retries can complete local identity instead of opening a browser.
+
+CI is deliberately different: `init --ci` never inspects local human GitHub or Google CLI sessions and requires explicit machine credentials.
+
+### CLI device login
+
+```bash
+python -m hydracept login
+```
+
+Device login remains available when you explicitly want a reusable Hydracept human session before entering a project:
+
+1. The CLI calls `POST /v1/auth/device/start` and prints a user code
+2. Your browser opens the Hydracept device page
+3. Sign in (GitHub/Google), enter the code, approve
+4. The CLI stores a human session in `~/.hydracept/session.json`
+5. Run `python -m hydracept init --apply --yes` to bind the project and create an installation API key
+
+### Agent / headless login (API key)
+
+Preferred unattended machine path:
+
+```bash
+export HYDRACEPT_API_KEY=...
+python -m hydracept init --apply --yes --json
+```
+
+Or CI:
+
+```bash
+python -m hydracept init --apply --yes --ci --json
+```
+
+Legacy path:
+
+```bash
+python -m hydracept login --token "$HYDRACEPT_API_KEY"
+python -m hydracept init --apply --yes
+python -m hydracept doctor
+python -m hydracept smoke
+```
+
+If the `hydracept` console script is not on your PATH (common after `pip install --user` on Windows), use `python -m hydracept …`.
+
+Browser sessions are for Studio and human account authority. Project runtimes and CI should use API keys, not browser cookies.
+
+## Identity authority
+
+Automatic local sign-in does not turn a GitHub credential into a Hydracept execution credential.
+
+The authority chain remains:
+
+```text
+verified developer identity
+→ Hydracept human session
+→ bootstrap completion
+→ project installation API key
+→ capability execution
+```
+
+The local identity assertion itself does not mint an installation key, setup grant, provider connection, or payment authorization. Those remain separate Hydracept authorities.
+
+GitHub Enterprise Hosted / GHES logins, service-account identities, and `gcloud` impersonation are not part of the automatic path. Browser login remains the fallback.
+
+## Project and environment provisioning
+
+Onboarding creates or resolves:
+
+- an organization
+- a repository project (`projectId`, often `cpr_…`)
+- an environment (normally `development` for a new local project)
+
+`init` prefers an existing `.hydracept/project.json` binding. If that file is missing, it matches the current git repository or workspace name to a project you already own, or creates one. The default environment is `development`.
+
+Every capability job needs that context:
+
+```json
+{
+  "context": {
+    "productId": "my-product",
+    "projectId": "cpr_...",
+    "environment": "development"
+  }
+}
+```
+
+## Machine / service credential
+
+Machine callers use a Hydracept API key as a bearer token:
+
+```http
+Authorization: Bearer <HYDRACEPT_API_KEY>
+```
+
+Recommended environment variables:
+
+| Variable | Purpose |
+|----------|---------|
+| `HYDRACEPT_API_URL` | API base (`https://api.hydracept.com`) |
+| `HYDRACEPT_API_KEY` | Your API key |
+| `HYDRACEPT_PROJECT` | Project id |
+| `HYDRACEPT_ENVIRONMENT` | Environment name |
+
+Do not ship Hydracept API keys in game clients. For player-facing apps, call Hydracept from your server.
+
+
+CLI helpers:
+
+```bash
+python -m hydracept init --apply --yes --wait
+python -m hydracept doctor
+python -m hydracept smoke
+```
+
+
+## Provider / BYOK connection
+
+Provider credentials (OpenAI, ElevenLabs, and others) are separate from your Hydracept login.
+
+Hydracept stores them encrypted, validates them, and binds them to projects/environments so execution can resolve BYOK keys at runtime. See [Connections / BYOK](../connections/).
+
+| Concern | Owned by |
+|---------|----------|
+| Who is calling Hydracept | Hydracept human session or API key |
+| Which model account pays for inference | Customer provider credential (BYOK) |
+
+Before connecting BYOK, run `python -m hydracept smoke` once to verify your setup. Then connect a provider for production jobs. The [5-minute game asset](../five-minute-game-asset/) tutorial walks through this end to end.
+
+## Managed trial and funding
+
+Authentication and Hydracept-funded inference are separate decisions. Proving a developer identity may connect the workspace even when managed-trial allowance is reduced or exhausted.
+
+When managed first-use allowance is unavailable, the capability is still ready — connect BYOK or fund managed execution. See [Billing & plans](../billing/) and [Capabilities](../capabilities/).
+
+## Verify
+
+`python -m hydracept doctor` (or `hydracept doctor`) runs integration checks and prints **Next** actions on failure:
+
+- API health (`GET /healthz`)
+- Authenticated diagnostics (`GET /v1/diagnostics/session`, `GET /v1/session/context`)
+- Local workspace alignment with server project/environment
+- Provider readiness and test-run status (`GET /v1/diagnostics/providers`)
+- Public capability list includes the smoke capability (default `image.generate.v1`)
+
+Exit code is non-zero when a fatal check fails. Use `--json` for CI output.
+
+```http
+GET /v1/diagnostics/session
+Authorization: Bearer <HYDRACEPT_API_KEY>
+```
+
+For agent discovery without hardcoding internals: `GET /v1/agent-context`.
+
+## Capabilities
+URL: https://docs.hydracept.com/capabilities/
+
+# Capabilities
+
+A capability key is a stable name for an outcome, such as image generation or voice generation. Use it to integrate once instead of building a separate provider integration for every workflow.
+
+## List and describe
+
+```http
+GET /v1/capabilities
+Authorization: Bearer <HYDRACEPT_API_KEY>
+```
+
+```http
+GET /v1/capabilities/{key}
+Authorization: Bearer <HYDRACEPT_API_KEY>
+```
+
+Anonymous discovery is intentionally conservative. It advertises capabilities that are safe to present before Hydracept has account and approval context. Account-scoped or mutating infrastructure actions, such as domain registration and DNS changes, are discoverable after authentication in Studio and through authenticated capability surfaces rather than in the anonymous first-contact catalog.
+
+Inference capability descriptors include **`billingModes`**, **`pricing`**, and factual **execution** / **output** fields so an agent can decide whether a call is usable right now — without reading several docs pages. Domain, DNS, and CPU-processing capabilities omit `billingModes`; they are not inference-priced. Registrar custody uses `credentialSources` instead.
+
+```json
+{
+  "key": "image.generate.v1",
+  "readySummary": "Ready now · managed execution · quote available",
+  "execution": {
+    "oneShot": true,
+    "managedAvailable": true,
+    "providerSetupRequired": false,
+    "projectLocalRequired": false,
+    "estimateAvailable": true,
+    "trialEligible": true
+  },
+  "funding": {
+    "mode": "managed_trial",
+    "eligible": true,
+    "status": "ready"
+  },
+  "output": { "kind": "artifact", "mediaType": "image/png" },
+  "interaction": { "typicallyRequired": false },
+  "billingModes": {
+    "byok": { "available": true },
+    "managed": { "available": true, "serviceFeeBps": 600 }
+  }
+}
+```
+
+Find by task: `GET /v1/capabilities?q=generate+an+image` or `python -m hydracept capabilities find "generate an image"`.
+
+- **oneShot** — this capability can be invoked without a product integration commitment
+- **managedAvailable** — no provider account is required for this call when true
+- **trialEligible** — managed first-use policy may cover this capability (server-authoritative remaining balance is on authenticated `funding`)
+- **funding.status** — `ready` or `funding_required` (with `fundingOptions`: managed, BYOK). Do not treat an unbound provider as "cannot execute" when managed first-use remains.
+- **readySummary** — agent-readable readiness (not a usefulness score)
+- **BYOK** — use your provider credentials (0% Hydracept inference fee). See [Connections](../connections/).
+- **Managed** — PAYG wallet + Hydracept service fee (`serviceFeeBps` / 100 = percent). See [Billing](../billing/).
+
+## Quote is optional preview
+
+Call `/quote` when you want to inspect the customer price before execution. The quote is a preview (`pricing.quote`, `kind: estimate`): it does **not** reserve or charge funds. Normal job submission should omit `execution.quoteId`; the API measures the submitted job and seals its retail quote at admission.
+
+```http
+POST /v1/capabilities/image.generate.v1/quote
+Authorization: Bearer <HYDRACEPT_API_KEY>
+Content-Type: application/json
+```
+
+```json
+{
+  "input": { "prompt": "cute slime icon", "model": "auto" },
+  "billingMode": "managed"
+}
+```
+
+If a workflow deliberately binds execution to a previously returned quote, the submitted job body must be unchanged and `execution.quoteId` may reference that quote. Execution remeasures pricing inputs against the sealed quote; a mismatch fails before work starts with `409 QUOTE_MISMATCH`. Never attach a stale quote ID just because a quote was requested earlier. `estimateId` is accepted as an inbound alias of `quoteId`.
+
+## Invoke vs durable jobs
+
+| Route | Use when |
+|-------|----------|
+| `POST /v1/capabilities/{key}/invoke` | Short synchronous work that fits in one request |
+| `POST /v1/capabilities/{key}/jobs` | Work that needs retries, polling, artifacts, or receipts |
+
+Use jobs for image, audio, 3D mesh, and any generation that may take longer than one HTTP request.
+
+`text.general.fast.v1` still offers `invoke_sync`, but that path is edge-held: about **60 seconds / 2048 `maxOutputTokens`**. Larger completions must use `POST /v1/capabilities/text.general.fast.v1/jobs`. For durable jobs the effective output cap is **derived by the platform** from the model, the context window, and the response schema, so callers do not need to compute a token budget; `maxOutputTokens` is an optional hint. Catalog `features.syncInvoke` and `features.durableJob` document those envelopes separately. Durable jobs share the durable-text worker; concurrency is hardware-bounded so one job does not block another of the same variety. `executionConstraints.maxDurationSeconds` is the **provider execution** deadline after the job starts (default **120s**, max **600**), not queue wait. Queue timeout, execution timeout, and post-submit ambiguity are different error codes (`QueueTimeout`, `ExecutionTimeout`, `TRANSPORT_AMBIGUOUS`).
+
+Durable text jobs (`executionModes` includes `job_async`) on eligible models also use **deferred processing**: Hydracept waits for the cheaper latency-tolerant provider tier and charges **50% of standard token rates**. Check `features.deferredProcessing` on the capability descriptor, or read [Deferred processing](../deferred-processing/). Synchronous invoke and stream stay on standard processing.
+
+Audio capabilities (`audio.sfx.generate.v1`, `audio.voice.generate.v1`, `audio.music.generate.v1`) run as durable jobs. Artifacts are **Ogg** (`audio/ogg`) with a `.ogg` filename, not WAV. Set `variantCount` (1–4) in job input to request multiple takes. See [variant selection](../jobs/#select-a-variant) when you need to pick one output before the next pipeline step.
+
+`image.generate.v1` width and height snap up to multiples of 16 (Open Graph 1200×630 becomes 1200×640).
+
+3D capabilities (`model.generate.3d.v1`, `model.generate.3d.from-image.v1`) run on Meshy. Use `model.generate.3d.v1` when you have turnaround view artifacts; use `model.generate.3d.from-image.v1` to chain OpenAI turnaround generation from a single concept image. See [5-minute 3D asset](../five-minute-3d-asset/).
+
+## Available capabilities
+
+Discover the live catalog with `GET /v1/capabilities` or `python -m hydracept agent-context`. The live catalog is the source of truth, not a frozen list in this page.
+
+Use the published capability keys from that catalog in your integrations.
+
+## Missing capability?
+
+If the catalog does not cover the outcome you need, call `POST /v1/capabilities/resolve` first. A `no_match_requestable` result may be filed as a non-binding **capability request**; a human can then quote and commission the implementation. Agents can read the quote but never pay it. See [Capability requests](../capability-requests/).
+
+## Example: discover image generation
+
+```bash
+curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  https://api.hydracept.com/v1/capabilities/image.generate.v1
+```
+
+See [Durable Jobs & Receipts](../jobs/) and [Quick Start](../).
+
+## Prompt limits
+
+Hydracept **never silently truncates** a caller prompt to fit a provider limit. Overflow is rejected **before** quote, wallet reservation, or provider submission (`422` / `PromptTooLong`).
+
+Read `inputConstraints` on `GET /v1/capabilities/{key}` — not provider docs — for the effective measurement, max, overflow policy, and per-model overlays (`byModel`). JSON Schema `maxLength` is a coarse ceiling; the selected model's `byModel` entry is authoritative when present.
+
+Examples:
+
+- `audio.sfx.generate.v1` prompt: 450 characters, `overflow: reject`
+- `audio.voice.generate.v1` text: 10,000 characters for Multilingual v2; 40,000 for Flash/Turbo v2.5
+- `audio.music.generate.v1` prompt: 4,100 characters
+- `image.generate.v1` prompt: 32,000 characters for GPT Image 1/2 (`byModel`)
+
+See [Errors](../errors/).
+
+## Image production
+
+`image.generate.v1` supports transparent output, Sheet & Slice, and variants. See [Image production](../image-production/).
+
+## Contract source
+
+The public OpenAPI document is the API contract for external integrations:
+
+[https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)
+
+Use that public spec as the source of truth for integrations.
+
+## Capability requests
+URL: https://docs.hydracept.com/capability-requests/
+
+# Capability requests (commissioned capabilities)
+
+Hydracept ships a fixed catalog of capability keys. When an agent needs an outcome that is not in the live catalog, it can file a **capability request** describing the missing work. A human operator reviews the request and, if it is in scope, issues a **commission quote**. Only a human can accept and pay that quote.
+
+Commission quotes are the opposite of execution quotes: they fund **implementation of a capability that does not exist yet**, they are non-binding until paid, and their `quoteId` must never be attached to a job as `execution.quoteId`.
+
+## Flow
+
+1. **Resolve first.** `POST /v1/capabilities/resolve` with the intended outcome. Missing capabilities are a normal result.
+   - `resolution: "supported"` — use the matched capability; no request needed.
+   - `resolution: "no_match_requestable"` — a request may be filed. `nextAction` names `POST /v1/capability-requests`.
+   - `resolution: "no_match_not_requestable"` — out of the supported product boundary; do not file.
+2. **Create a request.** `POST /v1/capability-requests` returns a `draft` with a stable `id`.
+3. **Revise (optional) and submit.** `POST /v1/capability-requests/{id}/revisions` freezes a new revision hash; `POST /v1/capability-requests/{id}/submit` sends the current revision for human review.
+4. **An operator issues a quote.** Internal review produces a commission quote with a price in your account billing currency (USD or CAD). A request can also be declined or returned as `needs_information`.
+5. **Read the quote (non-binding).** `GET /v1/capability-requests/{id}/quote` returns the `CapabilityQuoteView`.
+6. **A human pays.** The quote carries `approval.approvalUrl`; only an authenticated member of the owning organization (or a platform operator) can start checkout. Paying starts implementation.
+7. **Fulfilment.** The operator records the shipped capability key; the request reaches `fulfilled`.
+
+## Endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/v1/capabilities/resolve` | Decide whether a suitable capability already exists |
+| `POST` | `/v1/capability-requests` | Create a request (`hydracept.capability-request.v1`) |
+| `GET` | `/v1/capability-requests/{id}` | Read a request, its revision, and any customer feedback |
+| `POST` | `/v1/capability-requests/{id}/revisions` | Add a revision (invalidates an active quote) |
+| `POST` | `/v1/capability-requests/{id}/submit` | Submit the current revision for review |
+| `GET` | `/v1/capability-requests/{id}/quote` | Read the commission quote (human-paid) |
+
+Operator-only surfaces are not part of the public contract.
+
+## Create a request
+
+```http
+POST /v1/capability-requests
+Authorization: Bearer <HYDRACEPT_API_KEY>
+Content-Type: application/json
+```
+
+```json
+{
+  "schemaVersion": "hydracept.capability-request.v1",
+  "summary": "Vectorize a raster logo into clean SVG paths",
+  "need": "Our pipeline produces PNG logos but the destination store needs layered SVG.",
+  "proposedCapability": { "capabilityKey": "image.vectorize.v1" },
+  "acceptanceCases": [
+    { "input": "512x512 PNG logo", "expected": "SVG with fewer than 40 paths" }
+  ],
+  "constraints": { "maxLatencySeconds": 120 }
+}
+```
+
+`summary` and `need` are required. `projectId`, `proposedCapability`, `constraints`, `acceptanceCases`, and `implementationPreferences` are optional and are frozen into the revision hash shown to the human.
+
+## Read the commission quote
+
+```http
+GET /v1/capability-requests/cr_.../quote
+Authorization: Bearer <HYDRACEPT_API_KEY>
+```
+
+```json
+{
+  "quoteId": "cq_...",
+  "quoteKind": "commission",
+  "notExecutionQuoteId": true,
+  "requestId": "cr_...",
+  "requestRevisionId": "crr_...",
+  "requestHash": "sha256:...",
+  "commissionPrice": { "amountMicros": 250000000, "currency": "USD", "display": "US$250.00" },
+  "taxTreatment": "tax_calculated_at_checkout",
+  "runtimePricing": { "mode": "metered", "status": "projected", "billingCurrency": "USD" },
+  "delivery": { "targetBusinessDays": 10 },
+  "guarantee": { "kind": "full-satisfaction-refund", "acceptanceWindowDays": 7 },
+  "expiresAt": "2026-10-01T00:00:00Z",
+  "approval": { "humanRequired": true, "approvalUrl": "https://app.hydracept.com/approve/capability-quotes/cq_..." }
+}
+```
+
+- **`quoteKind: commission`** — implementation pricing, not execution pricing.
+- **`notExecutionQuoteId: true`** — this id is never valid as `execution.quoteId`.
+- **`commissionPrice`** — implementation fee before tax; `amountMicros` is authoritative.
+- **`runtimePricing.status`** — `projected` until the capability ships. A commission cannot promise exact runtime pricing for software that does not exist yet.
+- **`expiresAt`** — quotes expire after 14 days. Reading an expired quote returns `410`.
+
+## Pay (humans only)
+
+Open `approval.approvalUrl` in a browser. After signing in, a member of the owning organization sees a Stripe checkout for `commissionPrice`. Agents must stop and present the URL; they must never pay or accept a commission quote. `GET /quote` does not reserve funds and spends nothing.
+
+## CLI
+
+```bash
+python -m hydracept capability-request create request.json
+python -m hydracept capability-request show cr_...
+python -m hydracept capability-request submit cr_...
+python -m hydracept capability-request quote cr_...
+```
+
+## MCP
+
+- `request_capability_quote` — create and submit a request (non-binding).
+- `get_capability_request_quote` — read the commission quote.
+
+## Semantics and guarantees
+
+- **Non-binding** — filing a request and reading a quote cost nothing.
+- **Human-authorized** — no agent can accept or pay a commission quote.
+- **Frozen scope** — the quote is bound to the request revision hash; adding a revision invalidates an active quote.
+- **Refund guarantee** — `full-satisfaction-refund` with a 7-day acceptance window. An operator can request a refund on a paid commission.
+- **Expiry** — an expired quote cannot be accepted, even if checkout is retried.
+
+## Durable Jobs & Receipts
+URL: https://docs.hydracept.com/jobs/
+
+# Durable Jobs & Receipts
+
+Use jobs for generation that may take longer than one HTTP request. Submit once, check progress when you need to, and download the result when it is ready. Project history also lets agents recover from failures and reuse prior outputs without making a human copy a job ID out of Studio.
+
+Eligible **text** jobs also use [deferred processing](../deferred-processing/): Hydracept waits for the cheaper latency-tolerant provider tier and prices those calls at 50% of standard token rates. Eligible OpenAI Responses [pins](../pinned-execution/) keep the exactness path (standard processing, one logical model execution) unless you set `processing: "deferred"`. Check `features.deferredProcessing` on the capability descriptor. Invoke and stream stay on standard processing.
+
+## Submit
+
+```http
+POST /v1/capabilities/{key}/jobs
+Authorization: Bearer <HYDRACEPT_API_KEY>
+Content-Type: application/json
+```
+
+Include:
+
+- `context` — product, project, environment
+- `input` — capability-specific payload
+- `execution` — `executionPreference`, `billingMode` (`byok` | `managed`). **Omit `quoteId`** unless the job input is byte-for-byte the sealed quote
+- `idempotencyKey` — optional; the API mints one if missing
+- `execution.executionConstraints.maxDurationSeconds` — optional **provider execution** deadline in seconds after the job starts (not queue wait). `text.general.fast.v1` defaults to 120s (max 600). Queue wait uses a separate deadline. A job that never starts fails with `QueueTimeout`. A job that starts and then exceeds the provider deadline fails with `ExecutionTimeout` only if Hydracept observed the attempt end; after provider submission began, an abandoned wait is `TRANSPORT_AMBIGUOUS`. `timeoutSeconds` is accepted as an alias for the execution deadline.
+
+Example for `image.generate.v1` (BYOK):
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "context": {
+      "productId": "my-product",
+      "projectId": "cpr_...",
+      "environment": "development"
+    },
+    "input": { "prompt": "cute slime icon" },
+    "execution": {
+      "executionPreference": "automatic",
+      "billingMode": "byok"
+    },
+    "idempotencyKey": "demo-1"
+  }' \
+  https://api.hydracept.com/v1/capabilities/image.generate.v1/jobs
+```
+
+Managed inference (wallet-funded) can omit `quoteId` — the API seals a retail quote at admission:
+
+```json
+"execution": {
+  "executionPreference": "automatic",
+  "billingMode": "managed"
+}
+```
+
+See [Billing](../billing/) for wallet top-up, [Deferred processing](../deferred-processing/) for the 50% durable-text discount, and [Capabilities](../capabilities/) for `billingModes` discovery (omitted on domain and CPU capabilities).
+
+## Find project jobs
+
+The project-scoped history route is the public discovery surface for agents and product tooling:
+
+```http
+GET /v1/projects/{projectId}/jobs?outcome=failed&limit=10
+Authorization: Bearer <HYDRACEPT_API_KEY>
+```
+
+Supported filters are:
+
+- `status` — any public job status such as `failed`, `succeeded`, `needs_attention`, or `canceled`
+- `capabilityKey` — for example `image.generate.v1`
+- `outcome=failed` — convenience filter for failed jobs
+- `outcome=reusable` — succeeded jobs with at least one output artifact
+- `selected=true` — jobs with an explicitly selected variant
+- `limit` and `cursor` — keyset pagination
+
+List items contain job metadata such as `jobId`, status, capability, timestamps, `artifactCount`, `errorCode`, `selectedArtifactId`, and `receiptId` when available.
+
+**The list is deliberately prompt-free.** It never returns prompt text, request snapshots, or error messages. This lets an agent scan failures and reusable outputs without ingesting the content of every previous request. Request content is exposed only when the caller intentionally inspects one job.
+
+MCP:
+
+- `hydracept_jobs_find(intent="failed")`
+- `hydracept_jobs_find(intent="reusable", capability_key="image.generate.v1")`
+
+Python: `list_project_jobs(...)` / `find_project_jobs(...)` from the `hydracept` package. The ordinary `GET /v1/jobs` list remains the bearer-principal convenience view.
+
+## Inspect one job
+
+```http
+GET /v1/jobs/{jobId}
+Authorization: Bearer <HYDRACEPT_API_KEY>
+```
+
+The canonical job resource already contains the information needed to inspect or re-run a job: status, `error`, diagnostics, artifacts, `receiptId`, and `requestSnapshot` when available. There is no separate `/inspect` HTTP resource.
+
+For coding agents, MCP `hydracept_job_inspect(job_id)` composes that job read with the sealed receipt summary and returns a reuse candidate plus a single `nextAction`. Python exposes `inspect_job(client, job_id)` for the same purpose.
+
+If a failed job is retried, copy the canonical snapshot input but use a **new** `idempotencyKey`. On `QUOTE_MISMATCH`, also omit the stale execution `quoteId` / `estimateId` before resubmitting.
+
+For a successful job, prefer an explicit `selectedArtifactId`. If no explicit selection exists, inspect may identify the primary or first usable artifact, but it reports that distinction rather than pretending the artifact was human-selected.
+
+## Poll
+
+```http
+GET /v1/jobs/{jobId}
+Authorization: Bearer <HYDRACEPT_API_KEY>
+```
+
+Jobs move through `queued` and `running` before reaching a terminal status: `succeeded`, `failed`, or `canceled`. A job can also be `awaiting_approval`, `canceling`, or `needs_attention`; handle those states according to your workflow.
+
+Job payloads include `nextAction` (`poll`, `download_artifacts`, `retry_new`, `present_approval`, `inspect_error`, or `stop`), `retry` (`sameKey`, `newKeySafe`), and `pollAfterSeconds`. If `nextAction` is `poll`, wait that many seconds and `GET` again. Do not busy-loop. A client poll timeout is not a Hydracept failure: keep `GET /v1/jobs/{jobId}` or `POST` the **same** `idempotencyKey` while status is `queued` or `running`. Minting a new key starts a second job. Same key plus the same payload always returns the existing job, including after `failed`. `409` is only for a different payload on that key. Follow `nextAction`: mint a new key only when it is `retry_new` (`retry.newKeySafe: true`). If the code is `TRANSPORT_AMBIGUOUS`, `newKeySafe` is false — do not start a second provider attempt.
+
+Once a known ID is lost, use project history rather than asking a human to recover it manually.
+
+Jobs may include a `variantSet` when the capability accepts `variantCount` in input (image and audio generation). Each variant is a separate artifact with `variantIndex` on the job payload. `variantSet` reports `requestedCount`, `completedCount`, `failedCount`, and `selectedArtifactId`.
+
+## Select a variant
+
+When a job produced multiple variants, pick the one your pipeline should treat as the primary output:
+
+```http
+POST /v1/jobs/{jobId}/variants/select
+Authorization: Bearer <HYDRACEPT_API_KEY>
+Content-Type: application/json
+```
+
+```json
+{ "artifactId": "art_..." }
+```
+
+The job’s `selectedArtifactId` and artifact `selected` flags update immediately. Download the chosen artifact with `GET /v1/jobs/{jobId}/artifacts/{artifactId}`.
+
+Example for `audio.sfx.generate.v1` with two variants:
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "context": {
+      "productId": "my-product",
+      "projectId": "cpr_...",
+      "environment": "development"
+    },
+    "input": {
+      "prompt": "metal button click",
+      "durationMs": 500,
+      "variantCount": 2
+    },
+    "execution": { "executionPreference": "automatic" },
+    "idempotencyKey": "sfx-variants-1"
+  }' \
+  https://api.hydracept.com/v1/capabilities/audio.sfx.generate.v1/jobs
+```
+
+Optional control routes (when enabled for your plan):
+
+- `POST /v1/jobs/{jobId}/cancel`
+- `POST /v1/jobs/{jobId}/approve`
+- `POST /v1/jobs/{jobId}/reject`
+
+## Artifact / output
+
+Succeeded jobs expose outputs and artifacts on the job resource. Download individual artifacts with:
+
+```http
+GET /v1/jobs/{jobId}/artifacts/{artifactId}
+Authorization: Bearer <HYDRACEPT_API_KEY>
+```
+
+Public receipts emit SHA-256 as hex. Older jobs may still advertise `sha256:<hex>` — compare the hex digest only. `HydraceptWorkspace.jobs.run(..., download_dir=...)` (CLI 0.3.1+) strips the prefix. Audio SFX artifacts are Ogg files (`filename` ends in `.ogg`), not WAV.
+
+## Receipt
+
+```http
+GET /v1/jobs/{jobId}/receipt
+Authorization: Bearer <HYDRACEPT_API_KEY>
+```
+
+Receipts include the request, provider, model, cost, retries, and resulting artifacts. Funding and billing mode on the receipt come from admission evidence. Missing evidence stays `unknown` — do not display that as BYOK or managed trial. Use receipts to review a result, debug a failed run, or keep a record for your team. Related receipts can be grouped into a [run manifest](../provenance/); a stable pin can be emitted as an [AI lockfile](../provenance/).
+
+## Sheet & Slice (image.generate.v1)
+
+For cohesive asset packs (sprite cycles, icon families, pose sheets), submit a job with the `sheet` input. See [Image production](../image-production/) for the full contract and a 4×4 sword-swing example.
+
+## Full contract
+
+[https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)
+
+## Related
+
+- [Execution provenance](../provenance/)
+- [Pinned Execution](../pinned-execution/)
+- [Capabilities](../capabilities/)
+- [Billing & plans](../billing/)
+
+## Deferred processing
+URL: https://docs.hydracept.com/deferred-processing/
+
+# Deferred processing
+
+Hydracept **deferred processing** uses OpenAI Flex (`service_tier=flex`) at **50% of standard token rates**.
+
+It applies to:
+
+- Eligible durable text jobs (`POST /v1/capabilities/{key}/jobs`) — **default**
+- Eligible OpenAI Responses pins (`POST /v1/inference/pinned` and bulk items) — **opt in** with `processing: "deferred"`
+
+Interactive invoke and stream stay on standard processing. Image, audio, video, and 3D jobs are unchanged — those providers do not expose this discount today.
+
+## When it applies
+
+| Path | Processing |
+|------|------------|
+| `POST /v1/capabilities/{key}/jobs` (`job_async`) | Deferred when the routed model supports it. HTTP 429 retries stay on Flex; a Flex `400` retries once on standard rates. |
+| `POST /v1/inference/pinned` and `/pinned/bulk` | **Standard by default.** Opt in with `processing: "deferred"` on eligible OpenAI Responses pins. Same pin, one logical model execution, no truncation rewrite, no Flex→Standard fallback. Flex-capacity 429s retry inside the admission deadline and are recorded on the receipt. Omitted execution timeouts on Flex pins use the 600s platform max. |
+| `POST /v1/capabilities/{key}/invoke` | Standard |
+| Stream | Standard |
+
+Discover support on the capability descriptor:
+
+```http
+GET /v1/capabilities/text.reasoning.high.v1
+```
+
+Look for:
+
+```json
+"features": {
+  "deferredProcessing": {
+    "available": true,
+    "discountBps": 5000,
+    "appliesTo": ["job_async", "pinned"],
+    "defaultFor": ["job_async"],
+    "optInFor": ["pinned"]
+  }
+}
+```
+
+Receipts record `processingTier` and `deferredDiscountBps` on every pin. The discounted upstream basis is recorded only when deferred actually ran.
+
+Pinned native envelopes add `service_tier: "flex"` only when the caller opts in (plus the existing `store: false`). Hydracept does not send Responses `truncation` and does not change `max_output_tokens`.
+
+## BYOK and managed
+
+The 50% applies to the **provider token basis**, not the Hydracept service fee.
+
+- **BYOK** — you pay the provider 50% of standard token rates for eligible deferred calls. Hydracept fee remains 0%.
+- **Managed** — the published upstream basis is the discounted rate, then the catalog Hydracept service fee applies. Pinned inference uses the same managed/platform admission as other catalog capabilities.
+
+See [Billing](../billing/), [Durable jobs](../jobs/), and [Pinned Execution](../pinned-execution/).
+
+## Pinned Execution
+URL: https://docs.hydracept.com/pinned-execution/
+
+# Pinned Execution
+
+Use Pinned Execution when you need the same provider, model, API, and request settings every time. Hydracept sends the request as specified and returns an immutable execution record you can review or verify later.
+
+Permanent path (no research alias):
+
+```http
+POST /v1/inference/pinned
+GET  /v1/inference/pinned/{receipt_id}
+POST /v1/inference/pinned/bulk
+GET  /v1/inference/pinned/bulk/{bulk_id}
+```
+
+`POST /v1/inference/pinned/bulk` accepts a shared pin plus an `items` array. Each item is an independent pinned execution with its own receipt — concurrent ordinary pins, not a provider-native Batch API. Pins stay on **standard processing** unless the caller sets `processing: "deferred"` on an eligible OpenAI Responses pin (`service_tier=flex`, 50% of standard token rates) — same pin, one logical model execution, no truncation rewrite, no Flex→Standard fallback. Pre-inference capacity 429s and connection refusals may retry inside the admission deadline and are recorded on the receipt. Tenant identity is the customer **project**, same as `POST /v1/inference/pinned`: a project-bound API key is enough; an unbound key must send `context.projectId`. Organization is derived from that project. A client-supplied `organizationId` is not authorization. The bulk is durable: submit returns `accepted` with `nextAction: poll`. Poll `GET /v1/inference/pinned/bulk/{bulk_id}` until `nextAction` is `stop` (`succeeded`, `partial`, or `failed`). In-flight items survive a service restart. Sibling items do not share a provider attempt; a failure on one item does not retry or cancel the others. Concurrency is a sliding window: a hung in-flight item does not block later items from starting. When capacity rejections spike, later submissions reduce concurrency instead of hammering the same ceiling.
+
+Hydracept distinguishes three clocks:
+
+1. **Execution timeout** — `limits.timeoutSeconds` (or top-level `timeoutSeconds`) is the **wall-clock** budget for one admitted provider HTTP attempt. Default and platform maximum 600s. Trickling/thinking tokens do not extend this deadline. `processing: "deferred"` with an omitted timeout uses that same 600s max. Callers may set a lower value; a value above the platform maximum is rejected with `422`. Minimum is 30s. Connect/write/pool timeouts remain underneath as transport protections.
+2. **Admission/retry deadline** — `limits.admissionDeadlineSeconds` is how long Hydracept may keep trying to get the request accepted after Flex-capacity 429s or connection refusal. Default 120s on standard pins and 900s on deferred pins. `0` means one HTTP submission. Maximum 1800s. Ambiguous failures after send (execution deadline, cancelled in-flight POST) are never retried. A durable dispatch boundary is persisted before each paid POST; unknown submission state is sealed as `TRANSPORT_AMBIGUOUS` rather than retried.
+3. **Queue wait** — time waiting to start (default bulk start window 20 minutes) plus time spent behind earlier in-flight items at the current concurrency. Recorded as `schedulerWaitMs` when known. This does not consume the execution timeout.
+
+Connect/write/pool stay short so a failure before send is `providerSubmission: not_attempted`. A timeout or network error after send is `providerSubmission: ambiguous` and is never advertised as safely retryable. Receipts record `logicalAttempts=1` plus `providerSubmissions`, `capacityRejections`, `retryWaitMs`, `providerExecutionMs`, and `wallClockMs`. `safelyRetryable: false` means do not POST the sealed pin again. This per-item provider timeout is distinct from `bulkWait.timeoutSeconds` (client poll of the whole bulk, default 3600s).
+
+## Semantics
+
+- Explicit `provider` / `model` / `api` selection
+- `store: false` where the pin requires it
+- Eligible OpenAI Responses pins stay on standard processing unless `processing: "deferred"` is set (`service_tier=flex`, 50% off). One logical model execution. No truncation rewrite. No Flex→Standard fallback. Pre-inference capacity 429s may retry inside the admission deadline.
+- DeepSeek V4.1 Flash is a second native pin: `provider=deepseek`, `model=deepseek-flash`, `api=chat-completions` or `api=responses`. Chat Completions non-thinking is native `thinking: {"type":"disabled"}`. Responses non-thinking is native `reasoning: {"effort":"none"}`, still requested as `sampling.thinking=disabled`. `reasoning_effort` stays `low` / `high` / `max`; `reasoning=off` is illegal. Chat Completions structured output is `responseFormat: {"type":"json_object"}`. Responses pins accept `json_schema` and honor `responseFormat.strict`. Flex/`deferred` and cache controls are not representable. This is not an OpenAI Responses pin.
+- `tools` / `toolChoice` are forwarded onto the native provider request. Chat Completions keeps the nested `function` tool shape; Responses pins flatten it. A `tool_calls` / `function_call` finish is a successful completion. Empty assistant text with tool arguments is not `PROVIDER_EMPTY_OUTPUT`.
+- `includeNativeResponse: true` retains the provider JSON on the execute result (`nativeResponse`) and on `GET /v1/inference/pinned/{receipt_id}`. Omitted or `false` omits the field. A non-boolean value is `422`. The flag is observability-only and is not part of protocol request identity.
+- No sampling defaults: omitted temperature stays omitted
+- The request is sent as specified, without silent model substitutions
+- Correlation metadata never enters the prompt
+- Missing execution evidence **fails** the request rather than producing an incomplete record
+- Catalog workspace keys may run every registered capability, including `inference.pinned`. Admission uses the same BYOK / managed / platform path as other inference. Owner-org platform keys are enough; a per-project provider connection is not required.
+- Capacity class: lightweight inference. Plan guardrails still apply
+
+## Receipts
+
+After completion, the execution record is **immutable**: selected settings, request hashes, attempts, usage, provider request ID, timestamps, and `providerSubmission` (`not_attempted`, `ambiguous`, or `attempted`) cannot change. Corrections are recorded separately.
+
+`GET /v1/inference/pinned/{receipt_id}` returns that evidence after completion. Project-bound API keys can read receipts for their project; an organization on the principal is not required. Related receipts can be hashed into a run manifest; a stable pin becomes an AI lockfile. See [Execution provenance](../provenance/).
+
+## Example
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pin": { "provider": "openai", "model": "gpt-5.6-sol", "api": "responses" },
+    "isolation": "stateless",
+    "instructions": "Return exactly what was asked.",
+    "input": "ping"
+  }' \
+  https://api.hydracept.com/v1/inference/pinned
+```
+
+DeepSeek Flash, non-thinking, provider-enforced JSON:
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pin": { "provider": "deepseek", "model": "deepseek-flash", "api": "chat-completions" },
+    "isolation": "stateless",
+    "sampling": { "thinking": "disabled" },
+    "responseFormat": { "type": "json_object" },
+    "instructions": "Return JSON only.",
+    "input": "extract the id"
+  }' \
+  https://api.hydracept.com/v1/inference/pinned
+```
+
+Responses `json_schema`:
+
+```json
+{
+  "pin": { "provider": "deepseek", "model": "deepseek-flash", "api": "responses" },
+  "sampling": { "thinking": "disabled" },
+  "responseFormat": {
+    "type": "json_schema",
+    "name": "extract",
+    "schema": { "type": "object", "properties": { "id": { "type": "string" } } }
+  },
+  "instructions": "Return JSON only.",
+  "input": "extract the id"
+}
+```
+
+Python SDK:
+
+```python
+from hydracept import HydraceptClient
+client = HydraceptClient(os.environ["HYDRACEPT_API_URL"], os.environ["HYDRACEPT_API_KEY"])
+result = client.create_pinned_inference({
+    "pin": {"provider": "openai", "model": "gpt-5.6-sol", "api": "responses"},
+    "isolation": "stateless",
+    "input": "ping",
+})
+receipt = client.get_pinned_receipt(result["receipt"]["receipt_id"])
+
+bulk = client.create_pinned_inference_bulk({
+    "pin": {"provider": "openai", "model": "gpt-5.6-sol", "api": "responses"},
+    "isolation": "stateless",
+    "concurrency": 8,
+    "items": [
+        {"id": "cell-1", "input": "ping"},
+        {"id": "cell-2", "input": "pong"},
+    ],
+})
+done = client.wait_pinned_bulk(bulk["bulkId"])
+```
+
+TypeScript:
+
+```ts
+await client.runtime.createPinnedInference({
+  pin: { provider: "openai", model: "gpt-5.6-sol", api: "responses" },
+  isolation: "stateless",
+  input: "ping",
+});
+```
+
+.NET:
+
+```csharp
+await client.CreatePinnedInferenceAsync(body);
+```
+
+CLI: `python -m hydracept pinned run body.json`, `python -m hydracept pinned bulk body.json --wait`, `python -m hydracept pinned get <receipt_id>`, then `python -m hydracept lockfile emit <receipt_id>` and `python -m hydracept verify`.
+
+## Verification
+
+Pinned receipts are immutable after completion, so you can verify a run after the fact:
+
+```bash
+python -m hydracept pinned get <receipt_id>
+python -m hydracept verify
+```
+
+Related receipts can be grouped into a run manifest, and a stable pin can be emitted as an AI lockfile. See [Execution provenance](../provenance/).
+
+## Related
+
+- [Durable Jobs & Receipts](../jobs/)
+- [Execution provenance](../provenance/)
+- [Connections / BYOK](../connections/)
+- [Billing & plans](../billing/)
+
+## Execution provenance
+URL: https://docs.hydracept.com/provenance/
+
+# Execution provenance
+
+Know exactly what happened when an AI result was produced. Every Hydracept execution leaves a **receipt**: a durable record of the request, the execution, the provider response, and any resulting artifact.
+
+Pinned Execution gives you the strongest form of reproducibility. Provenance helps you review results, reproduce important runs, and show what changed between them.
+
+```text
+one execution          → Receipt
+many related executions → Run Manifest
+stable dependency       → AI Lockfile
+```
+
+Use provenance to:
+
+- reproduce a result with the same provider, model, and API
+- review the request and execution history behind an artifact
+- group related executions into an experiment, CI run, or release
+- detect changes in model pins, request semantics, and provider behavior
+
+## Receipt
+
+A receipt answers:
+
+- who requested it
+- which provider, model, and native API
+- the exact request and parameters
+- whether anything was rewritten, retried, or fell back
+- what the provider returned, what it cost, and which artifact resulted
+
+Pinned receipts (`GET /v1/inference/pinned/{receipt_id}`) provide the strongest guarantee: an exact pin, native hashes, no fallback, and evidence that is immutable after completion. Routed jobs also leave receipts, including the routing Hydracept applied. Receipt funding is copied from admission evidence; missing evidence stays `unknown` and must not be inferred as BYOK or managed trial.
+
+See [Pinned Execution](../pinned-execution/) and [Durable Jobs & Receipts](../jobs/).
+
+## Run manifest
+
+A run manifest hashes a set of related receipts — an experiment, a CI run, a release.
+
+```http
+POST /v1/provenance/manifests
+GET  /v1/provenance/manifests/{manifest_id}
+POST /v1/provenance/manifests/{manifest_id}/verify
+```
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "label": "Experiment 003",
+    "receiptIds": ["rcpt_...", "rcpt_..."],
+    "experimentHash": "..."
+  }' \
+  https://api.hydracept.com/v1/provenance/manifests
+```
+
+```bash
+python -m hydracept verify run-003.manifest.json
+```
+
+Verify reports how many receipts were found, how many pins match, whether request hashes drifted, fallbacks, provider retries, and provider spend.
+
+## AI lockfile
+
+Software has `package-lock.json`. AI applications have their own dependencies: provider, model pin, native API, sampling semantics, and prompt or tool hashes.
+
+```bash
+python -m hydracept lockfile emit rcpt_...
+python -m hydracept verify
+```
+
+`hydracept.lock` records the pin and the last receipt. `hydracept verify` checks that the model pin resolves, the native API is supported, request semantics are unchanged, credentials are available, and the latest conformance check passed.
+
+```http
+GET  /v1/provenance/lockfile?receipt_id=rcpt_...
+POST /v1/provenance/lockfile/verify
+```
+
+The lockfile is derived from receipts, so your execution record and reproducibility checks stay connected.
+
+## Related
+
+- [Pinned Execution](../pinned-execution/)
+- [Durable Jobs & Receipts](../jobs/)
+- [Research Inference Protocol](../research/)
+- [Connections / BYOK](../connections/)
+
+## Image Production
+URL: https://docs.hydracept.com/image-production/
+
+# Image production
+
+Hydracept returns **assets ready for your workflow**.
+
+Search terms teams actually use: **sprite sheet AI**, **transparent PNG generation**, **pixel art animation frames**, **inventory icon packs**, **contact sheet slice**, **chroma key matte for games**.
+
+For `image.generate.v1`, that means transparent PNGs, cohesive multi-asset sheets, variant sets, and centered frames you can use in Unity, Godot, Unreal, or a web pipeline.
+
+## Three production modes
+
+| Mode | Request | You get |
+|------|---------|---------|
+| **Transparent output** | `requestTransparentOutput: true` | Clean alpha PNG (native or matte-normalized) |
+| **Sheet & Slice** | `sheet.slice: true` with `rows` / `columns` | One cohesive generation → N centered assets |
+| **Variants** | `variantCount` (2–4) | Multiple takes in one job → compare and select |
+
+Best for **sprite sheets, pixel art animation, character poses, inventory icons, item families, VFX frames, prop packs, and UI glyphs** — small-format assets where intra-set cohesion matters more than hero-resolution detail.
+
+## Sheet & Slice
+
+Describe a cohesive set once. Hydracept generates a single composition, mattes the chroma plate, grid-slices (with blob fallback if the layout is skewed), centers each cell, and returns individual artifacts.
+
+`sheet.labels` are **metadata only** — they identify cells in the API response and never appear in the provider prompt or on the generated image.
+
+![SNES sword swing sheet after matte processing](../assets/showcase/sheet-4x4-source.png)
+
+*Example: SNES knight sword-swing sheet (gpt-image-2), matte-processed — hover the homepage demo to compare chroma vs transparency.*
+
+![Sword swing preview from sliced frames](../assets/showcase/sword-swing-preview.gif)
+
+*Aligned GIF preview built from sliced transparent frames of the same job.*
+
+### Request
+
+```json
+{
+  "context": {
+    "productId": "my-game",
+    "projectId": "cpr_...",
+    "environment": "development"
+  },
+  "input": {
+    "prompt": "SNES-era pixel art knight sword swing animation",
+    "requestTransparentOutput": true,
+    "sheet": {
+      "rows": 4,
+      "columns": 4,
+      "slice": true,
+      "animation": { "facing": "right" },
+      "labels": [
+        "frame-01", "frame-02", "frame-03", "frame-04",
+        "frame-05", "frame-06", "frame-07", "frame-08",
+        "frame-09", "frame-10", "frame-11", "frame-12",
+        "frame-13", "frame-14", "frame-15", "frame-16"
+      ],
+      "normalize": {
+        "width": 256,
+        "height": 256,
+        "center": true
+      }
+    }
+  },
+  "execution": { "executionPreference": "automatic" },
+  "idempotencyKey": "sword-swing-sheet-1"
+}
+```
+
+Submit as a durable job:
+
+```http
+POST /v1/capabilities/image.generate.v1/jobs
+Authorization: Bearer <HYDRACEPT_API_KEY>
+Content-Type: application/json
+```
+
+### Behavior
+
+- `sheet.labels` optionally name each cell in the API response (`frame-01`, `slash-b`, etc.). They are **not** sent to the provider and must not be drawn on the image. Succeeded jobs expose every cell on `GET /v1/jobs/{jobId}` as its own artifact with `label`, `filename`, and `sliceCellId`.
+- `sheet.animation` requests subtle frame-to-frame motion with a locked facing direction.
+- `sheet.slice` must be `true` to activate slicing.
+- `sheet.normalize` sets the output canvas per cell (`width`, `height`, `center`). `center` trims and centers each grid cell; it does not switch the slicer to blob detection.
+- `variantCount` must be `1` when sheet slicing is enabled.
+- Hydracept uses provider-native transparency when available and matte normalization when needed.
+
+### Output
+
+A succeeded job returns **multiple artifacts** — one per sliced cell — on the job resource. Download each with:
+
+```http
+GET /v1/jobs/{jobId}/artifacts/{artifactId}
+```
+
+## Transparent output
+
+For a single asset:
+
+```json
+{
+  "input": {
+    "prompt": "pixel art healing potion icon, isolated",
+    "requestTransparentOutput": true
+  }
+}
+```
+
+Hydracept treats transparency as an **output contract**. The catalog model record decides the default path:
+
+- **Native alpha** when `nativeTransparentBackground` is true (gpt-image-2, gpt-image-1). Hydracept sends `background: "transparent"` and does **not** chroma-key or run matte v9.
+- **Chroma-key matte** when the model has no native alpha, or when the client sets advanced `transparencyMethod: "matte-v9"`.
+
+Optional `keyColor` and `transparentRegions` apply only to the matte path.
+
+Optional `transparentRegions` selects which pixels go to alpha when `requestTransparentOutput` is true:
+
+| Value | Use when |
+|------|----------|
+| `borderConnected` (default) | Isolated sprites, icons, props. Unused canvas connected to the frame edge becomes transparent. Interior subject pixels stay opaque. |
+| `borderConnectedAndEnclosed` | Full-bleed plates with interior openings (windows, cutouts, apertures that do not touch the canvas edge). Those enclosed chroma islands are also keyed. |
+
+```json
+{
+  "input": {
+    "prompt": "full-bleed interior, window openings punched",
+    "requestTransparentOutput": true,
+    "transparentRegions": "borderConnectedAndEnclosed",
+    "keyColor": "#00ffff"
+  }
+}
+```
+
+Opaque jobs (`requestTransparentOutput: false`) fill the canvas. Clients should not re-key the returned PNG.
+
+### Verify transparency from bytes, not previews
+
+Image viewers, chat clients, IDE previews, and vision tools may composite a transparent PNG onto a black or white matte. That matte is a viewer choice; it is not background color stored in the PNG. **Do not judge Hydracept PNG transparency from a thumbnail, generic image `Read`, or vision description.**
+
+Smoke validation now returns both `transparencyOk` and a structured `transparencyReport`. A passing report includes decoded alpha and isolation evidence such as `hasAlphaChannel`, `transparentPixelRatio`, `opaqueCornerCount`, and `chromaPlateRatio`, plus `verdict: "valid_transparent_sprite"`.
+
+For a downloaded artifact, inspect the file bytes directly:
+
+```bash
+python -m hydracept verify .hydracept/demo/first-asset.png --json
+```
+
+Example shape:
+
+```json
+{
+  "schemaVersion": "hydracept.cli.png-transparency.v1",
+  "kind": "png_transparency",
+  "passed": true,
+  "transparencyOk": true,
+  "transparencyReport": {
+    "schemaVersion": "hydracept.png-transparency.v1",
+    "verdict": "valid_transparent_sprite",
+    "hasAlphaChannel": true,
+    "transparentPixelRatio": 0.7883,
+    "opaqueCornerCount": 0,
+    "chromaPlateRatio": 0.0
+  }
+}
+```
+
+The **inspector verdict is authoritative**. Do not substitute a shortcut based only on transparent-pixel ratio or corner count: Hydracept also checks for connected leftover chroma plate and other invalid alpha states. A passing report should not be overridden merely because a host preview appears black or white.
+
+When MCP Apps are available, prefer `hydracept_interaction_surface` with `artifact.review` for human visual review. The Hydracept review surface presents transparent assets appropriately; use it to judge composition and aesthetics. Use `transparencyReport` / local byte verification to judge alpha correctness.
+
+## Variants
+
+Ask for multiple creative takes in one job:
+
+```json
+{
+  "input": {
+    "prompt": "rusted plasma wrench inventory icon",
+    "variantCount": 4,
+    "requestTransparentOutput": true
+  }
+}
+```
+
+Poll the job, compare artifacts, and keep the exact `artifactId` you want. Provenance stays on the job receipt.
+
+## When to use sheets vs variants
+
+| Use sheets when… | Use variants when… |
+|------------------|-------------------|
+| You need **cohesion** across a set (animation frames, icon family) | You want **creative alternatives** for the same prompt |
+| Objects share palette, lighting, and scale language | You will pick one winner and discard the rest |
+| Output is many small assets from one generation | Output is one chosen asset from several attempts |
+
+Sheets share one canvas, so they are ideal for sprites, icons, and other related asset sets.
+
+## Contract sources
+
+- Capability input schema: `GET /v1/capabilities/image.generate.v1` and [agent context](https://hydracept.com/.well-known/agent-context.json)
+- Job lifecycle: [Durable Jobs & Receipts](../jobs/)
+- Public OpenAPI: [https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)
+
+## Connections / BYOK
+URL: https://docs.hydracept.com/connections/
+
+# Connections / BYOK
+
+Connect your own provider keys and keep the provider relationship on your account. Hydracept encrypts credentials and uses them only for the project and environment you authorize. You pay the provider directly; Hydracept adds no inference markup.
+
+Hydracept API keys identify callers. Provider credentials pay for model inference. See [Authentication & Activation](../authentication/) for how those fit together.
+
+## Interactive BYOK (recommended)
+
+After activation, open **Configure BYOK** on the completion page (or `/v1/onboarding/byok?organizationId=…&projectId=…`). Paste an OpenAI, ElevenLabs, or Meshy key — Hydracept encrypts and binds it in one step.
+
+New Free workspaces include one free test run so `python -m hydracept smoke` can verify your setup before you connect a provider. Ongoing generation uses your own provider keys.
+
+## Manual provider connection (API)
+
+Connect providers through the organization-scoped public API:
+
+1. **Create** — `POST /v1/organizations/{orgId}/provider-credentials` stores the provider secret. Hydracept encrypts it at rest and validates the credential as part of create (there is no separate public validate route).
+2. **Bind** — `POST /v1/organizations/{orgId}/provider-credentials/{credentialId}/bindings` attaches the credential to the project/environment that may use it at execution time.
+
+```http
+POST /v1/organizations/{orgId}/provider-credentials
+Authorization: Bearer <HYDRACEPT_API_KEY>
+Content-Type: application/json
+```
+
+```http
+POST /v1/organizations/{orgId}/provider-credentials/{credentialId}/bindings
+Authorization: Bearer <HYDRACEPT_API_KEY>
+Content-Type: application/json
+```
+
+Use the activation form, Studio, or the API with your Hydracept machine credential. Keep provider secrets off game clients.
+
+Walkthrough: [5-minute game asset](../five-minute-game-asset/).
+
+
+
+
+## Automated bootstrap
+
+If automated setup is unavailable for your provider, connect credentials with the create → bind flow above.
+
+
+
+
+## Next
+
+- [Capabilities](../capabilities/)
+- [Durable Jobs & Receipts](../jobs/)
+- [Errors](../errors/)
+
+## Billing & plans
+URL: https://docs.hydracept.com/billing/
+
+# Billing & plans
+
+Hydracept has four public plans: **Free**, **Builder**, **Team**, and **Enterprise**. Plans control capacity, retention, seats, and shared-workspace features — not routing quality, pin semantics, or receipt evidence.
+
+See live prices on [hydracept.com/pricing](https://hydracept.com/pricing).
+
+> Bring your own provider at 0%. Use Hydracept-managed providers at provider price + 6%. Upgrade your plan when you need more Hydracept capacity or organizational features.
+
+## BYOK (bring your own key)
+
+Connect your own provider credentials and pay your provider directly. Hydracept adds **0% inference markup**. Provider-spend guardrails help you set a daily safety budget and are not an additional Hydracept charge.
+
+Durable text jobs use **deferred processing** automatically: Hydracept submits them on the provider's latency-tolerant tier at **50% off** standard token rates. Eligible OpenAI Responses pins stay on standard processing unless you set `processing: "deferred"`. Interactive invoke and stream stay on standard processing. See [`features.deferredProcessing`](../deferred-processing/) on capability descriptors.
+
+## Managed inference (PAYG)
+
+Hydracept can run generation on platform credentials using a **prepaid wallet**:
+
+- **No subscription required** for managed inference
+- Transparent pricing: published upstream basis + **6% Hydracept service fee**
+- One managed fee across all capabilities (text, images, video, 3D, workflows)
+- New ordinary Free accounts receive a one-time **US$0.50 managed trial allowance** for setup/smoke verification
+- **Wallet top-up is live** (`walletTopUpLive: true` in the well-known manifest). Add funds from Studio Billing or `POST /v1/billing/wallet/top-up-session`.
+
+Example:
+
+```text
+Provider basis              $1.00
+Hydracept service fee (6%)  $0.06
+──────────────────────────────────
+Your total                  $1.06
+```
+
+Check capability discovery for managed availability:
+
+- `GET /v1/capabilities` — inference capabilities include `billingModes.byok` and `billingModes.managed`; domain and CPU processing omit `billingModes`
+- `POST /v1/capabilities/{key}/quote` — firm retail price before you run a job (does not reserve funds). `POST .../estimate` is a 0.2 serialization shim.
+
+Receipts keep the fee snapshot they were created under. Historical charges are never recomputed when the catalog fee changes.
+
+## Free ($0)
+
+Genuinely useful for evaluation, hobby projects, and occasional generation.
+
+- 1 user · 3 projects
+- 2 concurrent durable jobs · 10 active durable jobs
+- 1,000 lightweight inferences / hour
+- 30-day history
+- BYOK and managed execution
+- All generally available capability types
+
+Two concurrent durable jobs is the conversion pressure — not capability gating.
+
+## Builder ($19 / month)
+
+For a serious individual developer who has outgrown Free.
+
+- 1 user · 10 projects
+- 10 concurrent durable jobs · 40 active durable jobs
+- 4,000 lightweight inferences / hour
+- 90-day history
+- Personal provider vault, receipts, artifacts, and normal routing
+
+Primary upgrade trigger: *two concurrent jobs is slowing me down.*
+
+## Team ($149 / month)
+
+Organizational production, not the first paid tier.
+
+- 5 included users · 25 projects
+- 30 concurrent durable jobs · 150 active durable jobs
+- 25,000 lightweight inferences / hour
+- 180-day history
+- Shared provider vault, organization budgets, roles, and production controls
+
+Inference can still run on BYOK at 0% Hydracept fee. Managed execution remains PAYG + 6%.
+
+## Enterprise
+
+Sales-only. Larger teams, volume commitments, SLA, SSO, private networking, custom retention, and contractual terms. Request Enterprise at support@hydracept.com — there is no self-serve checkout.
+
+## How to upgrade (Studio)
+
+1. Sign in at [app.hydracept.com/login](https://app.hydracept.com/login)
+2. Open **Billing** in Studio: [app.hydracept.com/studio/billing](https://app.hydracept.com/studio/billing)
+3. Choose **Builder** ($19) or **Team** ($149) — checkout is hosted by Stripe
+4. An upgrade immediately refreshes admission capacity. You do not recreate the account.
+5. Use **Manage billing** for invoices, payment method, or cancellation
+6. Add wallet funds from the same page or `POST /v1/billing/wallet/top-up-session`
+7. Set **provider safety budgets** on the same page (not a Hydracept charge)
+
+## API
+
+- `GET /v1/billing/summary` — plan, subscription, managed inference wallet, and a 30-day usage/spend rollup (`?days=7..90`)
+- `GET /v1/billing/wallet` — wallet balances (available, reserved)
+- `GET /v1/billing/wallet/transactions` — immutable wallet transaction log
+- `POST /v1/billing/wallet/top-up-session` — prepaid wallet top-up (`walletTopUpLive: true`)
+- `GET /v1/billing/guardrails` — BYOK provider-spend guardrails
+- `PATCH /v1/billing/guardrails` — update daily / per-execution safety budgets
+- `GET /v1/billing/plans` — purchasable plans (Builder, Team)
+- `POST /v1/billing/checkout-session` — subscription checkout
+- `POST /v1/billing/portal-session` — Stripe Customer Portal
+- `GET /v1/capabilities` — inference capabilities include `billingModes`; domain and CPU processing omit them
+
+## When you hit limits
+
+Capacity limits are machine-readable. A durable concurrency error looks like:
+
+```json
+{
+  "code": "DURABLE_CONCURRENCY_LIMIT",
+  "message": "This project currently has 2 durable jobs running and the free plan allows 2.",
+  "details": {
+    "current": 2,
+    "plan": "free",
+    "upgrade": {
+      "plan": "builder",
+      "displayName": "Builder",
+      "monthlyUsd": 19,
+      "concurrentDurableJobs": 10
+    }
+  }
+}
+```
+
+- `402` / budget errors — review project budgets, wallet balance, BYOK guardrails, and plan capacity
+- `403` — plan entitlement blocked the action; the `details` object names the limit and the next plan
+- `429` — rate limit; retry with backoff
+
+See [Rate limits & quotas](../rate-limits/).
+
+## Related
+
+- [Authentication & Activation](../authentication/)
+- [Connections / BYOK](../connections/)
+- [Deferred processing](../deferred-processing/)
+- [Pinned Execution](../pinned-execution/)
+- [Execution provenance](../provenance/)
+- [Terms](https://hydracept.com/terms.html)
+
+## Errors
+URL: https://docs.hydracept.com/errors/
+
+# Errors
+
+Failed API calls return an HTTP status code. Structured capability errors return their Hydracept error information in a `detail` object; some standard HTTP errors use a string or validation details in `detail`.
+
+A **job that was successfully admitted and later failed is different**: `GET /v1/jobs/{jobId}` returns the job resource with terminal status `failed` and `error: {code, message}`. Do not confuse an HTTP request error with the error recorded on a durable job.
+
+## Typical statuses
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Invalid request / policy rejection |
+| `401` | Missing or invalid Hydracept API key / session |
+| `402` | Funding required, budget prevent-mode block, or managed wallet insufficient |
+| `403` | Your API key, project, or environment is not allowed to make this request |
+| `404` | Capability, job, or resource not found |
+| `410` | Resource gone (expired session or retired endpoint) |
+| `409` | Conflict (including idempotency conflicts) |
+| `422` | Request validation failed |
+| `429` | Rate limited |
+| `503` | Provider unavailable |
+
+## Structured capability errors
+
+When an endpoint returns a structured capability error, its body has this shape:
+
+```json
+{
+  "detail": {
+    "code": "BudgetExceeded",
+    "message": "Budget exceeded for principal:usr_example (estimated $0.0500, $0.0000 of $5.0000 remaining this UTC day)",
+    "details": {
+      "scope": "principal:usr_example",
+      "enforcement": "prevent",
+      "estimatedCost": 0.05,
+      "available": 0.0,
+      "ceiling": 5.0
+    }
+  }
+}
+```
+
+`BudgetExceeded` is returned only when a project or caller has opted into **prevent** mode. Default is no enforcement: spend ceilings are accounting, not a refuse gate. Opt in with `budget.enforcement` / `executionConstraints.budgetEnforcement` (`warn` or `prevent`) plus ceilings, or project `budget_policy_json.enforcement`.
+
+| Mode | Admission |
+|------|-----------|
+| `off` (default) | Call proceeds. No 402. |
+| `warn` | Call proceeds. Result/job includes `warnings` with scope, remaining, and ceiling. |
+| `prevent` | HTTP 402 `BudgetExceeded` with the scope and remaining USD. |
+
+Setting `maxCostUsd` / `maximumEstimatedCost` on a request without an explicit mode is caller opt-in to **prevent** for that call.
+
+`detail.code` is the stable Hydracept error code. `detail.message` is a human-readable explanation. Validation failures may use a different `detail` shape.
+
+### Unknown or conflicting execution fields
+
+Hydracept never acknowledges an execution request while silently discarding part of the caller’s execution intent. Unknown fields on the invoke/job envelope, `execution`, `executionConstraints`, or `sampling` return `422` instead of being ignored. Capability `input` is still validated by that capability’s schema.
+
+```json
+{
+  "detail": {
+    "code": "UNKNOWN_EXECUTION_FIELD",
+    "path": "execution.executionConstraints.modelPin",
+    "message": "Unknown execution field 'modelPin'. Did you mean 'preferredModel'?",
+    "didYouMean": "preferredModel",
+    "supported": [
+      "preferredModel",
+      "providerPin",
+      "autoSelect",
+      "maxCostUsd",
+      "budgetEnforcement"
+    ],
+    "retryable": false
+  }
+}
+```
+
+Sending the same execution constraint both at the envelope root (`preferredModel`) and under `execution.executionConstraints` with different values returns `CONFLICTING_EXECUTION_CONSTRAINT`. Hydracept does not pick a winner.
+
+### Prompt overflow
+
+Semantic prompt fields that exceed `inputConstraints` return `422` with `PromptTooLong`. Hydracept does not trim the prompt and continue.
+
+```json
+{
+  "detail": {
+    "code": "PromptTooLong",
+    "message": "Prompt is 947 characters; model.generate.3d.v1 accepts at most 800.",
+    "field": "input.prompt",
+    "actualCharacters": 947,
+    "maxCharacters": 800,
+    "retryable": false
+  }
+}
+```
+
+Discover the limit from `GET /v1/capabilities/{key}` → `inputConstraints` before submit. See [Capabilities](../capabilities/#prompt-limits).
+
+Handle the HTTP status first. When `detail.code` is present, use that Hydracept value rather than provider-native error strings.
+
+Admission failures from invoke/jobs may return `{code, message, details}` at the top level (not wrapped in `detail`). MCP tools surface `code`, `connectUrl` / `upgradeUrl`, and `nextAction` when present.
+
+| Code | What to do |
+|------|------------|
+| `USE_JOBS` | POST `/v1/capabilities/{key}/jobs` (`submit` in the error body) |
+| `USE_INVOKE` | POST `/v1/capabilities/{key}/invoke` |
+| `CONNECTION_REQUIRED` | Open `details.connectUrl` (or `connectUrl`) so a human connects BYOK |
+| `EXTERNAL_ACTIONS_DISABLED` | Open `details.upgradeUrl` (Studio billing) |
+| `QUOTE_MISMATCH` | Omit `execution.quoteId` and submit with a new `idempotencyKey` |
+| `billing_managed_usage_exhausted` | Open `upgradeUrl` or connect BYOK |
+
+### Managed inference
+
+| Code | Meaning |
+|------|---------|
+| `funding_required` | Managed first-use allowance used, ineligible, or per-job trial ceiling hit. `details.fundingOptions` is `managed` and/or `byok`. The capability is still ready; additional execution needs funding or a provider connection. |
+| `billing_managed_usage_exhausted` | Legacy alias for the same funding boundary (`details.legacyCode`). Prefer `funding_required`. Wallet balance too low for the authorized estimate. |
+| `billing_not_configured` | Stripe / billing not enabled for this environment |
+
+Quotes and capability discovery do not consume managed first-use capacity. When trial capacity is exhausted, Hydracept does not silently charge an unrelated payment method.
+
+When `billingModes` is omitted, the capability is not inference-priced (domain, DNS, and CPU processing). When `billingModes.managed.available` is `false`, use BYOK or choose another capability — do not rely on submit errors for discovery.
+
+## Terminal job errors
+
+A durable job may be admitted successfully and fail later. Read the job itself:
+
+```http
+GET /v1/jobs/{jobId}
+```
+
+```json
+{
+  "jobId": "wfr_...",
+  "status": "failed",
+  "error": {
+    "code": "PROVIDER_ERROR",
+    "message": "The provider could not complete the job"
+  },
+  "nextAction": "inspect_error"
+}
+```
+
+For automation, branch on `error.code`; `error.message` is explanatory text. Do not parse provider-native strings to infer a stable class.
+
+If the user says “the last job failed” and the ID is no longer in context, do not ask them to retrieve it manually. Use the prompt-free project history first:
+
+```text
+hydracept_jobs_find(intent="failed")
+→ hydracept_job_inspect(job_id)
+```
+
+or `GET /v1/projects/{projectId}/jobs?outcome=failed`. The list exposes only `errorCode`, never the full error message or request prompt. `hydracept_job_inspect` intentionally reads one job and bundles its `error`, diagnostics, request snapshot, and receipt summary.
+
+A retry is a new execution attempt: copy the inspected request input, remove the old `idempotencyKey`, and submit with a new one. On `QUOTE_MISMATCH`, also omit stale `execution.quoteId` / `estimateId`.
+
+## Idempotency
+
+Durable job submits accept `idempotencyKey` (minted if omitted). Replaying the same key with the same payload returns the existing `jobId` for queued, running, succeeded, and failed jobs — a client poll timeout is not a Hydracept failure. `409 IdempotencyConflict` is only for a **different** normalized payload on that key; those bodies include `jobId`. Follow the job's `nextAction` / `retry.newKeySafe` before minting a new key. `TRANSPORT_AMBIGUOUS` is never new-key-safe.
+
+`409` with `detail.code` `QUOTE_MISMATCH` means a previously sealed `quoteId` no longer matches the job body. Omit `execution.quoteId` and submit with a **new** `idempotencyKey`.
+
+## Related
+
+- [Rate limits & quotas](../rate-limits/)
+- [Durable Jobs & Receipts](../jobs/)
+- Public OpenAPI: [https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)
+
+## Rate limits & quotas
+URL: https://docs.hydracept.com/rate-limits/
+
+# Rate limits & quotas
+
+Every request is checked against your plan limits and the budget you configure.
+
+## What is limited
+
+Plans are **Free / Builder / Team / Enterprise**. Limits are applied per plan:
+
+- short requests (in progress, per hour, and per month) — includes pinned execution
+- active generation jobs
+- local / accelerated transforms
+- streaming connections
+- retained payload bytes and history retention days
+- project, environment, seat, and API-key limits
+
+Enterprise customers can discuss additional capacity with support. See [Hydracept pricing](https://hydracept.com/pricing).
+
+## Signals
+
+When you hit a limit, the API returns:
+
+- `429` for rate limiting
+- `402` for budget exceeded (including BYOK provider-spend guardrails)
+- `403` when your plan or project configuration does not allow the request
+
+Retry with backoff on `429`. For `402`, review project budgets, wallet, or your own guardrail at [Studio Billing](https://app.hydracept.com/studio/billing) — see [Billing & plans](../billing/). For `403`, review plan entitlements or contact support for Enterprise.
+
+## Budgets
+
+Execution options can carry budget constraints. BYOK still bills your provider account; Hydracept guardrails help prevent runaway spend before work starts. These guardrails are not an additional Hydracept charge.
+
+## Related
+
+- [Billing & plans](../billing/)
+- [Errors](../errors/)
+- [Authentication & Activation](../authentication/)
+
+## Security
+URL: https://docs.hydracept.com/security/
+
+# Security
+
+## Credentials
+
+- Hydracept API keys authenticate callers to the API.
+- Provider credentials (BYOK) pay for inference and are encrypted at rest.
+- Do not embed Hydracept API keys or provider secrets in shipped game clients.
+- For player-facing apps, call Hydracept from your server.
+
+## Transport
+
+All public API traffic uses HTTPS (`https://api.hydracept.com`).
+
+## Least privilege
+
+Bind provider credentials to the project/environment that needs them. Use separate machine credentials for CI and production when you can.
+
+## Consumer boundary
+
+For generation handled by Hydracept, route work through the Hydracept API instead of calling provider SDKs directly. See [Integrating safely](../consumer-boundary/).
+
+## Reporting
+
+Report security issues to [support@hydracept.com](mailto:support@hydracept.com).
+
+## Related
+
+- [Authentication & Activation](../authentication/)
+- [Connections / BYOK](../connections/)
+- [Privacy](https://hydracept.com/privacy.html)
+- [Terms](https://hydracept.com/terms.html)
+
+## Coding Agents
+URL: https://docs.hydracept.com/agents/
+
+# Coding Agents
+
+Coding agents can integrate Hydracept from the published docs, OpenAPI, and agent-context endpoints.
+
+Hydracept gives software and agents one stable execution surface for external capabilities including text/reasoning, translation, media generation, domains, and DNS. Job history is part of that public surface: an agent can find what failed or what already worked without turning the human into a job-ID clipboard.
+
+A single capability call is a supported usage. CI, SDK embedding, provider pinning, and production workflows are later compounding benefits — not an entrance fee.
+
+## One capability when you need it
+
+```bash
+python -m hydracept capabilities find "generate an image"
+python -m hydracept run image.generate.v1 --prompt "transparent 1024x1024 blue slime icon" --json
+```
+
+`run` composes `init` when the workspace can be bootstrapped. Do not start with a setup ceremony if the user already asked for a result.
+
+Opportunistic examples: one transparent icon, a 2-second UI sound, a rough 3D model, a domain availability check, a short translation, a higher-quality reasoning pass.
+
+## Agent context
+
+```http
+GET /v1/agent-context
+```
+
+Returns the current capabilities, onboarding steps, SDK names, configuration variables, and integration guidance an agent needs to get started.
+
+Durable text jobs use [deferred processing](../deferred-processing/) at 50% of standard token rates. Prefer `POST /v1/capabilities/{key}/jobs` (or MCP `hydracept_submit_job`) when the work can wait. Pins stay one-attempt and standard unless `processing: "deferred"` is set. Discover `features.deferredProcessing` on capability descriptors.
+
+## Well-known manifests
+
+| URL | Purpose |
+|-----|---------|
+| [https://hydracept.com/plugin](https://hydracept.com/plugin) | Plugin homepage (Cursor / Claude Code / MCP listings) |
+| [https://hydracept.com/agent-game-assets](https://hydracept.com/agent-game-assets) | Canonical agent game-asset workflow (Cursor/Claude → reference → sheet → Unity) |
+| [https://hydracept.com/.well-known/hydracept.json](https://hydracept.com/.well-known/hydracept.json) | Product manifest (API, capabilities, pricing flags) |
+| [https://hydracept.com/.well-known/agent-context.json](https://hydracept.com/.well-known/agent-context.json) | Agent-oriented discovery document |
+| [https://hydracept.com/llms.txt](https://hydracept.com/llms.txt) | Compact guidance for LLM crawlers |
+
+## Public OpenAPI
+
+Canonical customer contract:
+
+[https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)
+
+Authenticate requests with `Authorization: Bearer <HYDRACEPT_API_KEY>` as declared in the OpenAPI document.
+
+## Safe integration
+
+For products that use Hydracept for execution, follow [Integrating safely](../consumer-boundary/). Run the strict boundary in product CI; add `--json` when an agent or CI system needs a stable machine result.
+
+
+```bash
+python -m hydracept consumer-check --strict --json
+```
+
+
+
+## MCP
+
+Hydracept exposes an MCP server for tool-using agents. **In a project checkout, stdio is the default** after `python -m hydracept init`: `python -m hydracept mcp bind` writes `.cursor/mcp.json` and `.mcp.json` so `python -m hydracept mcp serve` uses `.hydracept/secrets.json`. Reload MCP once when init reports `reloadRequired: true`. Do not copy the workspace key into **Plugins → Configure**. Hosted endpoint `https://api.hydracept.com/mcp` is for clients with no checkout. If `hydracept_*` tools are missing, do **not** retry hosted discovery — use stdio or the CLI. Install the latest public package with `pip install -U hydracept`; rely on versioned machine contracts rather than hard-coded patch-version folklore. Hosted MCP cannot apply local project files. Do not treat a cached `.hydracept/agent-context.json` as the capability catalog.
+
+Job recovery tools are available on both stdio and hosted MCP:
+
+- `hydracept_jobs_find` — find recent, failed, or reusable jobs in the bound project
+- `hydracept_job_inspect` — inspect one selected job's error, diagnostics, receipt summary, request snapshot, and reuse candidate
+
+Install into a coding agent:
+
+- **Plugin homepage:** [https://hydracept.com/plugin](https://hydracept.com/plugin)
+- **Cursor:** install Hydracept from the Cursor Marketplace when listed, or add the public Hydracept agent-plugin repository. Then run `python -m hydracept init --apply --yes --json` and reload MCP only when requested.
+- **Claude Code:** install the Hydracept plugin, init in the repo, and reload MCP only when requested.
+- **No checkout (ChatGPT, MCP Registry):** hosted MCP at `https://api.hydracept.com/mcp` with a bearer API key
+- **CLI fallback:** `python -m hydracept agents install --auto` / `python -m hydracept mcp serve` / `python -m hydracept run ...`
+
+See [Agent plugin distribution](../agent-plugin-distribution/).
+
+
+## MCP interaction panel (stdio, 0.3.9+)
+
+After `python -m hydracept init --apply --yes --json`, stdio MCP exposes `hydracept_interaction_surface` for seven semantic states of one App (`ui://hydracept/app.html`). Follow `presentation.agentAction`. `present_and_yield` means present the surface and stop the turn. `presentation.status` `mount_requested` means present the App; `mounted`/`already_mounted` means the App is the UI; `fallback`/`unsupported` means use the structured fallback. The panel is presentation-only — it does not execute, charge, or write the repository. Reload MCP after upgrading to hydracept 0.3.17+ (0.3.12+ is the floor for init to reuse `gh`/`gcloud` without a browser). Funding display in 0.3.13+ no longer labels customer-visible `$0` as aggregate/trial credit when execution is funded by operator grants. Structured capability input should be passed with `--input-file` / `--body` rather than inline JSON on PowerShell.
+
+## Recommended agent path
+
+1. Read `GET /v1/agent-context` for the live bootstrap command, capability catalog, and rules.
+2. Run `python -m hydracept init --apply --yes --json` in the project root.
+3. If status is `ready`, the JSON `project.resolution` field tells you whether Hydracept reused a binding, matched a repository, or created the workspace project.
+4. If status is `interaction_required`, **stop automation immediately**. Identity may already be authenticated — read `identity` and `projectResolution` before assuming login failed. Do not start `--wait`, doctor, consumer-check, status, or unrelated diagnostics. If `presentation.agentAction` is `present_and_yield` and `hydracept_interaction_surface` is available, invoke it once with the supplied `interaction.context` and make it the final tool call of the turn. Otherwise present `action.url` verbatim and stop. Only after the human confirms completion should the agent run the returned `afterCompletion.command`.
+5. Connect BYOK for sustained inference, or use managed inference. Ordinary new Free accounts receive a one-time **US$0.50 managed trial allowance** for setup/smoke verification; BYOK is 0% Hydracept fee and managed execution is provider price + 6%.
+6. Discover the needed capability live. Do not assume Hydracept is only a game/media tool; the catalog may include text/reasoning, translation, domain/DNS, media, research, and other external operations.
+7. Submit managed work **without** `execution.quoteId`. The API seals pricing at admission. `/quote` is an optional preview; do not reuse a stale `quoteId`.
+8. For image production (Sheet & Slice, transparency, variants), read [Image production](../image-production/). Each slice needs ≥ 655360 px and 16-aligned edges (minimum 816×816 per slice; 2×2 sheets ≥ 1632×1632).
+9. For Unity 6 Editor integration, read [Unity integration](../unity-integration/).
+10. Submit and poll durable jobs per [Jobs](../jobs/) using the public capability contract.
+11. If the user says **“the last job failed”**, call `hydracept_jobs_find(intent="failed")` before asking for a job ID, then `hydracept_job_inspect` on the relevant item. Read `error.code`; if retrying, use the `requestSnapshot` input with a new idempotency key.
+12. If the user says **“use the one we picked”** or **“reuse the last good one”**, call `hydracept_jobs_find(intent="reusable", capability_key="...")`, inspect the candidate, and prefer its explicit `selectedArtifactId`. Do not promote, favorite, or approve it implicitly.
+13. Confirm error / rate-limit handling from [Errors](../errors/) and [Rate limits](../rate-limits/).
+14. For a clean-room consumer audit, run `python -m hydracept consumer-check --strict --json` and require `passed: true`.
+
+The project list is intentionally prompt-free. Agents can scan failed and reusable jobs without ingesting every historical request. Prompt/request content appears only after the agent deliberately inspects a single job.
+
+## If the user asks for game image features
+
+| User intent | Hydracept surface |
+|-------------|-------------------|
+| Transparent sprite / icon PNG | `image.generate.v1` + `requestTransparentOutput: true` (native alpha when the catalog model supports it) |
+| Full-bleed plate with interior openings | same; native alpha by default. Advanced chroma: `transparencyMethod: "matte-v9"` + `transparentRegions: "borderConnectedAndEnclosed"` |
+| Force chroma-key matte | `transparencyMethod: "matte-v9"` + optional `keyColor` |
+| Sprite sheet / contact sheet → individual frames | `sheet.slice`, `sheet.rows`, `sheet.columns`, optional `sheet.animation` |
+| Unity 6 Editor import with provenance | [Unity integration](../unity-integration/) — `hydracept integrations install unity` |
+| Multiple icon takes to pick from | `variantCount` 2–4 |
+| Recover the last failed generation | `hydracept_jobs_find(intent="failed")` → `hydracept_job_inspect` |
+| Reuse the selected prior artifact | `hydracept_jobs_find(intent="reusable")` → inspect → download/reference `selectedArtifactId` |
+| Automated art pipeline / CI | `POST /v1/capabilities/image.generate.v1/jobs` + artifact download |
+
+Do not invent Studio-only endpoints. Prefer the public capability contract and live catalog. Pinned research runs remain on the pinned-execution contract; project job history does not pretend to be a pinned-run history API.
+
+## Agent plugin distribution
+URL: https://docs.hydracept.com/agent-plugin-distribution/
+
+# Coding agent integrations
+
+Use **`hydracept-agent-plugin`** to give coding agents access to Hydracept capabilities, job submission, and result records.
+
+The CLI (`python -m hydracept agents install --auto`) is the universal local install. Host plugins are also published from the public catalog at [github.com/zencodeinc/hydracept-agent-plugins](https://github.com/zencodeinc/hydracept-agent-plugins).
+
+## What agents can do
+
+Agents can discover available capabilities, submit generation jobs, check progress, and retrieve artifacts and execution records.
+
+> Hydracept gives software and agents external capabilities through one stable execution control plane. Every run leaves a receipt.
+
+Plugin homepage (Cursor / Claude / MCP listing forms):
+
+[https://hydracept.com/plugin](https://hydracept.com/plugin)
+
+Official MCP Registry `description` (≤100 characters):
+
+> Execution control plane for agents: capabilities, durable jobs, budgets, receipts, and BYOK.
+
+Publisher: **Zencode Consulting Inc.**
+
+## MCP transports
+
+| Transport | When to use | Endpoint |
+|-----------|-------------|----------|
+| Stdio (primary for coding agents) | Git checkout after `hydracept init` | `python -m hydracept mcp serve` |
+| Hosted | No project checkout (ChatGPT, MCP Registry) | `https://api.hydracept.com/mcp` |
+
+Stdio authenticates with `.hydracept/secrets.json`. Do not copy that key into a host plugin **Configure** UI. Hosted MCP authenticates with `Authorization: Bearer <HYDRACEPT_API_KEY>` for clients that cannot see the workspace.
+
+## Install
+
+```bash
+python -m hydracept agents install --auto
+```
+
+| Host | Install |
+|------|---------|
+| Plugin homepage | [https://hydracept.com/plugin](https://hydracept.com/plugin) |
+| CLI (all hosts) | `python -m hydracept agents install --auto` |
+| Cursor | Cursor Marketplace listing of `zencodeinc/hydracept-agent-plugins`, or enable `plugins/cursor` |
+| Claude Code | `/plugin marketplace add zencodeinc/hydracept-agent-plugins` then `/plugin install hydracept@hydracept` |
+| MCP Registry | `com.hydracept/mcp` at `https://api.hydracept.com/mcp` |
+
+The marketplace name (`hydracept`) participates in the Claude install command.
+
+## Verify the connection
+
+1. Run `python -m hydracept init` in your project. This binds project MCP to stdio. Reload MCP once. Do not copy the workspace key into host plugin settings.
+2. Ask the agent to list Hydracept capabilities (`hydracept_capabilities`).
+3. Run `python -m hydracept smoke` when you want a paid verification job.
+
+Listing submissions for OpenAI/Codex, ClawHub, VS Code, JetBrains, and the Unity Asset Store are separate publication decisions.
+
+## Unity
+URL: https://docs.hydracept.com/unity-integration/
+
+# Hydracept Unity integration
+
+Generate and import production assets directly from the Unity 6 Editor. Player builds stay independent of Hydracept.
+
+## Install
+
+### CLI (recommended)
+
+```bash
+python -m hydracept integrations install unity
+```
+
+This adds the package to your Unity project `Packages/manifest.json`.
+
+
+### Package Manager (UPM)
+
+```
+https://github.com/zencodeinc/hydracept-public.git?path=/packages/unity#v0.1.0
+```
+
+
+
+
+## Setup
+
+From your Unity project root:
+
+```bash
+python -m hydracept init --apply --yes --json
+```
+
+Open **Window → Hydracept** and click **Refresh** on the Status tab.
+
+## Workflows
+
+### Generate sprite
+
+1. **Generate** tab → enter prompt and dimensions
+2. Choose import profile (Sprite, Pixel Art Sprite, UI Sprite, Texture)
+3. Submit → import variants when complete
+
+### Sheet & Slice
+
+1. **Sheet & Slice** tab → prompt, grid size, frame size
+2. Submit → **Import All** imports individual sliced PNGs
+
+A succeeded sheet job returns **one artifact per cell**, ready to import separately. See [Image production](../image-production/) for the API contract.
+
+Imported assets land in `Assets/Generated/Hydracept/` with `hydracept.provenance.json` sidecars.
+
+## Boundary
+
+- Editor-only — no Runtime assembly
+- No credentials in project assets
+- Player builds do not include Hydracept code
+- Imported assets work offline after import
+
+Generation happens in the Editor. Credentials stay out of player builds, and imported assets continue to work offline. See [Integrating safely](../consumer-boundary/).
+
+## Unity (redirect)
+URL: https://docs.hydracept.com/unity/
+
+# Unity
+
+The Unity docs live at [Unity integration](../unity-integration/).
+
+```bash
+python -m hydracept integrations install unity
+```
+
+## Python SDK
+URL: https://docs.hydracept.com/python/
+
+# Python SDK
+
+Install the public Python client and CLI:
+
+```bash
+pip install -U hydracept
+python -m hydracept init --apply --yes --json
+python -m hydracept doctor
+python -m hydracept smoke
+```
+
+Prefer `python -m hydracept` on Windows if `hydracept.exe` is not on PATH.
+
+Smoke uses the Free-plan trial budget or BYOK. It is a real image job, not a no-op health check.
+
+Workspace-aware invoke:
+
+```python
+from hydracept import HydraceptWorkspace
+
+with HydraceptWorkspace.open() as hydracept:
+    result = hydracept.invoke("text.general.fast.v1", {"input": {"prompt": "hello"}})
+```
+
+See [Quick Start](../) and [Durable jobs](../jobs/).
+
+## Current release (0.3.17)
+
+`pip install -U hydracept` installs the current PyPI cut. Use `python -m hydracept run <key> --input-file request.json --json` for structured inputs (PowerShell-safe, including UTF-8 BOM and UTF-16 files). `python -m hydracept capabilities describe` includes `nextAction.exampleInput` for constructing that file. `python -m hydracept funding status --json` reports customer-visible managed credit separately from the active trial bucket and execution-available funding. Receipts copy funding from admission evidence; missing evidence stays `unknown` and is never displayed as BYOK or managed trial. Hydracept-covered executions report `$0` `customerCharge` while retail `price` remains visible. Domain and CPU capabilities omit inference `billingModes`.
+
+## MCP interaction panel (0.3.9+)
+
+Stdio MCP (`python -m hydracept mcp serve`) ships one Hydracept App at `ui://hydracept/app.html` with seven semantic surfaces: `project.connect`, `capability.launch`, `connection.resolve`, `authorization.preflight`, `job.progress`, `artifact.review`, and `change.promote`. Use `hydracept_interaction_surface` when a human decision or structured input is required. Unattended `init --apply --yes --json` binds or creates when unambiguous. Upgrade with `pip install -U hydracept` (0.3.17+ required for current funding display, receipt charge truth, and PowerShell `--input-file`; 0.3.12+ for init to reuse `gh`/`gcloud` without a browser).
+
+## Consumer Boundary
+URL: https://docs.hydracept.com/consumer-boundary/
+
+# Integrating safely
+
+Use the public Hydracept API as the single path from your product to the external capabilities Hydracept owns for that integration.
+
+## Rule
+
+This keeps credentials, provider configuration, job status, cost, and execution records in one place.
+
+When Hydracept is meant to own execution:
+
+- call Hydracept capabilities and jobs from trusted tooling or your server
+- keep direct provider/service SDKs out of paths handled by Hydracept
+- never embed provider keys in game clients or other shipped public code
+
+## CI gate
+
+
+```bash
+python -m hydracept consumer-check --strict --json
+```
+
+Require `passed: true` in automated consumer/integration audits. `--strict` expands the scanner beyond source files into common configuration manifests and prose (`*.md`, `*.rst`, `*.txt`) so provider hosts and legacy integration paths cannot hide in deployment/build configuration or documentation. Generated, vendored and cached paths (`.hydracept`, `node_modules`, `__pycache__`, `.venv`, `dist`, `build`, `.next`, `obj`, `bin`, coverage output, tool caches) are skipped — they are not authored by the consumer. Each violation is tagged `[code]` or `[documentation]` and carries its line number, so a comment-only or prose mention can be triaged apart from an executable reference. `--json` emits `hydracept.cli.consumer-check.v1` for agents and CI.
+
+
+
+
+## Related
+
+- [Capabilities](../capabilities/)
+- [Coding Agents](../agents/)
+- Public OpenAPI: [https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)
+
+## Research Inference Protocol
+URL: https://docs.hydracept.com/research/
+
+# Reproducible research runs
+
+Use [Pinned Execution](../pinned-execution/) when a research run needs an explicit provider, model, API, and request. The completed execution record captures the settings and provider response so a result can be reviewed and reproduced.
+
+Group related runs in a [manifest](../provenance/) and save a stable setup in an AI lockfile. The public endpoint is:
+
+```http
+POST /v1/inference/pinned
+GET  /v1/inference/pinned/{receipt_id}
+```

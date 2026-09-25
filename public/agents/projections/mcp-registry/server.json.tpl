@@ -6,7 +6,7 @@
   "version": "{{distributionVersion}}",
   "websiteUrl": "{{pluginHomepage}}",
   "repository": {
-    "url": "https://github.com/zencodeinc/hydracept-agent-plugins",
+    "url": "https://github.com/zencodeinc/hydracept-plugin",
     "source": "github"
   },
   "remotes": [

@@ -13,13 +13,29 @@ Cohesive sprite, icon, glyph, and VFX families via Sheet & Slice.
 
 Use `image.generate.v1` with sheet options — not a separate fictional capability.
 
-## Pixel minimum (required)
+## Sizing (required)
 
-Each **slice** (and a non-sliced image) needs **≥ 655360 total pixels**. Edges must be **multiples of 16**. Minimum square: **816×816**.
+Size the sheet by **either** axis — you do not need both:
 
-A 2×2 sheet is four slices. Do **not** submit 1024×1024 — that is 512×512 per cell (262144 px) and fails. Use at least **1632×1632** (816×816 per cell) for 2×2.
+- **Cell size** — `sheet.normalize.width/height`. The canvas is then
+  `cell × columns` by `cell × rows`.
+- **Canvas size** — `width`/`height`. Each cell is then
+  `width ÷ columns` by `height ÷ rows`.
 
-If the API returns `total pixels must be >= 655360`, the message includes this slice `W×H` and the 816×816 floor. Resize; do not retry the same canvas.
+If you give both they must agree (`canvas = cell × columns, rows`), or the request is
+rejected with the relationship spelled out.
+
+The **resulting canvas** must meet the model's minimum canvas. This is data-driven: read
+`canvasFloor` and `sheetSlicing` on `GET /v1/capabilities/image.generate.v1`.
+
+- Edges are multiples of the model's `multipleOf` (16 for the default image model).
+- Minimum square on the default model: **816×816**.
+- **Slices may be any size.** There is no per-slice pixel floor; a legal canvas slices into
+  whatever `rows × columns` you asked for.
+
+Examples on the default model: 2×2 with `normalize 408×408` → canvas 816×816; 2×2 with
+`width/height 1024` → cells 512×512; 4×4 with `width/height 1024` → cells 256×256 (and
+smaller after trim) — all legal.
 
 ## Sheet options
 
@@ -31,7 +47,7 @@ If the API returns `total pixels must be >= 655360`, the message includes this s
 ## Workflow
 
 1. Define the family: style, count, and intended in-game use
-2. Size the sheet so **each slice** meets 816×816 (or another 16-aligned pair ≥ 655360 px)
+2. Size the **sheet canvas** to meet the model minimum (default 816×816, 16-aligned)
 3. Submit one sheet job with consistent prompt and sheet metadata
 4. Poll the job and download the sheet plus sliced frames when available
 5. Prefer one cohesive sheet over many unrelated single-image jobs

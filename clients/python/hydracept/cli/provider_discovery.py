@@ -60,7 +60,7 @@ def discover_provider(
 
     files = list(DEFAULT_ENV_FILES)
     if extra_env_file is not None:
-        files.append(extra_env_file.name)
+        files.append(str(extra_env_file))
 
     for name in files:
         path = project_root / name if not Path(name).is_absolute() else Path(name)

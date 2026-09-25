@@ -1,7 +1,5 @@
 # Quick Start
 
-<!-- Maintained for docs.hydracept.com. GitHub front door: /README.md at repo root. -->
-
 <!-- docs:marker:quick-start -->
 
 Hydracept is an execution control plane for software and agents that need external capabilities. Games and media are important examples.
@@ -67,9 +65,11 @@ npm install @hydracept/sdk
 <!-- docs:if packages.csharp.registryPublished -->
 ## .NET SDK
 
+<!-- docs:if packages.csharp.registryPublished -->
 ```bash
 dotnet add package Hydracept.Client
 ```
+<!-- docs:endif -->
 <!-- docs:endif -->
 
 <!-- docs:if !packages.typescript.registryPublished&!packages.python.registryPublished&!packages.csharp.registryPublished -->
