@@ -1,4 +1,4 @@
-README.md	4829
+README.md	4835
 architecture/hydracept-consumer-exceptions.yaml	172
 architecture/hydracept-integration-policy.yaml	4446
 clients/csharp/Hydracept.Client/Hydracept.Client.csproj	1435
@@ -14,7 +14,7 @@ clients/csharp/Hydracept.Client/IHydraceptClient.cs	6016
 clients/csharp/Hydracept.Client/README.md	843
 clients/openapi/public-openapi.json	356986
 clients/python/CHANGELOG.md	14432
-clients/python/README.md	2100
+clients/python/README.md	2106
 clients/python/hydracept/__init__.py	1845
 clients/python/hydracept/__main__.py	183
 clients/python/hydracept/artifact_naming.py	2974

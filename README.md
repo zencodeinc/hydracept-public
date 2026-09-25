@@ -72,7 +72,7 @@ python -m hydracept agents install --auto       # Cursor / Claude Code plugin + 
 
 - **Plugin & install links:** [hydracept.com/plugin](https://hydracept.com/plugin)
 - **Hosted MCP (no repo checkout):** `https://api.hydracept.com/mcp` with bearer `HYDRACEPT_API_KEY`
-- **MCP Registry name:** `com.hydracept/mcp`
+- **MCP Registry name:** `com.hydracept/hydracept`
 
 Do not paste workspace API keys into IDE plugin config when stdio bind is available. Full agent guide: [Coding Agents](https://docs.hydracept.com/agents/).
 
