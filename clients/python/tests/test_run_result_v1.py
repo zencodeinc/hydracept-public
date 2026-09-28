@@ -14,7 +14,8 @@ def _assert_common(payload: dict) -> None:
     assert "chargeState" in payload["pricing"]
     assert "billingMode" in payload["pricing"]
     assert "providerCostUsd" in payload["pricing"]
-    assert payload["pricing"]["providerCostBasis"] == "upstream-price-basis"
+    assert payload["pricing"]["providerCostBasis"] == "provider-cogs"
+    assert "providerPriceBasisUsd" in payload["pricing"]
     assert "estimatedProviderCostUsd" in payload["pricing"]
     assert "estimatedCustomerChargeUsd" in payload["pricing"]
     # Generic actualCost/estimatedCost are not part of the consumer contract, and

@@ -378,7 +378,22 @@ class HydraceptJob(BaseModel):
     created_at: datetime | None = Field(default=None, alias="createdAt")
     completed_at: datetime | None = Field(default=None, alias="completedAt")
     estimated_cost: float | None = Field(default=None, alias="estimatedCost")
-    actual_cost: float | None = Field(default=None, alias="actualCost")
+    actual_cost: float | None = Field(
+        default=None,
+        alias="actualCost",
+        description=(
+            "Provider COGS when the receipt has evidence for it; null when unknown. "
+            "Never the customer charge (that is pricing.charge.customerCharge) and "
+            "never a fabricated 0."
+        ),
+    )
+    pricing: HydraceptReceiptPricing | None = Field(
+        default=None,
+        description=(
+            "Canonical terminal pricing once a receipt is sealed: charge (customer) "
+            "and providerCost (COGS evidence) as distinct dimensions."
+        ),
+    )
     currency: str = "USD"
     artifacts: list[HydraceptJobArtifactRef] = Field(default_factory=list)
     variant_set: HydraceptVariantSet | None = Field(default=None, alias="variantSet")

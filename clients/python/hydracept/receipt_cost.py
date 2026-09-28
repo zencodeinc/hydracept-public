@@ -15,13 +15,16 @@ ADR-022 defines four money truths, and this module never conflates them:
 ``pricing.charge.customerCharge``
     The amount the customer owes, decomposed as upstream + Hydracept fee.
     It is $0 when Hydracept fully covers the execution.
-``ProviderUsage.actual_cost``
-    What Hydracept actually paid the provider. Private and admin-only; it must
-    never be presented as a customer cost.
+``pricing.providerCost`` / ``providerCostUsd``
+    Hydracept's actual provider COGS (what it paid/consumed). Margin is public:
+    the amount is null when unknown (never 0) and carries ``basis``/``status``.
+``providerPriceBasisUsd``
+    The sealed upstream provider price basis the charge was computed from. It is a
+    retail-basis number, distinct from COGS.
 
 Hydracept has no retail, list, or catalog *price*: the provider price basis is
 not a markup, and the managed margin is the spread between that basis and
-Hydracept's own procurement cost.
+Hydracept's own provider cost.
 """
 
 from __future__ import annotations
@@ -142,30 +145,19 @@ def customer_financial_state(payload: dict[str, Any] | None) -> str | None:
 
 
 def provider_cost_micros(payload: dict[str, Any] | None) -> int | None:
-    """The customer-facing upstream provider price basis — never procurement cost.
+    """Actual provider COGS: what Hydracept paid/consumed, with evidence.
 
-    ADR-022: ``ProviderPriceSnapshot`` is the only customer-visible provider
-    number. ``ProviderUsage.actual_cost`` is what Hydracept actually paid and is
-    admin-only, so it is not a fallback here.
+    Margin is public. ``pricing.providerCost`` is the structured COGS record
+    (``amount`` null when unknown, never 0, with ``basis``/``status``). The retail
+    upstream price basis is a different number and lives in
+    :func:`provider_price_basis_micros`.
     """
     if not isinstance(payload, dict):
         return None
     pricing = _pricing_blob(payload)
-    micros = _money_micros(pricing.get("basisActual") or pricing.get("basis_actual"))
-    if micros is not None:
-        return micros
-    micros = _money_micros(pricing.get("actualCharge") or pricing.get("actual_charge"))
-    if micros is not None:
-        return micros
-    # `project_public_settlement` mirrors the sealed basis into `price`; it is a
-    # basis, never a retail price.
-    micros = _money_micros(pricing.get("price"))
-    if micros is not None:
-        return micros
-    for blob in (pricing.get("providerUsage"), pricing.get("provider_usage")):
-        if not isinstance(blob, dict):
-            continue
-        micros = _money_micros(blob.get("reportedCost") or blob.get("reported_cost"))
+    provider_cost = pricing.get("providerCost") or pricing.get("provider_cost")
+    if isinstance(provider_cost, dict):
+        micros = _money_micros(provider_cost.get("amount"))
         if micros is not None:
             return micros
     for key in (
@@ -178,6 +170,29 @@ def provider_cost_micros(payload: dict[str, Any] | None) -> int | None:
         if micros is not None:
             return micros
         micros = _as_int(payload.get(key))
+        if micros is not None:
+            return micros
+    return None
+
+
+def provider_price_basis_micros(payload: dict[str, Any] | None) -> int | None:
+    """The sealed upstream provider *price basis* the customer charge was built from."""
+    if not isinstance(payload, dict):
+        return None
+    pricing = _pricing_blob(payload)
+    micros = _money_micros(pricing.get("basisActual") or pricing.get("basis_actual"))
+    if micros is not None:
+        return micros
+    micros = _money_micros(pricing.get("actualCharge") or pricing.get("actual_charge"))
+    if micros is not None:
+        return micros
+    micros = _money_micros(pricing.get("price"))
+    if micros is not None:
+        return micros
+    for blob in (pricing.get("providerUsage"), pricing.get("provider_usage")):
+        if not isinstance(blob, dict):
+            continue
+        micros = _money_micros(blob.get("reportedCost") or blob.get("reported_cost"))
         if micros is not None:
             return micros
     return None
@@ -217,14 +232,17 @@ def estimated_customer_charge_micros(payload: dict[str, Any] | None) -> int | No
 
 
 def surfaced_cost_micros(payload: dict[str, Any] | None) -> int | None:
-    """Wallet charge when Hydracept billed; otherwise the provider price basis.
+    """Wallet charge when Hydracept billed; otherwise COGS, then the price basis.
 
     Does not fall back to quote/estimatedCharge.
     """
     charged = customer_charge_micros(payload)
     if charged is not None:
         return charged
-    return provider_cost_micros(payload)
+    cogs = provider_cost_micros(payload)
+    if cogs is not None:
+        return cogs
+    return provider_price_basis_micros(payload)
 
 
 def micros_to_usd(micros: int | None) -> float | None:
@@ -236,10 +254,10 @@ def micros_to_usd(micros: int | None) -> float | None:
 _LEGACY_COST_NOTE = (
     "Legacy ambiguous cost fields, removed from the public contract. "
     "customerChargeUsd is what this customer was charged (0 when Hydracept covers it); "
-    "providerCostUsd is the upstream provider price basis the charge was computed from; "
+    "providerCostUsd is Hydracept's actual provider COGS (null when unknown, never 0); "
+    "providerPriceBasisUsd is the upstream price basis the charge was computed from; "
     "estimatedCustomerChargeUsd is a quote. Do not treat legacyActualCostUsd as the "
-    "customer charge, and never present providerProcurementCostUsd to a customer — it is "
-    "Hydracept's private cost (ADR-022)."
+    "customer charge."
 )
 
 
@@ -354,6 +372,7 @@ def present_receipt(payload: dict[str, Any] | None) -> dict[str, Any]:
     pricing = dict(_pricing_blob(receipt))
     customer = customer_charge_micros(receipt)
     basis = provider_cost_micros(receipt)
+    price_basis = provider_price_basis_micros(receipt)
     estimated_basis = estimated_provider_cost_micros(receipt)
     estimated_charge = estimated_customer_charge_micros(receipt)
     breakdown = customer_charge_breakdown(receipt)
@@ -393,7 +412,8 @@ def present_receipt(payload: dict[str, Any] | None) -> dict[str, Any]:
         "billingMode": pricing_mode(receipt) or None,
         "managedEquivalentChargeUsd": equivalent,
         "providerCostUsd": micros_to_usd(basis),
-        "providerCostBasis": "upstream-price-basis",
+        "providerCostBasis": "provider-cogs",
+        "providerPriceBasisUsd": micros_to_usd(price_basis),
         "estimatedProviderCostUsd": micros_to_usd(estimated_basis),
         "estimatedCustomerChargeUsd": micros_to_usd(estimated_charge),
         "receipt": receipt,
@@ -412,6 +432,7 @@ def present_job(job: dict[str, Any] | None, receipt: dict[str, Any] | None = Non
     charge = presented.get("customerCharge")
     customer_owed = presented.get("customerChargeUsd")
     basis_usd = presented.get("providerCostUsd")
+    price_basis_usd = presented.get("providerPriceBasisUsd")
     estimated_charge_usd = presented.get("estimatedCustomerChargeUsd")
     estimated_basis_usd = presented.get("estimatedProviderCostUsd")
     diagnostics: dict[str, Any] = {}
@@ -426,7 +447,8 @@ def present_job(job: dict[str, Any] | None, receipt: dict[str, Any] | None = Non
     payload["chargeState"] = state
     payload["billingMode"] = presented.get("billingMode")
     payload["providerCostUsd"] = basis_usd
-    payload["providerCostBasis"] = "upstream-price-basis"
+    payload["providerCostBasis"] = "provider-cogs"
+    payload["providerPriceBasisUsd"] = price_basis_usd
     payload["estimatedProviderCostUsd"] = estimated_basis_usd
     payload["estimatedCustomerChargeUsd"] = estimated_charge_usd
     payload["pricing"] = {
@@ -436,7 +458,8 @@ def present_job(job: dict[str, Any] | None, receipt: dict[str, Any] | None = Non
         "chargeState": state,
         "billingMode": presented.get("billingMode"),
         "providerCostUsd": basis_usd,
-        "providerCostBasis": "upstream-price-basis",
+        "providerCostBasis": "provider-cogs",
+        "providerPriceBasisUsd": price_basis_usd,
         "estimatedProviderCostUsd": estimated_basis_usd,
         "estimatedCustomerChargeUsd": estimated_charge_usd,
         "status": state,

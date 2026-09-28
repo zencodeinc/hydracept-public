@@ -2,7 +2,7 @@ schemaVersion: 1
 id: hydracept-agent-plugin
 legacyPackId: hydracept-agent-pack
 version: 0.1.0
-distributionVersion: 0.1.8
+distributionVersion: 0.1.9
 registryName: com.hydracept/mcp
 minimumHydraceptVersion: 0.3.9
 name: Hydracept

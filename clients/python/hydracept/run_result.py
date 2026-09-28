@@ -71,9 +71,9 @@ class RunPricing:
         from hydracept.receipt_cost import format_pricing_summary, micros_to_usd
 
         owed = micros_to_usd(self.customer_total_micros)
-        basis = micros_to_usd(self.provider_basis_micros)
-        if basis is None:
-            basis = micros_to_usd(self.provider_cost_micros)
+        # providerCostUsd is actual provider COGS; the retail price basis is separate.
+        cogs = micros_to_usd(self.provider_cost_micros)
+        price_basis = micros_to_usd(self.provider_basis_micros)
         estimated_provider = micros_to_usd(self.estimated_provider_micros)
         if estimated_provider is None:
             estimated_provider = micros_to_usd(self.estimated_provider_cost_micros)
@@ -95,8 +95,9 @@ class RunPricing:
             "billingMode": billing_mode,
             "chargeExpectation": self.charge_expectation(),
             "managedEquivalentChargeUsd": micros_to_usd(self.managed_equivalent_micros),
-            "providerCostUsd": basis,
-            "providerCostBasis": "upstream-price-basis",
+            "providerCostUsd": cogs,
+            "providerCostBasis": "provider-cogs",
+            "providerPriceBasisUsd": price_basis,
             "estimatedCustomerChargeUsd": estimated_charge,
             "summary": summary,
             "mode": self.mode,
@@ -104,8 +105,9 @@ class RunPricing:
             "reservedCost": self.reserved_cost,
             "note": (
                 "customerChargeUsd is what this customer was charged (0 when Hydracept covers it); "
-                "providerCostUsd is the upstream provider price basis the charge was computed from, "
-                "not a retail or list price; estimatedCustomerChargeUsd is a quote, never a charge; "
+                "providerCostUsd is Hydracept's actual provider COGS (null when unknown, never 0); "
+                "providerPriceBasisUsd is the upstream price basis the charge was computed from; "
+                "estimatedCustomerChargeUsd is a quote, never a charge; "
                 "managedEquivalentChargeUsd is provider cost + 6%, not a retail list price. "
                 "Hydracept's own procurement cost is not a customer field (ADR-022)."
             ),
@@ -114,7 +116,7 @@ class RunPricing:
             payload["estimatedProviderCostUsd"] = estimated_provider
         if self.service_fee_bps is not None:
             payload["managedFeePercent"] = self.service_fee_bps / 100.0
-        if owed is None and basis is None and self.actual_cost is not None:
+        if owed is None and cogs is None and price_basis is None and self.actual_cost is not None:
             # A receipt-less job reported an actual cost that no explicit field
             # covers. Keep it under an unambiguous name instead of dropping it.
             payload["legacyActualCostUsd"] = self.actual_cost

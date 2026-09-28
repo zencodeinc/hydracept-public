@@ -1,0 +1,67 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.hydracept/hydracept",
+  "title": "Hydracept",
+  "description": "Execution control plane for agents: capabilities, durable jobs, budgets, receipts, and BYOK.",
+  "version": "0.4.5",
+  "websiteUrl": "https://hydracept.com/plugin",
+  "repository": {
+    "url": "https://github.com/zencodeinc/hydracept-public",
+    "source": "github"
+  },
+  "icons": [
+    {
+      "src": "https://hydracept.com/hydracept-logo.png",
+      "mimeType": "image/png"
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "hydracept",
+      "version": "0.4.5",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        },
+        {
+          "type": "positional",
+          "value": "serve"
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "HYDRACEPT_API_KEY",
+          "description": "Hydracept API key from https://hydracept.com/start (or use project secrets after init)",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.hydracept.com/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {HYDRACEPT_API_KEY}",
+          "variables": {
+            "HYDRACEPT_API_KEY": {
+              "description": "Hydracept API key",
+              "isRequired": true,
+              "isSecret": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

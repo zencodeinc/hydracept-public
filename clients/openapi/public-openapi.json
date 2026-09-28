@@ -9519,7 +9519,19 @@
                 "type": "null"
               }
             ],
-            "title": "Actualcost"
+            "title": "Actualcost",
+            "description": "Provider COGS when the receipt has evidence for it; null when unknown. Never the customer charge (that is pricing.charge.customerCharge) and never a fabricated 0."
+          },
+          "pricing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HydraceptReceiptPricing"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Canonical terminal pricing once a receipt is sealed: charge (customer) and providerCost (COGS evidence) as distinct dimensions."
           },
           "currency": {
             "type": "string",
@@ -10255,6 +10267,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ReceiptProviderUsage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "providerCost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReceiptProviderCost"
               },
               {
                 "type": "null"
@@ -12226,6 +12248,44 @@
           "pricingMode"
         ],
         "title": "ReceiptPricingPolicy"
+      },
+      "ReceiptProviderCost": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "unknown"
+          },
+          "basis": {
+            "type": "string",
+            "title": "Basis",
+            "default": "unknown"
+          },
+          "priceScheduleId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricescheduleid"
+          }
+        },
+        "type": "object",
+        "title": "ReceiptProviderCost",
+        "description": "Provider COGS evidence. ``amount`` is null when unknown \u2014 never ``0``.\n\n``basis``/``status`` explain how the amount was obtained; a usage-priced cost\nnames the pinned ``priceScheduleId`` so a later catalog change cannot silently\nrewrite historical COGS."
       },
       "ReceiptProviderUsage": {
         "properties": {

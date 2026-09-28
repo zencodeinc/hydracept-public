@@ -83,12 +83,16 @@ public sealed class HydraceptRunPricing
     [JsonPropertyName("billingMode")]
     public string? BillingMode { get; set; }
 
-    /// <summary>Upstream provider price basis the charge was computed from — not a retail price.</summary>
+    /// <summary>Actual provider COGS (null when unknown, never 0).</summary>
     [JsonPropertyName("providerCostUsd")]
     public double? ProviderCostUsd { get; set; }
 
     [JsonPropertyName("providerCostBasis")]
-    public string ProviderCostBasis { get; set; } = "upstream-price-basis";
+    public string ProviderCostBasis { get; set; } = "provider-cogs";
+
+    /// <summary>Upstream provider price basis the charge was computed from — not a retail price.</summary>
+    [JsonPropertyName("providerPriceBasisUsd")]
+    public double? ProviderPriceBasisUsd { get; set; }
 
     /// <summary>Pre-execution upstream provider price basis.</summary>
     [JsonPropertyName("estimatedProviderCostUsd")]

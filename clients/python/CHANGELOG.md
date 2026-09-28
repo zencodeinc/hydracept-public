@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.4.4 — 2026-09-25 (unreleased)
+## 0.4.5 — 2026-09-26 (unreleased)
 
+- Provider cost accounting is now explicit and auditable. `providerCostUsd` is Hydracept's **actual provider COGS** (what it paid/consumed), not the retail price basis: it is `null` when unknown, never `0`, and is accompanied by `pricing.providerCost` with `basis`/`status` (and a pinned `priceScheduleId` for usage-priced cost). The upstream retail price basis moved to the new `providerPriceBasisUsd` / `providerCostBasis: "provider-cogs"`. An estimate is never promoted to actual cost, and a failure no longer implies `$0`.
 - PyPI README carries the Official MCP Registry ownership line (`mcp-name: com.hydracept/hydracept`, matching `hydracept-plugin` `mcp-registry/server.json`); package metadata adds classifiers and project URLs (docs, public source, issues, hosted MCP, registry manifest)
 - `connections adopt --from-env-file` resolves absolute paths outside the project root instead of looking up a bare filename under `--project-root`
 - `setup-grant create` prints the issued token when not using `--json`

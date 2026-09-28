@@ -168,7 +168,11 @@ public sealed class HydraceptWorkspace : IDisposable
 
         var owed = MicrosToUsd(ReadDouble(customerCharge, "amountMicros"))
             ?? MicrosToUsd(ReadDouble(customerCharge, "customerTotalMicros"));
-        var basis = MicrosToUsd(ReadDouble(basisActual, "amountMicros"))
+        // COGS: structured providerCost, then legacy provider-reported/basis micros.
+        var cogs = MicrosToUsd(ReadDouble(ObjectOrNull(source, "pricing", "providerCost", "amount"), "amountMicros"))
+            ?? MicrosToUsd(ReadDouble(ObjectOrNull(source, "pricing"), "providerReportedCostMicros"))
+            ?? MicrosToUsd(ReadDouble(ObjectOrNull(source, "pricing"), "providerBasisCostMicros"));
+        var priceBasis = MicrosToUsd(ReadDouble(basisActual, "amountMicros"))
             ?? MicrosToUsd(ReadDouble(ObjectOrNull(source, "pricing", "actualCharge"), "amountMicros"))
             ?? MicrosToUsd(ReadDouble(reportedCost, "amountMicros"));
         var estimatedBasis = MicrosToUsd(ReadDouble(basisEstimated, "amountMicros"));
@@ -181,13 +185,14 @@ public sealed class HydraceptWorkspace : IDisposable
             CustomerChargeUsd = owed,
             ChargeState = owed is null ? null : owed > 0 ? "charged" : "covered",
             BillingMode = ReadString(pricing, "mode"),
-            ProviderCostUsd = basis,
-            ProviderCostBasis = "upstream-price-basis",
+            ProviderCostUsd = cogs,
+            ProviderCostBasis = "provider-cogs",
+            ProviderPriceBasisUsd = priceBasis,
             EstimatedProviderCostUsd = estimatedBasis,
             EstimatedCustomerChargeUsd = estimated,
             Currency = "USD",
         };
-        if (owed is null && basis is null)
+        if (owed is null && cogs is null)
         {
             var legacy = ReadDouble(job, "actualCost");
             if (legacy is not null)

@@ -280,12 +280,13 @@ def _receipt_summary(receipt: dict[str, Any]) -> dict[str, Any]:
         "estimatedCustomerChargeUsd": presented.get("estimatedCustomerChargeUsd"),
         "costUsd": micros_to_usd(surfaced_cost_micros(receipt)),
         "providerCostUsd": presented.get("providerCostUsd"),
-        "providerCostBasis": "upstream-price-basis",
+        "providerCostBasis": "provider-cogs",
+        "providerPriceBasisUsd": presented.get("providerPriceBasisUsd"),
         "estimatedProviderCostUsd": presented.get("estimatedProviderCostUsd"),
         "customerChargeNote": (
-            "customerChargeUsd is what this customer was charged; providerCostUsd is the "
-            "upstream provider price basis the charge was computed from, not a retail price. "
-            "Hydracept's procurement cost is never a customer field (ADR-022)."
+            "customerChargeUsd is what this customer was charged; providerCostUsd is Hydracept's "
+            "actual provider COGS (null when unknown, never 0); providerPriceBasisUsd is the "
+            "upstream price basis the charge was computed from."
         ),
         "pricing": {
             "customerCharge": charge,
@@ -295,14 +296,15 @@ def _receipt_summary(receipt: dict[str, Any]) -> dict[str, Any]:
             "billingMode": str(mode or "").strip().lower() or None,
             "managedEquivalentChargeUsd": presented.get("managedEquivalentChargeUsd"),
             "providerCostUsd": presented.get("providerCostUsd"),
-            "providerCostBasis": "upstream-price-basis",
+            "providerCostBasis": "provider-cogs",
+            "providerPriceBasisUsd": presented.get("providerPriceBasisUsd"),
             "estimatedProviderCostUsd": presented.get("estimatedProviderCostUsd"),
             "estimatedCustomerChargeUsd": presented.get("estimatedCustomerChargeUsd"),
             "providerUsage": pricing.get("providerUsage") if isinstance(pricing, dict) else None,
             "note": (
-                "customerChargeUsd is the amount owed; providerCostUsd is a price basis, and "
-                "providerUsage is provider-reported usage, not a substitute for either; "
-                "managedEquivalentChargeUsd is provider cost + 6%, not a retail list price."
+                "customerChargeUsd is the amount owed; providerCostUsd is actual provider COGS; "
+                "providerPriceBasisUsd is the upstream price basis; managedEquivalentChargeUsd "
+                "is provider cost + 6%, not a retail list price."
             ),
         },
         "durationMs": inner.get("durationMs") or inner.get("latencyMs") if isinstance(inner, dict) else None,

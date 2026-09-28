@@ -15,9 +15,11 @@ export type HydraceptRunPricing = {
   chargeState: string | null;
   /** `managed` | `byok` | `platform`. */
   billingMode: string | null;
-  /** Upstream provider price basis the charge was computed from — not a retail price. */
+  /** Actual provider COGS (null when unknown, never 0). */
   providerCostUsd: number | null;
-  providerCostBasis: 'upstream-price-basis';
+  providerCostBasis: 'provider-cogs';
+  /** Upstream provider price basis the charge was computed from — not a retail price. */
+  providerPriceBasisUsd: number | null;
   /** Pre-execution upstream provider price basis. */
   estimatedProviderCostUsd: number | null;
   /** Pre-execution managed customer charge (provider basis + Hydracept fee). */
@@ -79,10 +81,17 @@ export function pricingFromJob(
     {}) as Record<string, unknown>;
   const providerUsage = (pricing.providerUsage as Record<string, unknown> | undefined) || {};
   const reportedCost = (providerUsage.reportedCost as Record<string, unknown> | undefined) || {};
+  const providerCost = (pricing.providerCost as Record<string, unknown> | undefined) || {};
+  const providerCostAmount = (providerCost.amount as Record<string, unknown> | undefined) || {};
 
   const owed =
     microsUsd(customerCharge.amountMicros) ?? microsUsd(customerCharge.customerTotalMicros);
-  const basis =
+  // COGS: structured providerCost, then legacy provider-reported/basis micros.
+  const cogs =
+    microsUsd(providerCostAmount.amountMicros) ??
+    microsUsd(pricing.providerReportedCostMicros) ??
+    microsUsd(pricing.providerBasisCostMicros);
+  const priceBasis =
     microsUsd(basisActual.amountMicros) ??
     microsUsd((pricing.actualCharge as Record<string, unknown> | undefined)?.amountMicros) ??
     microsUsd(reportedCost.amountMicros);
@@ -96,13 +105,14 @@ export function pricingFromJob(
     customerChargeUsd: owed,
     chargeState: owed == null ? null : owed > 0 ? 'charged' : 'covered',
     billingMode: (pricing.mode as string | undefined) ?? null,
-    providerCostUsd: basis,
-    providerCostBasis: 'upstream-price-basis',
+    providerCostUsd: cogs,
+    providerCostBasis: 'provider-cogs',
+    providerPriceBasisUsd: priceBasis,
     estimatedProviderCostUsd: estimatedBasis,
     estimatedCustomerChargeUsd: estimated,
     currency: 'USD',
   };
-  if (owed == null && basis == null) {
+  if (owed == null && cogs == null) {
     const legacy = asNumber(job.actualCost);
     if (legacy != null) payload.legacyActualCostUsd = legacy;
   }

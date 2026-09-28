@@ -14,6 +14,7 @@ from hydracept.receipt_cost import (
     present_job,
     present_receipt,
     provider_cost_micros,
+    provider_price_basis_micros,
     surfaced_cost_micros,
 )
 
@@ -35,10 +36,12 @@ def test_receipt_summary_byok_uses_provider_basis_not_quote() -> None:
     )
     assert summary["customerOwedUsd"] is None
     assert summary["costUsd"] == 3.0887
-    assert summary["providerCostUsd"] == 3.0887
-    assert summary["providerCostBasis"] == "upstream-price-basis"
+    # BYOK has no COGS evidence; the provider figure is the retail price basis.
+    assert summary["providerCostUsd"] is None
+    assert summary["providerCostBasis"] == "provider-cogs"
+    assert summary["providerPriceBasisUsd"] == 3.0887
     assert summary["customerChargeUsd"] is None
-    assert surfaced_cost_micros(summary) == provider_cost_micros(
+    assert surfaced_cost_micros(summary) == provider_price_basis_micros(
         {
             "pricing": {
                 "providerUsage": {
@@ -70,7 +73,8 @@ def test_receipt_summary_managed_keeps_wallet_charge_and_provider_basis() -> Non
     assert summary["billingMode"] == "managed"
     assert summary["costUsd"] == 0.044
     assert summary["customerCharge"]["customerTotalMicros"] == 44_000
-    assert summary["providerCostUsd"] == 0.04
+    assert summary["providerCostUsd"] is None
+    assert summary["providerPriceBasisUsd"] == 0.04
 
 
 def test_receipt_summary_covered_zero_charge_does_not_use_provider_basis() -> None:
@@ -95,9 +99,10 @@ def test_receipt_summary_covered_zero_charge_does_not_use_provider_basis() -> No
     assert summary["chargeState"] == "covered"
     assert summary["customerCharge"]["customerTotalMicros"] == 0
     assert summary["costUsd"] == 0.0
-    # The sealed basis (`price` after project_public_settlement) is the
-    # customer-facing provider number and outranks provider-reported cost.
-    assert summary["providerCostUsd"] == 0.05
+    # The sealed basis (`price` after project_public_settlement) is the retail
+    # price basis; COGS is separate and unknown here.
+    assert summary["providerCostUsd"] is None
+    assert summary["providerPriceBasisUsd"] == 0.05
     assert "retailUsd" not in summary
 
 
@@ -126,8 +131,9 @@ def test_present_receipt_leads_with_customer_charge_and_labels_the_basis() -> No
     assert presented["customerOwedUsd"] == 0.0
     assert presented["chargeState"] == "covered"
     assert presented["billingMode"] == "managed"
-    assert presented["providerCostUsd"] == 0.05
-    assert presented["providerCostBasis"] == "upstream-price-basis"
+    assert presented["providerCostUsd"] is None
+    assert presented["providerCostBasis"] == "provider-cogs"
+    assert presented["providerPriceBasisUsd"] == 0.05
     assert presented["customerCharge"]["customerTotalMicros"] == 0
     assert presented["customerCharge"]["state"] == "covered"
     assert presented["customerCharge"]["hydraceptFeeMicros"] == 3_000
@@ -169,7 +175,8 @@ def test_present_job_leads_with_customer_charge_not_actual_cost() -> None:
     assert presented["customerChargeUsd"] == 0.0
     assert presented["customerOwedUsd"] == 0.0
     assert presented["chargeState"] == "covered"
-    assert presented["providerCostUsd"] == 0.05
+    assert presented["providerCostUsd"] is None
+    assert presented["providerPriceBasisUsd"] == 0.05
     assert presented["customerCharge"]["customerTotalMicros"] == 0
     assert "Covered by Hydracept" in presented["pricing"]["summary"]
     assert "actualCost" not in presented
@@ -216,8 +223,9 @@ def test_provider_usage_actual_cost_is_private_procurement_not_a_customer_cost()
     )
     assert presented["customerChargeUsd"] == 0.0
     assert presented["chargeState"] == "covered"
-    assert presented["providerCostUsd"] == 0.05
-    assert presented["providerCostBasis"] == "upstream-price-basis"
+    assert presented["providerCostUsd"] is None
+    assert presented["providerCostBasis"] == "provider-cogs"
+    assert presented["providerPriceBasisUsd"] == 0.05
     assert presented["estimatedProviderCostUsd"] == 0.05
     assert presented["estimatedCustomerChargeUsd"] == 0.053
     assert presented["legacyCostAliases"]["providerProcurementCostUsd"] == 0.017715
@@ -253,7 +261,8 @@ def test_provider_usage_internal_cost_is_preserved_when_reported_cost_also_prese
             }
         }
     )
-    assert presented["providerCostUsd"] == 0.0005
+    assert presented["providerCostUsd"] is None
+    assert presented["providerPriceBasisUsd"] == 0.0005
     assert presented["receipt"]["pricing"]["providerUsage"] == {
         "reportedCost": {"amountMicros": 500}
     }

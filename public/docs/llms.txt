@@ -120,6 +120,11 @@ Bootstrap: python -m hydracept init --apply --yes --json
 - https://hydracept.com/reference-image-generation
 - https://hydracept.com/agent-integration
 - https://hydracept.com/openai-image-alternative
+- https://hydracept.com/cheapest-ai-image-api
+- https://hydracept.com/ai-model-cost-routing
+- https://hydracept.com/ai-generation-price-comparison
+- https://hydracept.com/generate-multiple-game-icons
+- https://hydracept.com/ai-assets-for-coding-agents
 - https://hydracept.com/game-icon-generation
 - https://hydracept.com/inventory-icon-generation
 - https://hydracept.com/voice-generation
