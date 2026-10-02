@@ -1,10 +1,10 @@
 import type { HydraceptRuntimeEvent } from './types.js';
 
 /**
- * Maintained SSE helper for Hydracept invocation events.
- * Ordinary REST clients should prefer createHydraceptHttp / OpenAPI-generated types.
+ * SSE helper for stream invoke execution tokens.
+ * Durable job lifecycle history uses GET /v1/jobs/{jobId}/events (cursor poll).
  */
-export async function* iterInvocationEvents(
+export async function* iterExecutionStreamEvents(
   baseUrl: string,
   token: string,
   executionId: string,
@@ -27,8 +27,8 @@ export async function* iterInvocationEvents(
 
   const root = baseUrl.replace(/\/$/, '');
   const path = options.pathsAreV1Relative
-    ? `/invocations/${encodeURIComponent(executionId)}/events`
-    : `/v1/invocations/${encodeURIComponent(executionId)}/events`;
+    ? `/executions/${encodeURIComponent(executionId)}/events`
+    : `/v1/executions/${encodeURIComponent(executionId)}/events`;
   const fetchImpl = options.fetchImpl ?? fetch;
   const response = await fetchImpl(`${root}${path}`, {
     headers,

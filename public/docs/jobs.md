@@ -91,7 +91,9 @@ Authorization: Bearer <HYDRACEPT_API_KEY>
 
 The canonical job resource already contains the information needed to inspect or re-run a job: status, `error`, diagnostics, artifacts, `receiptId`, and `requestSnapshot` when available. There is no separate `/inspect` HTTP resource.
 
-For coding agents, MCP `hydracept_job_inspect(job_id)` composes that job read with the sealed receipt summary and returns a reuse candidate plus a single `nextAction`. Python exposes `inspect_job(client, job_id)` for the same purpose.
+The prompt that was executed is `requestSnapshot.input.prompt`. Durable text jobs do not keep a separate input payload; Hydracept fills that field from the admitted prompt record when one was kept. A snapshot that only lists capability, product, environment, and idempotency key means no prompt record was kept (hashes-only retention, metadata-only prompt memory, or a deleted document payload).
+
+For coding agents, MCP `hydracept_job_inspect(job_id)` composes that job read with the sealed receipt summary and returns `executedPrompt`, a reuse candidate, and a single `nextAction`. Python exposes `inspect_job(client, job_id)` for the same purpose. Find and inspect use the workspace-bound project.
 
 If a failed job is retried, copy the canonical snapshot input but use a **new** `idempotencyKey`. On `QUOTE_MISMATCH`, also omit the stale execution `quoteId` / `estimateId` before resubmitting.
 
@@ -111,6 +113,39 @@ Job payloads include `nextAction` (`poll`, `download_artifacts`, `retry_new`, `p
 Once a known ID is lost, use project history rather than asking a human to recover it manually.
 
 Jobs may include a `variantSet` when the capability accepts `variantCount` in input (image and audio generation). Each variant is a separate artifact with `variantIndex` on the job payload. `variantSet` reports `requestedCount`, `completedCount`, `failedCount`, and `selectedArtifactId`.
+
+## Partial output during a job
+
+`readerDelivery` publishes partial text from one durable text job before the receipt is sealed. It is not streaming invoke, and a completion callback that runs once with the finished output is not this contract. Any client can poll it. Synchronous invoke rejects it.
+
+```json
+{ "readerDelivery": { "boundary": "paragraph" } }
+```
+
+Use it only on a durable `text.*` job, with no `responseSchema` and no tools. Hydracept makes one provider call on the route you selected. It does not switch models to enable this. Discover support before submit: `GET /v1/capabilities/{key}/execution-targets` and read `readerDelivery` on each target. `features.readerDelivery` names the providers that can publish during the call, states that the opt-in stays on standard processing, and states that the selected route is not changed.
+
+While the call runs, the job appends `job.reader_text` events. Concatenate `payload.text` in `payload.sequence` order. That concatenation is the sealed output. A later cleanup does not rewrite text already published. If the sealed body would differ, the job fails and the published events stay as stored.
+
+`provisional` is always true. It means the span is published output, not the sealed result. Do not treat a partial event as the finished job output.
+
+Replay:
+
+```http
+GET /v1/jobs/{jobId}/events?type=job.reader_text&cursor={lastCursor}
+Authorization: Bearer <HYDRACEPT_API_KEY>
+```
+
+- Events are ordered by ascending event id.
+- `cursor` is exclusive: the response contains events whose id is greater than `cursor`.
+- `nextCursor` is set only when another page remains. Persist the last event's `cursor` yourself; Hydracept does not store your position.
+- The same cursor is the same event. Ignore a cursor you have already applied.
+- `payload.sequence` is the 1-based index for this job. A gap, or the same sequence on a new cursor, means the stream is not usable. Do not append that event.
+
+After any `job.reader_text` event is stored, a retry of that job does not start another provider call. The published output stays. If the original call cannot be continued, the job fails with `TRANSPORT_AMBIGUOUS` and `retry.newKeySafe` is false.
+
+If the provider call ends without reporting usage, the failure receipt records provider cost as unknown (`providerCost.status` `unknown`, amount null). That is not a zero-cost success.
+
+This path uses standard token rates. Deferred processing does not publish partial output. Compare one call with two calls on the same model and the same pricing lane. Compare deferred completion with standard partial output separately: that second comparison is the price of earlier access. `features.readerDelivery` records `processingTier: standard` and `deferredDiscountApplies: false`. The job receipt's `pricing.providerCost` is the measured spend when usage was reported.
 
 ## Select a variant
 

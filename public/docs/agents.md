@@ -62,13 +62,13 @@ Hydracept exposes an MCP server for tool-using agents. **In a project checkout, 
 
 Job recovery tools are available on both stdio and hosted MCP:
 
-- `hydracept_jobs_find` — find recent, failed, or reusable jobs in the bound project
-- `hydracept_job_inspect` — inspect one selected job's error, diagnostics, receipt summary, request snapshot, and reuse candidate
+- `hydracept_jobs_find` — find recent, failed, or reusable jobs in the workspace-bound project. The list has no prompt text.
+- `hydracept_job_inspect` — read one job. The prompt that was executed is `executedPrompt` (`requestSnapshot.input.prompt`). Text jobs return it when a prompt record was kept and no input payload was stored. Also returns error, diagnostics, receipt summary, and a reuse candidate.
 
 Install into a coding agent:
 
 - **Plugin homepage:** [https://hydracept.com/plugin](https://hydracept.com/plugin)
-- **Cursor:** Hydracept is not in the Cursor Marketplace yet — use [github.com/zencodeinc/hydracept-plugin](https://github.com/zencodeinc/hydracept-plugin) (v0.1.8) or `python -m hydracept agents install --auto`. Then run `python -m hydracept init --apply --yes --json` and reload MCP only when requested.
+- **Cursor:** Hydracept is not in the Cursor Marketplace yet — use [github.com/zencodeinc/hydracept-plugin](https://github.com/zencodeinc/hydracept-plugin) (v0.1.10) or `python -m hydracept agents install --auto`. Then run `python -m hydracept init --apply --yes --json` and reload MCP only when requested.
 - **Claude Code:** install the Hydracept plugin, init in the repo, and reload MCP only when requested.
 - **No checkout (ChatGPT, MCP Registry):** hosted MCP at `https://api.hydracept.com/mcp` with a bearer API key
 - **CLI fallback:** `python -m hydracept agents install --auto` / `python -m hydracept mcp serve` / `python -m hydracept run ...`
@@ -109,6 +109,7 @@ The project list is intentionally prompt-free. Agents can scan failed and reusab
 | Sprite sheet / contact sheet → individual frames | `sheet.slice`, `sheet.rows`, `sheet.columns`, optional `sheet.animation` |
 | Unity 6 Editor import with provenance | [Unity integration](../unity-integration/) — `hydracept integrations install unity` |
 | Multiple icon takes to pick from | `variantCount` 2–4 |
+| Read the prompt that was executed | `hydracept_job_inspect(job_id)` → `executedPrompt`. Unknown id: `hydracept_jobs_find(intent="recent")` first |
 | Recover the last failed generation | `hydracept_jobs_find(intent="failed")` → `hydracept_job_inspect` |
 | Reuse the selected prior artifact | `hydracept_jobs_find(intent="reusable")` → inspect → download/reference `selectedArtifactId` |
 | Automated art pipeline / CI | `POST /v1/capabilities/image.generate.v1/jobs` + artifact download |

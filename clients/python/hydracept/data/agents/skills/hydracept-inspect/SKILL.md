@@ -1,13 +1,20 @@
 ---
 name: hydracept-inspect
 description: >
-  Recover from Hydracept job failures and reuse prior successful artifacts without
-  asking the human to paste a job id.
+  Read the prompt a Hydracept job executed, recover from a failure, or reuse a
+  prior artifact without asking the human to paste a job id.
 ---
 
 # Hydracept Inspect
 
-Use this skill when the user says a Hydracept job failed, asks what happened to the last job, or asks to reuse the last good/selected output.
+Use this skill when the user asks for the prompt that was executed, what a prior job was asked, a historical prompt, a failed job, what happened to the last job, or to reuse the last good/selected output.
+
+## Read the executed prompt
+
+1. These tools use the workspace-bound project. Bind the project that owns the job before searching.
+2. Known job id: `hydracept_job_inspect(job_id)` and read `executedPrompt`. The same text is `requestSnapshot.input.prompt`.
+3. Unknown job id: `hydracept_jobs_find(intent="recent")`, then inspect that one job. The find list never includes prompt text.
+4. Text jobs return `executedPrompt` when a prompt record was kept and no input payload was stored. `executedPrompt` is null when Hydracept did not keep that record (hashes-only retention, or no prompt was captured).
 
 ## Workflow
 

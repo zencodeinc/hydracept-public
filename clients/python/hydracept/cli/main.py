@@ -118,6 +118,10 @@ def _print_init_ready(payload: dict[str, Any]) -> None:
     console.print(f"[green]✓[/green] environment: {environment}")
     if mcp.get("configured"):
         console.print("[green]✓[/green] MCP configured")
+    local_identity = payload.get("localIdentity") if isinstance(payload.get("localIdentity"), dict) else {}
+    email_hint = str(local_identity.get("emailHint") or "").strip()
+    if email_hint:
+        console.print(f"[yellow]Note:[/yellow] {email_hint}")
     console.print("[green]✓[/green] ready")
 
 

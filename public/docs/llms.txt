@@ -47,8 +47,9 @@ Hosted MCP: https://api.hydracept.com/mcp
 - Filters: status, capabilityKey, outcome=failed|reusable, selected=true, limit, cursor
 - `outcome=reusable` means succeeded with at least one output artifact
 - The list is prompt-free: no prompt text, request snapshots, or error messages. It may return errorCode, selectedArtifactId, and receiptId.
-- Inspect one job intentionally with GET /v1/jobs/{jobId}; the job already contains requestSnapshot when available.
-- MCP: hydracept_jobs_find → hydracept_job_inspect
+- Inspect one job intentionally with GET /v1/jobs/{jobId}. The prompt that was executed is requestSnapshot.input.prompt.
+- MCP: hydracept_jobs_find → hydracept_job_inspect. Read executedPrompt. The find list has no prompt text. Text jobs return the admitted prompt when a prompt record was kept and no input payload was stored.
+- Find and inspect use the workspace-bound project. Bind the project that owns the job first.
 - Retry with a new idempotencyKey. On QUOTE_MISMATCH omit stale execution quoteId/estimateId.
 - Reuse explicit selectedArtifactId when present; do not confuse reuse with approval, favorite, review, or repository promotion.
 - Pinned execution remains separate and by-id; project job history is not a pinned-run history API.
@@ -84,7 +85,9 @@ When managed execution is available, no provider account is required for the cal
 - Docs: https://docs.hydracept.com/billing/
 
 ## Early beta
-- 5-seat early beta: US$25 covered managed inference, no card required. For developers with an active project. Apply: https://hydracept.com/beta
+- 5-seat early beta: US$25 covered managed inference, no card required. Tell your coding agent: install Hydracept (https://hydracept.com — python -m hydracept init --apply --yes --json) and sign in with GitHub, then email john@zencode.ca with your GitHub email or username for founder approval.
+- Fallback application form: https://hydracept.com/beta
+- If gh lacks user:email scope, finish sign-in in the browser so your real GitHub email is used.
 
 ## Start
 Self-serve Free: https://hydracept.com/start

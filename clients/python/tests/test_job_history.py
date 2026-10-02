@@ -65,6 +65,7 @@ def test_find_project_jobs_adds_agent_next_action() -> None:
     client = FakeClient()
     payload = find_project_jobs(client, intent="failed")
     assert payload["nextAction"] == "inspect"
+    assert "executedPrompt" in payload["howToReadExecutedPrompt"]
     assert "outcome=failed" in client.paths[-1]
 
 
@@ -75,4 +76,5 @@ def test_inspect_job_prefers_explicit_selected_artifact_and_preserves_snapshot()
     assert payload["reuseCandidateArtifactId"] == "art_selected"
     assert payload["reuseCandidateSelected"] is True
     assert payload["requestSnapshot"]["input"]["prompt"] == "make an icon"
+    assert payload["executedPrompt"] == "make an icon"
     assert payload["receipt"]["costUsd"] == 0.0125

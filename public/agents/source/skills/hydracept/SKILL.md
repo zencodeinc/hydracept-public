@@ -110,7 +110,7 @@ Live machine-readable copy: `GET /v1/agent-context?profile=integration` → `pyt
 
 **Python (scripts):** `HydraceptWorkspace.open().run(...)` or `HydraceptClient.from_workspace().run_capability_job(...)`. MCP tools must not block — repeat `hydracept_job_status` until `nextAction != poll`, then `hydracept_download_artifact(job_id)` (uses `primaryArtifactId`; `ARTIFACT_SELECTION_REQUIRED` when peers must be chosen).
 
-**History:** `GET /v1/projects/{projectId}/jobs` is prompt-free and supports `status`, `capabilityKey`, `outcome=failed|reusable`, and `selected`. `hydracept_jobs_find` is the agent convenience wrapper. `hydracept_job_inspect` intentionally reads one full job plus its receipt summary and returns `requestSnapshot`, error/diagnostics, and a reuse candidate.
+**History:** `GET /v1/projects/{projectId}/jobs` is prompt-free and supports `status`, `capabilityKey`, `outcome=failed|reusable`, and `selected`. `hydracept_jobs_find` is the agent convenience wrapper and uses the workspace-bound project. `hydracept_job_inspect` reads one job. The prompt that was executed is `executedPrompt` (`requestSnapshot.input.prompt`). Text jobs keep that admitted prompt when no input payload was stored.
 
 ## Workflow
 
@@ -129,7 +129,7 @@ upgrade CLI → init → find capability → describe → run → poll → artif
 8. **Pin (research)** — MCP `hydracept_pinned_run` / `POST /v1/inference/pinned` when the user needs an exact provider/model/API pin. One logical model execution; Flex-capacity 429s retry inside the admission deadline. No Flex→Standard fallback.
 9. **Poll** — MCP `hydracept_job_status` or `python -m hydracept jobs submit … --watch` (line-flushed).
 10. **Recover context** — if the ID is no longer in the conversation, call `hydracept_jobs_find` (`failed`, `reusable`, or `recent`) instead of asking the human for it. The list is intentionally prompt-free.
-11. **Inspect one prior job** — `hydracept_job_inspect(job_id)`. For failure, read `error.code`. For retry, copy `requestSnapshot` input and use a new idempotency key. For reuse, prefer explicit `selectedArtifactId`; a nominated fallback is not the same as a human selection.
+11. **Inspect one prior job** — `hydracept_job_inspect(job_id)`. The prompt that was executed is `executedPrompt` (`requestSnapshot.input.prompt`). For failure, read `error.code`. For retry, copy `requestSnapshot` input and use a new idempotency key. For reuse, prefer explicit `selectedArtifactId`; a nominated fallback is not the same as a human selection.
 12. **Retrieve artifact** — MCP `hydracept_download_artifact(job_id, out="artifacts/result.png")` (stdio; `output_path` also works) or job artifact URLs (hosted).
 13. **Inspect receipt** — MCP `hydracept_get_receipt` (jobs), `hydracept_pinned_get` (pinned), or `python -m hydracept jobs receipt <jobId>`.
 14. **Verify provenance or PNG alpha** — use the lockfile/manifest verification tools for provenance. For a downloaded PNG, use `python -m hydracept verify <path.png> --json`; never infer alpha correctness from a rendered preview.

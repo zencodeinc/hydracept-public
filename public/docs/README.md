@@ -142,7 +142,7 @@ curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
   "https://api.hydracept.com/v1/projects/cpr_.../jobs?outcome=failed&limit=10"
 ```
 
-The list is prompt-free. Once the relevant job is identified, intentionally inspect only that job with `GET /v1/jobs/{jobId}`. MCP provides the shorter agent loop:
+The list is prompt-free. Once the relevant job is identified, intentionally inspect only that job with `GET /v1/jobs/{jobId}`. The prompt that was executed is `requestSnapshot.input.prompt`. MCP provides the shorter agent loop and returns it as `executedPrompt`:
 
 ```text
 hydracept_jobs_find(intent="failed")

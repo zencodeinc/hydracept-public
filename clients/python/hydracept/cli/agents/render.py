@@ -76,7 +76,7 @@ def render_cursor(project_root: Path, repo_root: Path | None = None) -> list[str
         "hooks/hooks.json",
         "mcp.json",
         "README.md",
-        "assets/logo.png",
+        "assets/trademark.png",
     ):
         src = template_root / rel
         if src.is_file():

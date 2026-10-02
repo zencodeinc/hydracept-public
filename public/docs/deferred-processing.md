@@ -7,7 +7,7 @@ It applies to:
 - Eligible durable text jobs (`POST /v1/capabilities/{key}/jobs`) — **default**
 - Eligible OpenAI Responses pins (`POST /v1/inference/pinned` and bulk items) — **opt in** with `processing: "deferred"`
 
-Interactive invoke and stream stay on standard processing. Image, audio, video, and 3D jobs are unchanged — those providers do not expose this discount today.
+Interactive invoke and stream stay on standard processing. A durable job with `readerDelivery` also stays on standard processing, because a deferred call does not publish partial output before it finishes. That standard rate is a different comparison from running one provider call instead of two: keep the model and the pricing lane the same when you compare call counts. Image, audio, video, and 3D jobs are unchanged — those providers do not expose this discount today.
 
 ## When it applies
 
@@ -17,6 +17,7 @@ Interactive invoke and stream stay on standard processing. Image, audio, video, 
 | `POST /v1/inference/pinned` and `/pinned/bulk` | **Standard by default.** Opt in with `processing: "deferred"` on eligible OpenAI Responses pins. Same pin, one logical model execution, no truncation rewrite, no Flex→Standard fallback. Flex-capacity 429s retry inside the admission deadline and are recorded on the receipt. Omitted execution timeouts on Flex pins use the 600s platform max. |
 | `POST /v1/capabilities/{key}/invoke` | Standard |
 | Stream | Standard |
+| Durable job with `readerDelivery` | Standard. The same call publishes partial output before the receipt is sealed. |
 
 Discover support on the capability descriptor:
 

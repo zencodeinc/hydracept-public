@@ -6,6 +6,29 @@ from typing import Any
 from urllib.parse import urlencode
 
 
+# Keep identical to hydracept_contracts.job_history. The published client cannot import it.
+JOBS_FIND_DESCRIPTION = (
+    "Find a prior job in the workspace-bound project when you do not have its id. "
+    "intent is recent, failed, or reusable. This list never includes prompt text. "
+    "To read the prompt that was executed, call hydracept_job_inspect and read "
+    "executedPrompt (requestSnapshot.input.prompt). Bind the project that owns the job "
+    "before searching."
+)
+
+JOB_INSPECT_DESCRIPTION = (
+    "Read one prior job, including the prompt that was executed. executedPrompt is that "
+    "prompt, also stored at requestSnapshot.input.prompt. Text jobs return it when a "
+    "prompt record was kept and no input payload was stored. Also returns error, diagnostics, "
+    "receipt summary, and a reuse candidate. Pass job_id from hydracept_jobs_find or an "
+    "earlier run."
+)
+
+HOW_TO_READ_EXECUTED_PROMPT = (
+    "This list does not include prompt text. Call hydracept_job_inspect with one jobId "
+    "and read executedPrompt (requestSnapshot.input.prompt)."
+)
+
+
 def history_query_for_intent(intent: str) -> dict[str, str]:
     normalized = (intent or "recent").strip().lower()
     if normalized == "recent":
@@ -21,6 +44,7 @@ def history_find_result(payload: dict[str, Any]) -> dict[str, Any]:
     result = dict(payload)
     items = result.get("items")
     result["nextAction"] = "inspect" if isinstance(items, list) and items else "none"
+    result["howToReadExecutedPrompt"] = HOW_TO_READ_EXECUTED_PROMPT
     return result
 
 
@@ -81,6 +105,32 @@ def _reuse_candidate(job: dict[str, Any]) -> tuple[str | None, bool]:
     return None, False
 
 
+def executed_prompt_text(job: dict[str, Any]) -> str | None:
+    """Return the admitted prompt from a public job payload, when one was kept."""
+    snapshot = job.get("requestSnapshot")
+    if not isinstance(snapshot, dict):
+        return None
+    raw_input = snapshot.get("input")
+    if isinstance(raw_input, str) and raw_input.strip():
+        return raw_input.strip()
+    if not isinstance(raw_input, dict):
+        return None
+    prompt = raw_input.get("prompt")
+    if isinstance(prompt, str) and prompt.strip():
+        return prompt.strip()
+    messages = raw_input.get("messages")
+    if isinstance(messages, list):
+        for message in reversed(messages):
+            if not isinstance(message, dict):
+                continue
+            if message.get("role") not in {None, "user", "human"}:
+                continue
+            content = message.get("content")
+            if isinstance(content, str) and content.strip():
+                return content.strip()
+    return None
+
+
 def inspect_job_bundle(
     job: dict[str, Any],
     receipt: dict[str, Any] | None = None,
@@ -101,6 +151,7 @@ def inspect_job_bundle(
     return {
         "jobId": job.get("jobId") or job.get("id"),
         "capabilityKey": job.get("capabilityKey"),
+        "executedPrompt": executed_prompt_text(job),
         "status": job.get("status"),
         "error": error,
         "diagnostics": job.get("diagnostics"),

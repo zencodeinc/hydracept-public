@@ -44,26 +44,14 @@ public sealed class HydraceptClient : IHydraceptClient
         }
     }
 
-    public Task<JsonElement> InvokeAsync(object body, CancellationToken cancellationToken = default) =>
-        PostJsonAsync("v1/invocations", body, headers: null, cancellationToken);
-
-    public Task<JsonElement> GetInvocationAsync(string executionId, CancellationToken cancellationToken = default) =>
-        GetJsonAsync($"v1/invocations/{Uri.EscapeDataString(executionId)}", cancellationToken);
-
-    public Task<JsonElement> GetReceiptAsync(string executionId, CancellationToken cancellationToken = default) =>
-        GetJsonAsync($"v1/invocations/{Uri.EscapeDataString(executionId)}/receipt", cancellationToken);
-
-    public Task<JsonElement> CancelInvocationAsync(string executionId, CancellationToken cancellationToken = default) =>
-        PostJsonAsync($"v1/invocations/{Uri.EscapeDataString(executionId)}/cancel", body: null, headers: null, cancellationToken);
-
-    public async IAsyncEnumerable<HydraceptSseEvent> StreamInvocationEventsAsync(
+    public async IAsyncEnumerable<HydraceptSseEvent> StreamExecutionEventsAsync(
         string executionId,
         string? lastEventId = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         using var request = new HttpRequestMessage(
             HttpMethod.Get,
-            $"v1/invocations/{Uri.EscapeDataString(executionId)}/events");
+            $"v1/executions/{Uri.EscapeDataString(executionId)}/events");
         request.Headers.Accept.ParseAdd("text/event-stream");
         if (!string.IsNullOrWhiteSpace(lastEventId))
             request.Headers.TryAddWithoutValidation("Last-Event-ID", lastEventId);
@@ -86,11 +74,25 @@ public sealed class HydraceptClient : IHydraceptClient
             yield return evt;
     }
 
-    public Task<JsonElement> SubmitJobAsync(object body, CancellationToken cancellationToken = default) =>
-        PostJsonAsync("v1/jobs", body, headers: null, cancellationToken);
-
     public Task<JsonElement> GetJobAsync(string jobId, CancellationToken cancellationToken = default) =>
         GetJsonAsync($"v1/jobs/{Uri.EscapeDataString(jobId)}", cancellationToken);
+
+    public Task<JsonElement> GetJobEventsAsync(
+        string jobId,
+        string? type = null,
+        string? cursor = null,
+        CancellationToken cancellationToken = default)
+    {
+        var path = $"v1/jobs/{Uri.EscapeDataString(jobId)}/events";
+        var query = new List<string>();
+        if (!string.IsNullOrWhiteSpace(type))
+            query.Add("type=" + Uri.EscapeDataString(type));
+        if (!string.IsNullOrWhiteSpace(cursor))
+            query.Add("cursor=" + Uri.EscapeDataString(cursor));
+        if (query.Count > 0)
+            path += "?" + string.Join("&", query);
+        return GetJsonAsync(path, cancellationToken);
+    }
 
     public Task<JsonElement> GetJobResultAsync(string jobId, CancellationToken cancellationToken = default) =>
         GetJsonAsync($"v1/jobs/{Uri.EscapeDataString(jobId)}/result", cancellationToken);

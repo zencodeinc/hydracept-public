@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0 — 2026-10-02
+
+**Breaking:** Removed legacy runtime helpers (`runtime.invoke`, `runtime.submitJob`, `runtime.getInvocation`, `runtime.cancelInvocation`, `runtime.getReceipt`). Use `invokeCapability`, `submitCapabilityJob`, and unified job routes (`getJob`, `cancelJob`, `getJobReceipt`). Stream token SSE moved from `GET /v1/invocations/{id}/events` to `GET /v1/executions/{id}/events` (`iterExecutionStreamEvents`, `runtime.streamExecutionEvents`).
+
 ## 0.3.5 — 2026-09-04
 
 - Align public SDK release with Hydracept 0.3.9 constellation (init auto-bind, vendored MCP surface catalog)

@@ -8,7 +8,7 @@
     <RootNamespace>Hydracept.Client</RootNamespace>
     <AssemblyName>Hydracept.Client</AssemblyName>
     <Description>Thin HTTP + SSE client for the Hydracept public API — production-ready game assets, with a receipt for every run.</Description>
-    <Version>0.4.5</Version>
+    <Version>0.5.0</Version>
     <Authors>Zencode</Authors>
     <PackageId>Hydracept.Client</PackageId>
     <PackageTags>hydracept;mcp;gamedev;unity;image-generation;sprite-sheet;transparent-png;reference-image;multi-provider;game-ai</PackageTags>

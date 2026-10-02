@@ -20,7 +20,7 @@ export type {
   PanelSessionCreated,
   SurfaceActionInputField,
 } from './panel-types.js';
-export { iterInvocationEvents } from './sse.js';
+export { iterExecutionStreamEvents } from './sse.js';
 export type {
   HydraceptAssetOut,
   HydraceptAssetPage,

@@ -16,7 +16,7 @@ history:
   list: GET /v1/projects/{projectId}/jobs
   inspect: GET /v1/jobs/{jobId}
   receipt: GET /v1/jobs/{jobId}/receipt
-  request: requestSnapshot on GET /v1/jobs/{jobId}
+  request: executedPrompt on hydracept_job_inspect; requestSnapshot.input.prompt on GET /v1/jobs/{jobId}
   filters:
     - status
     - capabilityKey
@@ -27,6 +27,7 @@ history:
     - hydracept_jobs_find
     - hydracept_job_inspect
   rules:
+    - To read the prompt that was executed, inspect one job and read executedPrompt (requestSnapshot.input.prompt). Find with hydracept_jobs_find when the job id is unknown. The list never includes prompt text. Text jobs return the admitted prompt when a prompt record was kept and no input payload was stored. Find and inspect use the workspace-bound project.
     - Project history is prompt-free; list items never include prompts, request snapshots, or error messages.
     - If a user reports a prior failure or asks to reuse prior output, find history before asking for a job id.
     - Inspect only the specific job whose request/error content is needed.

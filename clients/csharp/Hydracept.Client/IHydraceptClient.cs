@@ -8,26 +8,26 @@ namespace Hydracept.Client;
 public interface IHydraceptClient
 {
     /// <summary>
-    /// Deprecated request-response invocations (<c>POST /v1/invocations</c>).
-    /// Capabilities that advertise only <c>job_async</c> (including creative longform)
-    /// reject this path; use <see cref="SubmitCapabilityJobAsync"/>.
+    /// Token-level SSE for stream invoke executions (<c>GET /v1/executions/{id}/events</c>).
+    /// Durable job lifecycle history uses <see cref="GetJobEventsAsync"/> (cursor poll).
     /// </summary>
-    Task<JsonElement> InvokeAsync(object body, CancellationToken cancellationToken = default);
-
-    Task<JsonElement> GetInvocationAsync(string executionId, CancellationToken cancellationToken = default);
-
-    Task<JsonElement> GetReceiptAsync(string executionId, CancellationToken cancellationToken = default);
-
-    Task<JsonElement> CancelInvocationAsync(string executionId, CancellationToken cancellationToken = default);
-
-    IAsyncEnumerable<HydraceptSseEvent> StreamInvocationEventsAsync(
+    IAsyncEnumerable<HydraceptSseEvent> StreamExecutionEventsAsync(
         string executionId,
         string? lastEventId = null,
         CancellationToken cancellationToken = default);
 
-    Task<JsonElement> SubmitJobAsync(object body, CancellationToken cancellationToken = default);
-
     Task<JsonElement> GetJobAsync(string jobId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cursor-paged job events. <c>cursor</c> is an exclusive lower bound.
+    /// Pass <c>type=job.reader_text</c> and the last event cursor to resume
+    /// partial output. This is not stream invoke SSE.
+    /// </summary>
+    Task<JsonElement> GetJobEventsAsync(
+        string jobId,
+        string? type = null,
+        string? cursor = null,
+        CancellationToken cancellationToken = default);
 
     Task<JsonElement> GetJobResultAsync(string jobId, CancellationToken cancellationToken = default);
 
@@ -126,4 +126,3 @@ public interface IHydraceptClient
 
     Task<byte[]> DownloadJobArtifactAsync(string jobId, string artifactId, CancellationToken cancellationToken = default);
 }
-

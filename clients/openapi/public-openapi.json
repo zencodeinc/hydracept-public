@@ -3,6 +3,29 @@
   "info": {
     "title": "Hydracept Public API",
     "version": "0.2.1",
+    "x-hydracept-caller-context-limits": {
+      "metadataMaxBytes": {
+        "value": 16384,
+        "reason": "Keeps forge_executions JSONB rows bounded; not a substitute for object storage."
+      },
+      "tagsMaxCount": {
+        "value": 32,
+        "reason": "Matches practical indexed-label cardinality (AWS allows 50 tags per resource)."
+      },
+      "tagMaxLength": {
+        "value": 256,
+        "reason": "Fits composite correlation refs (e.g. story:<uuid>:chapter:<n>) within AWS tag value headroom."
+      },
+      "externalRefMaxLength": {
+        "value": 255,
+        "reason": "Postgres varchar(255) column width on forge_executions.external_ref."
+      },
+      "metadataMaxDepth": {
+        "value": 32,
+        "reason": "Prevents pathological nesting from RecursionError during canonical JSON encoding."
+      },
+      "enforcement": "Published values are hard ceilings. HYDRACEPT_CALLER_METADATA_MAX_BYTES, HYDRACEPT_CALLER_TAGS_MAX_COUNT, HYDRACEPT_CALLER_TAG_MAX_LENGTH, HYDRACEPT_CALLER_EXTERNAL_REF_MAX_LENGTH, and HYDRACEPT_CALLER_METADATA_MAX_DEPTH may tighten a deployment. Values below 1 or above these ceilings are clamped to the ceiling."
+    },
     "description": "Discovery, quoting, durable jobs, artifacts, and receipts. Public integration surface for Hydracept capabilities and jobs. Authenticate with a Hydracept API key (Bearer). Implementation internals are not part of this contract."
   },
   "paths": {
@@ -1070,6 +1093,254 @@
         ]
       }
     },
+    "/v1/adapters/source-preview": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapters"
+        ],
+        "summary": "Preview LoRA Source Before Registration",
+        "description": "Look up a public Hugging Face LoRA and propose registration choices.\n\nThe response fills revision, weights file, base-model family, name, strength,\nand trigger words when the model card knows them. It does not register an\nadapter, download weight tensors, or spend provider credits. Several equally\nplausible weight files stay unselected until the caller chooses one.",
+        "operationId": "preview_adapter_source_v1_adapters_source_preview_post",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelAdapterSourcePreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Preview Adapter Source V1 Adapters Source Preview Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/adapters/suggestions": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapters"
+        ],
+        "summary": "Suggest a LoRA",
+        "description": "Suggest a project LoRA or a public Hugging Face LoRA without registering it.\n\nA project alias, adapter id, or unique display name becomes a generation patch.\nA link becomes a suggestion the caller can show and later accept. This does not\ndownload weight tensors or spend provider credits.",
+        "operationId": "suggest_lora_v1_adapters_suggestions_post",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Environment"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoraSuggestionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Suggest Lora V1 Adapters Suggestions Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
+    "/v1/adapters/suggestions/accept": {
+      "post": {
+        "tags": [
+          "public_api",
+          "external",
+          "model-adapters"
+        ],
+        "summary": "Use or Add a Suggested LoRA",
+        "description": "Use a project LoRA, or register an unambiguous public one and then use it.\n\nRegistration happens only when a weights file is known. Several weight files,\nor a missing base model, return the same choice the suggestion would have shown.\nThis does not generate an image or spend provider credits.",
+        "operationId": "accept_lora_suggestion_v1_adapters_suggestions_accept_post",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Environment"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoraAcceptRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Accept Lora Suggestion V1 Adapters Suggestions Accept Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
     "/v1/adapters/upload": {
       "post": {
         "tags": [
@@ -1633,6 +1904,98 @@
         "security": []
       }
     },
+    "/v1/capabilities/{capability_key}/execution-targets": {
+      "get": {
+        "summary": "List execution targets",
+        "description": "Models that can perform this capability.\n\nThe default is the unpinned selection. Availability is a separate field.",
+        "operationId": "list_execution_targets_v1_capabilities__capability_key__execution_targets_get",
+        "parameters": [
+          {
+            "name": "capability_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Capability Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "anonymous",
+        "x-hydracept-client-codegen": true,
+        "tags": [
+          "public_api",
+          "external"
+        ],
+        "security": []
+      }
+    },
+    "/v1/capabilities/{capability_key}/benchmarks": {
+      "get": {
+        "summary": "Describe capability benchmarks",
+        "description": "Benchmark definition and coverage. Comparative scores are not computed in this release.",
+        "operationId": "describe_capability_benchmarks_v1_capabilities__capability_key__benchmarks_get",
+        "parameters": [
+          {
+            "name": "capability_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Capability Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "anonymous",
+        "x-hydracept-client-codegen": true,
+        "tags": [
+          "public_api",
+          "external"
+        ],
+        "security": []
+      }
+    },
     "/v1/capabilities/{capability_key}/invoke": {
       "post": {
         "summary": "Invoke Capability",
@@ -1933,6 +2296,81 @@
         ]
       }
     },
+    "/v1/executions/{execution_id}/events": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "capabilities"
+        ],
+        "summary": "Stream execution tokens (SSE)",
+        "description": "Token-level SSE for stream invoke executions.\n\nDurable job lifecycle history remains on GET /v1/jobs/{jobId}/events (cursor poll).",
+        "operationId": "execution_stream_events_v1_executions__execution_id__events_get",
+        "parameters": [
+          {
+            "name": "execution_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Execution Id"
+            }
+          },
+          {
+            "name": "Last-Event-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-sent events (`text/event-stream`) with token and terminal frames.",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": [
+          "service_principal",
+          "panel_session"
+        ],
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
     "/v1/jobs/{job_id}": {
       "get": {
         "tags": [
@@ -2021,10 +2459,28 @@
                   "type": "null"
                 }
               ],
-              "description": "Pass nextCursor from the previous page.",
+              "description": "Exclusive lower bound on the event id. Persist the last event cursor. nextCursor is set only when another page remains.",
               "title": "Cursor"
             },
-            "description": "Pass nextCursor from the previous page."
+            "description": "Exclusive lower bound on the event id. Persist the last event cursor. nextCursor is set only when another page remains."
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "When set, return only this event type. job.reader_text is partial output from the in-flight call. cursor is an exclusive lower bound; persist the last event cursor.",
+              "title": "Type"
+            },
+            "description": "When set, return only this event type. job.reader_text is partial output from the in-flight call. cursor is an exclusive lower bound; persist the last event cursor."
           },
           {
             "name": "limit",
@@ -7835,6 +8291,46 @@
         ],
         "title": "ApiKeyCreate"
       },
+      "BenchmarkContextRecord": {
+        "properties": {
+          "benchmarkPolicyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Benchmarkpolicyid"
+          },
+          "workloadProfileId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workloadprofileid"
+          },
+          "derivedScoreHash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Derivedscorehash"
+          }
+        },
+        "type": "object",
+        "title": "BenchmarkContextRecord",
+        "description": "Stable benchmark ids. derivedScoreHash is null when no comparison was computed."
+      },
       "BillingCurrencyUpdate": {
         "properties": {
           "billingCurrency": {
@@ -7884,7 +8380,7 @@
           "baseModelFamily": {
             "type": "string",
             "title": "Basemodelfamily",
-            "default": "flux"
+            "default": ""
           },
           "recommendedWeight": {
             "anyOf": [
@@ -8117,6 +8613,34 @@
       },
       "CapabilityInvokeRequest": {
         "properties": {
+          "externalRef": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Externalref",
+            "description": "Opaque caller-owned correlation reference. Never sent to providers. Max 255 characters (forge_executions column width)."
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 32,
+            "title": "Tags",
+            "description": "Caller-owned flat labels for correlation and future exact-match filtering. At most 32 tags; each tag max 256 characters."
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Opaque caller-owned JSON bookkeeping. Never interpreted or sent to providers. Serialized size capped at 16384 UTF-8 bytes."
+          },
           "responseSchema": {
             "anyOf": [
               {
@@ -8154,6 +8678,17 @@
               }
             ]
           },
+          "readerDelivery": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReaderDelivery"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "On a durable text job, publish job.reader_text events during the one provider call, before the receipt is sealed. Replay with GET /v1/jobs/{jobId}/events?type=job.reader_text. Not streaming invoke. Uses standard processing. Does not change the selected route."
+          },
           "maturityRating": {
             "anyOf": [
               {
@@ -8188,6 +8723,18 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Input"
+          },
+          "inputPayloadRef": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inputpayloadref",
+            "description": "Verified payload id from POST /v1/payloads. When set, inline input is optional; the server resolves content before admission, estimate, and stream dispatch."
           },
           "execution": {
             "$ref": "#/components/schemas/CapabilityExecutionOptions"
@@ -8234,6 +8781,16 @@
                 "type": "null"
               }
             ]
+          },
+          "pin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExactTargetPin"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -8242,6 +8799,34 @@
       },
       "CapabilityJobRequest": {
         "properties": {
+          "externalRef": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Externalref",
+            "description": "Opaque caller-owned correlation reference. Never sent to providers. Max 255 characters (forge_executions column width)."
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 32,
+            "title": "Tags",
+            "description": "Caller-owned flat labels for correlation and future exact-match filtering. At most 32 tags; each tag max 256 characters."
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Opaque caller-owned JSON bookkeeping. Never interpreted or sent to providers. Serialized size capped at 16384 UTF-8 bytes."
+          },
           "responseSchema": {
             "anyOf": [
               {
@@ -8279,6 +8864,17 @@
               }
             ]
           },
+          "readerDelivery": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReaderDelivery"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "On a durable text job, publish job.reader_text events during the one provider call, before the receipt is sealed. Replay with GET /v1/jobs/{jobId}/events?type=job.reader_text. Not streaming invoke. Uses standard processing. Does not change the selected route."
+          },
           "maturityRating": {
             "anyOf": [
               {
@@ -8314,6 +8910,18 @@
             "type": "object",
             "title": "Input"
           },
+          "inputPayloadRef": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inputpayloadref",
+            "description": "Verified payload id from POST /v1/payloads. When set, inline input is optional; the server resolves content before admission, estimate, and stream dispatch."
+          },
           "execution": {
             "$ref": "#/components/schemas/CapabilityExecutionOptions"
           },
@@ -8342,6 +8950,16 @@
               }
             ],
             "title": "Taskkind"
+          },
+          "pin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExactTargetPin"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -9210,6 +9828,21 @@
         "type": "object",
         "title": "EnvironmentPatch"
       },
+      "ExactTargetPin": {
+        "properties": {
+          "target": {
+            "type": "string",
+            "title": "Target"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target"
+        ],
+        "title": "ExactTargetPin",
+        "description": "Exact execution target. Hydracept does not substitute."
+      },
       "ExecutionConstraints": {
         "properties": {
           "maxCostUsd": {
@@ -9337,6 +9970,29 @@
               }
             ],
             "title": "Resolvedmodel"
+          },
+          "externalRef": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Externalref"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
           },
           "typedOutput": {
             "anyOf": [
@@ -9474,6 +10130,29 @@
               }
             ],
             "title": "Productid"
+          },
+          "externalRef": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Externalref"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
           },
           "createdAt": {
             "anyOf": [
@@ -10028,6 +10707,29 @@
             ],
             "title": "Productid"
           },
+          "externalRef": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Externalref"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
           "environment": {
             "anyOf": [
               {
@@ -10164,6 +10866,26 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/RoutingSelection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetRouting": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TargetRoutingRecord"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "benchmarkContext": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenchmarkContextRecord"
               },
               {
                 "type": "null"
@@ -10961,6 +11683,65 @@
         "type": "object",
         "title": "JobApproveBody"
       },
+      "LoraAcceptRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Query"
+          },
+          "filePath": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filepath"
+          },
+          "baseModelFamily": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Basemodelfamily"
+          },
+          "refresh": {
+            "type": "boolean",
+            "title": "Refresh",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "LoraAcceptRequest"
+      },
+      "LoraSuggestionRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Query"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "LoraSuggestionRequest"
+      },
       "MatureContentTrait": {
         "type": "string",
         "enum": [
@@ -11227,6 +12008,21 @@
           "ref"
         ],
         "title": "ModelAdapterSource"
+      },
+      "ModelAdapterSourcePreviewRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Query"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "ModelAdapterSourcePreviewRequest"
       },
       "Money": {
         "properties": {
@@ -12196,6 +12992,25 @@
         ],
         "title": "QuoteKind"
       },
+      "ReaderDelivery": {
+        "properties": {
+          "boundary": {
+            "$ref": "#/components/schemas/ReaderDeliveryBoundary",
+            "default": "paragraph"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ReaderDelivery",
+        "description": "Opt in to partial text output on a durable text job.\n\n``boundary`` is ``paragraph``: events close on a blank line, or on a\nsentence-sized span once the hold limit is reached. Tokens are not events."
+      },
+      "ReaderDeliveryBoundary": {
+        "type": "string",
+        "enum": [
+          "paragraph"
+        ],
+        "title": "ReaderDeliveryBoundary"
+      },
       "ReceiptCharge": {
         "properties": {
           "customerCharge": {
@@ -12587,6 +13402,28 @@
               }
             ],
             "title": "Routekey"
+          },
+          "vendor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor"
+          },
+          "vendorModel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendormodel"
           }
         },
         "type": "object",
@@ -13480,6 +14317,62 @@
           "command"
         ],
         "title": "SurfaceProjectCommandHandler"
+      },
+      "TargetRoutingRecord": {
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          },
+          "policyVersion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policyversion"
+          },
+          "requestedTarget": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requestedtarget"
+          },
+          "resolvedTarget": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedtarget"
+          },
+          "substituted": {
+            "type": "boolean",
+            "title": "Substituted",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "TargetRoutingRecord",
+        "description": "Which target ran. Profile stays null until a real routing profile is published."
       },
       "ValidationError": {
         "properties": {

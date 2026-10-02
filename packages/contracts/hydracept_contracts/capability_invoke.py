@@ -101,6 +101,14 @@ class ExecutionConstraints(BaseModel):
         return text
 
 
+class ExactTargetPin(BaseModel):
+    """Exact execution target. Hydracept does not substitute."""
+
+    target: str
+
+    model_config = {"populate_by_name": True, "extra": "forbid"}
+
+
 class CapabilityExecutionOptions(BaseModel):
     execution_preference: str = Field(default="automatic", alias="executionPreference")
     billing_mode: str | None = Field(default=None, alias="billingMode")
@@ -300,11 +308,20 @@ def mint_job_idempotency_key() -> str:
 class CapabilityInvokeRequest(CapabilityInvocationEnvelope):
     context: CapabilityContext = Field(default_factory=CapabilityContext)
     input: dict[str, Any] = Field(default_factory=dict)
+    input_payload_ref: str | None = Field(
+        default=None,
+        alias="inputPayloadRef",
+        description=(
+            "Verified payload id from POST /v1/payloads. When set, inline input is optional; "
+            "the server resolves content before admission, estimate, and stream dispatch."
+        ),
+    )
     execution: CapabilityExecutionOptions = Field(default_factory=CapabilityExecutionOptions)
     idempotency_key: str | None = Field(default=None, alias="idempotencyKey")
     correlation_id: str | None = Field(default=None, alias="correlationId")
     task_kind: str | None = Field(default=None, alias="taskKind")
     execution_mode: ExecutionMode | None = Field(default=None, alias="executionMode")
+    pin: ExactTargetPin | None = None
 
     model_config = {"populate_by_name": True, "extra": "forbid"}
 
@@ -317,10 +334,19 @@ class CapabilityInvokeRequest(CapabilityInvocationEnvelope):
 class CapabilityJobRequest(CapabilityInvocationEnvelope):
     context: CapabilityContext = Field(default_factory=CapabilityContext)
     input: dict[str, Any] = Field(default_factory=dict)
+    input_payload_ref: str | None = Field(
+        default=None,
+        alias="inputPayloadRef",
+        description=(
+            "Verified payload id from POST /v1/payloads. When set, inline input is optional; "
+            "the server resolves content before admission, estimate, and stream dispatch."
+        ),
+    )
     execution: CapabilityExecutionOptions = Field(default_factory=CapabilityExecutionOptions)
     idempotency_key: str = Field(default_factory=mint_job_idempotency_key, alias="idempotencyKey")
     correlation_id: str | None = Field(default=None, alias="correlationId")
     task_kind: str | None = Field(default=None, alias="taskKind")
+    pin: ExactTargetPin | None = None
 
     model_config = {"populate_by_name": True, "extra": "forbid"}
 

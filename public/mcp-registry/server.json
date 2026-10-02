@@ -3,7 +3,7 @@
   "name": "com.hydracept/hydracept",
   "title": "Hydracept",
   "description": "Execution control plane for agents: capabilities, durable jobs, budgets, receipts, and BYOK.",
-  "version": "0.4.5",
+  "version": "0.5.0",
   "websiteUrl": "https://hydracept.com/plugin",
   "repository": {
     "url": "https://github.com/zencodeinc/hydracept-public",
@@ -20,7 +20,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "hydracept",
-      "version": "0.4.5",
+      "version": "0.5.0",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"

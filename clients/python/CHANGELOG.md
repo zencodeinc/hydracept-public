@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 — 2026-10-02 (released)
+
+**Breaking:** Legacy HTTP routes `POST /v1/invocations`, `POST /v1/jobs`, and invocation lifecycle GETs return **410 Gone**. Use `POST /v1/capabilities/{key}/invoke|jobs` and `GET /v1/jobs/{jobId}` (+ receipt/cancel). Stream SSE helper renamed to `iter_execution_stream_events` targeting `GET /v1/executions/{executionId}/events`.
+
+## 0.4.6 — 2026-09-28 (released)
+
+- `hydracept init` surfaces comped-beta / email verification hints from identity assertion (`emailHint` on `localIdentity`) when GitHub noreply email is unverified
+- `hydracept_job_inspect` returns `executedPrompt` for the admitted prompt. Durable text jobs fill it from the prompt record when no input payload was stored. `hydracept_jobs_find` stays prompt-free and says to inspect one job to read the prompt.
+
 ## 0.4.5 — 2026-09-26 (unreleased)
 
 - Provider cost accounting is now explicit and auditable. `providerCostUsd` is Hydracept's **actual provider COGS** (what it paid/consumed), not the retail price basis: it is `null` when unknown, never `0`, and is accompanied by `pricing.providerCost` with `basis`/`status` (and a pinned `priceScheduleId` for usage-priced cost). The upstream retail price basis moved to the new `providerPriceBasisUsd` / `providerCostBasis: "provider-cogs"`. An estimate is never promoted to actual cost, and a failure no longer implies `$0`.

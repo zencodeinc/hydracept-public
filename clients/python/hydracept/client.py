@@ -496,14 +496,14 @@ class HydraceptClient:
         return self._post("/v1/panel/launch-codes/exchange", body)
 
 
-def iter_invocation_events(
+def iter_execution_stream_events(
     base_url: str,
     token: str,
     execution_id: str,
     *,
     last_event_id: str | None = None,
 ) -> Iterator[dict[str, Any]]:
-    """Maintained SSE helper for legacy invocation streams."""
+    """SSE helper for stream invoke execution tokens."""
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "text/event-stream",
@@ -512,7 +512,7 @@ def iter_invocation_events(
         headers["Last-Event-ID"] = last_event_id
     with httpx.stream(
         "GET",
-        f"{base_url.rstrip('/')}/v1/invocations/{execution_id}/events",
+        f"{base_url.rstrip('/')}/v1/executions/{execution_id}/events",
         headers=headers,
         timeout=None,
     ) as response:

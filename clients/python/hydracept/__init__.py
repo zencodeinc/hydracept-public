@@ -6,7 +6,7 @@ from importlib.metadata import PackageNotFoundError, version as package_version
 from pathlib import Path
 
 from hydracept.artifact_naming import DownloadedArtifact
-from hydracept.client import HydraceptClient, iter_invocation_events
+from hydracept.client import HydraceptClient, iter_execution_stream_events
 from hydracept.history import find_project_jobs, inspect_job, list_project_jobs
 from hydracept.http_timeout import http_timeout
 from hydracept.job_lifecycle import (
@@ -58,7 +58,7 @@ __all__ = [
     "find_project_jobs",
     "http_timeout",
     "inspect_job",
-    "iter_invocation_events",
+    "iter_execution_stream_events",
     "job_wait_contract",
     "list_project_jobs",
 ]

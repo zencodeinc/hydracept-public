@@ -565,6 +565,10 @@ def _try_local_identity_bootstrap(
                     proof=proof,
                     bootstrap_session_id=session_id,
                 )
+                if asserted.get("emailUnverified"):
+                    hint_text = str(asserted.get("emailHint") or "").strip()
+                    if hint_text:
+                        local_identity_state["emailHint"] = hint_text
             except Exception:  # noqa: BLE001
                 local_identity_state.update(
                     {"outcome": "fallback_required", "reason": "proof_rejected"}

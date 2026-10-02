@@ -10,7 +10,12 @@ from mcp.server.mcpserver.server import MCPServer
 
 from hydracept import HydraceptClient
 from hydracept.cli.workspace import require_ready_workspace
-from hydracept.history import find_project_jobs, inspect_job
+from hydracept.history import (
+    JOB_INSPECT_DESCRIPTION,
+    JOBS_FIND_DESCRIPTION,
+    find_project_jobs,
+    inspect_job,
+)
 from hydracept.mcp.interactions import register_interaction_tools
 from hydracept.mcp.project_mcp import ProjectMcpService
 
@@ -45,13 +50,13 @@ def register_project_tools(
             workspace=workspace,
         )
 
-    @server.tool()
+    @server.tool(description=JOBS_FIND_DESCRIPTION)
     def hydracept_jobs_find(
         intent: str = "recent",
         capability_key: str = "",
         limit: int = 10,
     ) -> dict[str, Any]:
-        """Find recent, failed, or reusable jobs in this checkout without asking for a job id."""
+        """Find a prior job, then inspect it to read the prompt that was executed."""
         def _run() -> dict[str, Any]:
             client = history_client()
             try:
@@ -66,9 +71,9 @@ def register_project_tools(
 
         return invoke(_run)
 
-    @server.tool()
+    @server.tool(description=JOB_INSPECT_DESCRIPTION)
     def hydracept_job_inspect(job_id: str) -> dict[str, Any]:
-        """Inspect one job's error, diagnostics, receipt summary, request snapshot, and reuse candidate."""
+        """Read one prior job, including the prompt that was executed."""
         def _run() -> dict[str, Any]:
             client = history_client()
             try:

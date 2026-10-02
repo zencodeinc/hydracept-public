@@ -2,7 +2,7 @@ schemaVersion: 1
 id: hydracept-agent-plugin
 legacyPackId: hydracept-agent-pack
 version: 0.1.0
-distributionVersion: 0.1.9
+distributionVersion: 0.1.10
 registryName: com.hydracept/mcp
 minimumHydraceptVersion: 0.3.9
 name: Hydracept
@@ -18,7 +18,7 @@ tagline: Discovery, quoting, durable jobs, artifacts, and receipts.
 category: Execution control plane
 positioning: Native integrations for Cursor, Claude Code, OpenAI Codex, and OpenClaw.
 operator: Zencode Consulting Inc.
-logo: assets/logo.png
+logo: assets/trademark.png
 urls:
   home: https://hydracept.com
   plugin: https://hydracept.com/plugin

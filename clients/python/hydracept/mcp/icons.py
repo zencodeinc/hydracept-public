@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from mcp.types import Icon
 
-# Stylized H — same asset as hydracept.com/hydracept-logo.png and plugin assets/logo.png.
+# Stylized H on a light plate — hydracept.com/hydracept-logo.png and plugin assets/trademark.png.
 HYDRACEPT_LOGO_URL = "https://hydracept.com/hydracept-logo.png"
 
 

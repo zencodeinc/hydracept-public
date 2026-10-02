@@ -375,6 +375,9 @@ class HydraceptJob(BaseModel):
     status: HydraceptJobStatus
     project_id: str | None = Field(default=None, alias="projectId")
     product_id: str | None = Field(default=None, alias="productId")
+    external_ref: str | None = Field(default=None, alias="externalRef")
+    tags: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime | None = Field(default=None, alias="createdAt")
     completed_at: datetime | None = Field(default=None, alias="completedAt")
     estimated_cost: float | None = Field(default=None, alias="estimatedCost")
@@ -496,6 +499,28 @@ class HydraceptReceiptRoute(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class TargetRoutingRecord(BaseModel):
+    """Which target ran. Profile stays null until a real routing profile is published."""
+
+    profile: str | None = None
+    policy_version: str | None = Field(default=None, alias="policyVersion")
+    requested_target: str | None = Field(default=None, alias="requestedTarget")
+    resolved_target: str | None = Field(default=None, alias="resolvedTarget")
+    substituted: bool = False
+
+    model_config = {"populate_by_name": True}
+
+
+class BenchmarkContextRecord(BaseModel):
+    """Stable benchmark ids. derivedScoreHash is null when no comparison was computed."""
+
+    benchmark_policy_id: str | None = Field(default=None, alias="benchmarkPolicyId")
+    workload_profile_id: str | None = Field(default=None, alias="workloadProfileId")
+    derived_score_hash: str | None = Field(default=None, alias="derivedScoreHash")
+
+    model_config = {"populate_by_name": True}
+
+
 class HydraceptReceiptTimestamps(BaseModel):
     created_at: datetime | None = Field(default=None, alias="createdAt")
     started_at: datetime | None = Field(default=None, alias="startedAt")
@@ -528,6 +553,9 @@ class HydraceptReceipt(BaseModel):
     principal_id: str | None = Field(default=None, alias="principalId")
     project_id: str | None = Field(default=None, alias="projectId")
     product_id: str | None = Field(default=None, alias="productId")
+    external_ref: str | None = Field(default=None, alias="externalRef")
+    tags: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     environment: str | None = None
     admission: HydraceptReceiptAdmission | None = None
     route: HydraceptReceiptRoute | None = None
@@ -550,6 +578,8 @@ class HydraceptReceipt(BaseModel):
     media: dict[str, Any] | None = None
     pricing: HydraceptReceiptPricing | None = None
     routing: RoutingSelection | None = None
+    target_routing: TargetRoutingRecord | None = Field(default=None, alias="targetRouting")
+    benchmark_context: BenchmarkContextRecord | None = Field(default=None, alias="benchmarkContext")
     customer_savings: CustomerSavings | None = Field(default=None, alias="customerSavings")
 
     model_config = {"populate_by_name": True}
