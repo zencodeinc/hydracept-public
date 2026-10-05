@@ -13,4 +13,7 @@ public sealed class HydraceptClientOptions
     /// Default false: convenience methods use v1/... paths relative to BaseAddress.
     /// </summary>
     public bool PathsIncludeV1Prefix { get; set; } = true;
+
+    /// <summary>Optional X-Hydracept-Client / User-Agent value (defaults to hydracept C# SDK).</summary>
+    public string? ClientAgent { get; set; }
 }

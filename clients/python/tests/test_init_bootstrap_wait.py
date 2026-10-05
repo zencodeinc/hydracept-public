@@ -12,6 +12,8 @@ from hydracept.cli.bootstrap_session_store import load_bootstrap_session
 from hydracept.cli.exit_codes import AUTH, SUCCESS
 from hydracept.cli.init_resolver import CANONICAL_INIT_COMMAND, VERBATIM_URL_INSTRUCTION, run_init
 
+from http_test_helpers import FakeResponse, pending_bootstrap_session_get
+
 
 @pytest.fixture(autouse=True)
 def _disable_ambient_local_identity(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -20,19 +22,6 @@ def _disable_ambient_local_identity(monkeypatch: pytest.MonkeyPatch) -> None:
         "hydracept.cli.init_resolver._try_local_identity_bootstrap",
         lambda *args, **kwargs: (None, [], {}),
     )
-
-
-class FakeResponse:
-    def __init__(self, payload: dict, status_code: int = 200) -> None:
-        self._payload = payload
-        self.status_code = status_code
-
-    def json(self) -> dict:
-        return self._payload
-
-    def raise_for_status(self) -> None:
-        if self.status_code >= 400:
-            raise RuntimeError(f"status {self.status_code}")
 
 
 def _session_payload(session_id: str) -> dict:
@@ -91,7 +80,11 @@ def test_init_interaction_is_self_contained_for_agent(tmp_path: Path, monkeypatc
         "hydracept.cli.init_resolver.httpx.post",
         return_value=FakeResponse(_session_payload("bs_agent")),
     ):
-        result = run_init(tmp_path, apply=True, yes=True, json_output=True)
+        with patch(
+            "hydracept.cli.init_resolver.httpx.get",
+            side_effect=pending_bootstrap_session_get("bs_agent"),
+        ):
+            result = run_init(tmp_path, apply=True, yes=True, json_output=True)
 
     _assert_interaction_contract(result.payload, "bs_agent")
     stored = load_bootstrap_session(tmp_path)
@@ -116,7 +109,13 @@ def test_init_accepts_server_activation_url_alias_verbatim(
             }
         ),
     ):
-        result = run_init(tmp_path, apply=True, yes=True, json_output=True)
+        with patch(
+            "hydracept.cli.init_resolver.httpx.get",
+            side_effect=pending_bootstrap_session_get(
+                "bs_alias", activation_url=exact_url, connect_url=exact_url
+            ),
+        ):
+            result = run_init(tmp_path, apply=True, yes=True, json_output=True)
 
     assert result.payload["action"]["url"] == exact_url
     assert result.payload["bootstrapSession"]["activationUrl"] == exact_url

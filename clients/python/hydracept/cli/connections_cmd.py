@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import sys
+from datetime import UTC, datetime
+from importlib.metadata import version as pkg_version
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +32,7 @@ def _adopt_payload(
     environment: str,
     replace: bool,
 ) -> dict[str, Any]:
+    client_version = pkg_version("hydracept")
     return {
         "provider": provider,
         "secret": secret,
@@ -39,6 +42,11 @@ def _adopt_payload(
         "replaceExisting": replace,
         "projectId": project_id,
         "environment": environment,
+        "consent": {
+            "source": "cli_init",
+            "clientVersion": client_version,
+            "confirmedAt": datetime.now(UTC).isoformat(),
+        },
     }
 
 
@@ -51,17 +59,20 @@ def adopt_provider_secret(
     replace: bool = False,
     setup_grant: str | None = None,
 ) -> dict[str, Any]:
+    from hydracept.cli.client_identity import hydracept_client_headers
+
     if setup_grant:
         headers = {
             "Authorization": f"Bearer {setup_grant.strip()}",
             "Content-Type": "application/json",
+            **hydracept_client_headers(),
         }
         url = f"{DEFAULT_API.rstrip('/')}/v1/connections"
     else:
         session = load_session()
         if session is None:
             raise SessionClientError(SESSION_EXPIRED_MESSAGE, status_code=401)
-        headers = _session_headers(session)
+        headers = {**_session_headers(session), **hydracept_client_headers()}
         url = f"{session.app_base_url}/v1/connections"
 
     with httpx.Client(timeout=60.0) as client:
@@ -80,7 +91,10 @@ def adopt_provider_secret(
         raise SessionClientError(SESSION_EXPIRED_MESSAGE, status_code=401)
     if response.status_code == 409:
         body = response.json()
-        detail = body.get("detail") if isinstance(body, dict) else body
+        if isinstance(body, dict):
+            detail = body.get("detail") or body.get("message") or body
+        else:
+            detail = body
         raise SessionClientError(str(detail), status_code=409)
     if response.is_error:
         try:

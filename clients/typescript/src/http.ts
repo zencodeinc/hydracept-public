@@ -27,9 +27,17 @@ export function createHydraceptHttp(options: HydraceptClientOptions) {
   const fetchImpl = options.fetchImpl ?? fetch;
   const credentials = options.credentials ?? 'omit';
 
+  const clientAgent =
+    options.clientAgent ??
+    `hydracept/${options.packageVersion ?? '0.0.0'} typescript-sdk`;
+
   function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
     const token = resolveToken(options);
-    const headers: Record<string, string> = { ...extra };
+    const headers: Record<string, string> = {
+      'X-Hydracept-Client': clientAgent,
+      'User-Agent': clientAgent,
+      ...extra,
+    };
     if (token) headers.Authorization = `Bearer ${token}`;
     return headers;
   }
@@ -95,8 +103,12 @@ export function createHydraceptHttp(options: HydraceptClientOptions) {
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         lastError = error;
+        if (init.signal?.aborted) {
+          throw init.signal.reason ?? new DOMException('Aborted', 'AbortError');
+        }
         const status = (error as HydraceptHttpError).status;
-        const retryable = status !== undefined && isRetryableStatus(status);
+        const retryable =
+          status === undefined || (status !== undefined && isRetryableStatus(status));
         if (!retryable || attempt === maxAttempts) throw error;
         const delayMs = baseDelayMs * attempt;
         await new Promise<void>((resolve, reject) => {

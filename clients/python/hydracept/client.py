@@ -19,7 +19,9 @@ from hydracept.artifact_naming import (
     find_artifact,
     suggested_filename,
 )
+from hydracept.client_identity import hydracept_client_headers
 from hydracept.errors import raise_api_status
+from hydracept.http_retry import post_json_with_retry
 from hydracept.http_timeout import (
     PINNED_BULK_WAIT_TIMEOUT_SECONDS,
     PINNED_READ_TIMEOUT_SECONDS,
@@ -68,6 +70,7 @@ class HydraceptClient:
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
+            **hydracept_client_headers(component="python-sdk"),
         }
         self._http = httpx.Client(
             base_url=self.base_url,
@@ -149,7 +152,14 @@ class HydraceptClient:
         Job-only capabilities (creative longform, images) reject this path.
         Use :meth:`submit_capability_job` and poll :meth:`get_job`.
         """
-        return self._post(f"/v1/capabilities/{key}/invoke", self._merge_body(body))
+        payload = self._merge_body(body)
+        if "idempotency_key" in payload:
+            payload.setdefault("idempotencyKey", str(payload.pop("idempotency_key")))
+        idem = payload.get("idempotencyKey")
+        if not idem:
+            idem = str(uuid4())
+            payload["idempotencyKey"] = idem
+        return post_json_with_retry(self._http, f"/v1/capabilities/{key}/invoke", payload)
 
     def submit_capability_job(self, key: str, body: dict[str, Any]) -> dict[str, Any]:
         """POST /v1/capabilities/{key}/jobs. Returns immediately with a job id."""

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Hydracept Public API",
-    "version": "0.2.1",
+    "version": "0.5.1",
     "x-hydracept-caller-context-limits": {
       "metadataMaxBytes": {
         "value": 16384,
@@ -26,7 +26,7 @@
       },
       "enforcement": "Published values are hard ceilings. HYDRACEPT_CALLER_METADATA_MAX_BYTES, HYDRACEPT_CALLER_TAGS_MAX_COUNT, HYDRACEPT_CALLER_TAG_MAX_LENGTH, HYDRACEPT_CALLER_EXTERNAL_REF_MAX_LENGTH, and HYDRACEPT_CALLER_METADATA_MAX_DEPTH may tighten a deployment. Values below 1 or above these ceilings are clamped to the ceiling."
     },
-    "description": "Discovery, quoting, durable jobs, artifacts, and receipts. Public integration surface for Hydracept capabilities and jobs. Authenticate with a Hydracept API key (Bearer). Implementation internals are not part of this contract."
+    "description": "Discovery, quoting, durable jobs, artifacts, and receipts. Public integration surface for Hydracept capabilities and jobs. Authenticate with a Hydracept API key (Bearer). The info.version field tracks the current published Hydracept client release, not a separate HTTP API semver."
   },
   "paths": {
     "/v1/adapter-aliases": {
@@ -843,10 +843,12 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RetailEstimateResponse"
+                }
               }
             }
           },
@@ -856,6 +858,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -915,10 +947,12 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RetailEstimateResponse"
+                }
               }
             }
           },
@@ -928,6 +962,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -1754,7 +1818,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
@@ -1769,6 +1833,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -1820,7 +1914,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
@@ -1835,6 +1929,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -1876,10 +2000,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCapabilityDescriptor"
+                }
               }
             }
           },
@@ -1889,6 +2015,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -1922,10 +2078,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionTargetList"
+                }
               }
             }
           },
@@ -1935,6 +2093,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -1968,10 +2156,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CapabilityBenchmarkDiscoveryResponse"
+                }
               }
             }
           },
@@ -1981,6 +2171,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -2023,19 +2243,81 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/HydraceptInvocationResult"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
               }
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Validation error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -2072,10 +2354,12 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/HydraceptJob"
+                }
               }
             }
           },
@@ -2085,6 +2369,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -2134,10 +2448,12 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/HydraceptJob"
+                }
               }
             }
           },
@@ -2147,6 +2463,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -2219,10 +2565,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCapabilityListResponse"
+                }
               }
             }
           },
@@ -2232,6 +2580,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -2335,11 +2713,8 @@
         ],
         "responses": {
           "200": {
-            "description": "Server-sent events (`text/event-stream`) with token and terminal frames.",
+            "description": "Server-sent execution events",
             "content": {
-              "application/json": {
-                "schema": {}
-              },
               "text/event-stream": {
                 "schema": {
                   "type": "string"
@@ -2347,12 +2722,12 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "403": {
+            "description": "Public error envelope",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -3944,10 +4319,12 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PanelDefinitionView"
+                }
               }
             }
           },
@@ -3957,6 +4334,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -4002,10 +4409,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PanelDefinitionListResponse"
+                }
               }
             }
           },
@@ -4015,6 +4424,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -4055,10 +4494,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PanelDefinitionView"
+                }
               }
             }
           },
@@ -4068,6 +4509,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -4116,10 +4587,12 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PanelDefinitionView"
+                }
               }
             }
           },
@@ -4129,6 +4602,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -4168,10 +4671,12 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PanelSessionCreated"
+                }
               }
             }
           },
@@ -4181,6 +4686,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -4221,10 +4756,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PanelSessionView"
+                }
               }
             }
           },
@@ -4234,6 +4771,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -4274,10 +4841,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PanelSessionView"
+                }
               }
             }
           },
@@ -4287,6 +4856,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -4327,10 +4926,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PanelLaunchCodeIssued"
+                }
               }
             }
           },
@@ -4340,6 +4941,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -4369,10 +5000,12 @@
         "operationId": "panel_bootstrap_v1_panel_bootstrap_get",
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PanelBootstrap"
+                }
               }
             }
           },
@@ -4382,6 +5015,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Public error envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicError"
                 }
               }
             }
@@ -9490,6 +10153,29 @@
         ],
         "title": "ConnectionBindingCreate"
       },
+      "ConnectionConsent": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "clientVersion": {
+            "type": "string",
+            "title": "Clientversion"
+          },
+          "confirmedAt": {
+            "type": "string",
+            "title": "Confirmedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "clientVersion",
+          "confirmedAt"
+        ],
+        "title": "ConnectionConsent"
+      },
       "ConnectionCreate": {
         "properties": {
           "provider": {
@@ -9500,6 +10186,16 @@
             "type": "string",
             "title": "Label",
             "default": "default"
+          },
+          "consent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConnectionConsent"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "credentials": {
             "anyOf": [
@@ -9944,6 +10640,17 @@
           "executionId": {
             "type": "string",
             "title": "Executionid"
+          },
+          "idempotencyKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotencykey"
           },
           "status": {
             "type": "string",
@@ -11272,6 +11979,17 @@
               }
             ],
             "title": "Customerdebitedmicros"
+          },
+          "actualChargeMicros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actualchargemicros"
           }
         },
         "type": "object",
@@ -11531,9 +12249,15 @@
             "title": "Outputtokens"
           },
           "estimatedCost": {
-            "type": "number",
-            "title": "Estimatedcost",
-            "default": 0.0
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedcost"
           },
           "actualCost": {
             "type": "number",
@@ -14489,6 +15213,1287 @@
           "amountMicros"
         ],
         "title": "WalletTopUpRequest"
+      },
+      "PublicError": {
+        "additionalProperties": true,
+        "description": "Machine-readable API error returned for 402, 409, and 5xx responses.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "requestId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Requestid"
+          },
+          "retryable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Retryable"
+          },
+          "nextAction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Nextaction"
+          },
+          "retryAfterSeconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Retryafterseconds"
+          },
+          "jobId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Jobid"
+          },
+          "jobStatus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Jobstatus"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "PublicError",
+        "type": "object"
+      },
+      "BillingModeAvailability": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "serviceFeeBps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Servicefeebps"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "BillingModeAvailability",
+        "type": "object"
+      },
+      "CapabilityBillingModes": {
+        "properties": {
+          "byok": {
+            "$ref": "#/components/schemas/BillingModeAvailability"
+          },
+          "managed": {
+            "$ref": "#/components/schemas/BillingModeAvailability"
+          }
+        },
+        "required": [
+          "byok",
+          "managed"
+        ],
+        "title": "CapabilityBillingModes",
+        "type": "object"
+      },
+      "CapabilityExecutionFacts": {
+        "description": "Static invocation facts; authenticated runnability lives in workspaceRunnable.",
+        "properties": {
+          "oneShot": {
+            "default": true,
+            "title": "Oneshot",
+            "type": "boolean"
+          },
+          "managedInferenceAvailable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Managedinferenceavailable"
+          },
+          "inferenceProviderSetupRequired": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Inferenceprovidersetuprequired"
+          },
+          "projectLocalRequired": {
+            "default": false,
+            "title": "Projectlocalrequired",
+            "type": "boolean"
+          },
+          "estimateAvailable": {
+            "default": false,
+            "title": "Estimateavailable",
+            "type": "boolean"
+          },
+          "trialEligible": {
+            "default": false,
+            "title": "Trialeligible",
+            "type": "boolean"
+          },
+          "selection": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Selection"
+          },
+          "supportsExplicitTarget": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Supportsexplicittarget"
+          },
+          "targetsHref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Targetshref"
+          },
+          "benchmarksHref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Benchmarkshref"
+          }
+        },
+        "title": "CapabilityExecutionFacts",
+        "type": "object"
+      },
+      "CapabilityFundingFacts": {
+        "description": "Catalog funding facts only; authenticated access is a separate authority.",
+        "properties": {
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "eligible": {
+            "default": false,
+            "title": "Eligible",
+            "type": "boolean"
+          },
+          "status": {
+            "default": "ready",
+            "title": "Status",
+            "type": "string"
+          },
+          "fundingOptions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Fundingoptions"
+          },
+          "remainingMicros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Remainingmicros"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "CapabilityFundingFacts",
+        "type": "object"
+      },
+      "CapabilityInteractionFacts": {
+        "description": "Whether an ordinary requested invocation typically interrupts the user.",
+        "properties": {
+          "typicallyRequired": {
+            "default": false,
+            "title": "Typicallyrequired",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reason"
+          }
+        },
+        "title": "CapabilityInteractionFacts",
+        "type": "object"
+      },
+      "CapabilityOutputShape": {
+        "description": "Canonical useful terminal representation for a capability result.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "artifact",
+              "structured",
+              "text"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "mediaType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mediatype"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "CapabilityOutputShape",
+        "type": "object"
+      },
+      "ConstraintMeasurement": {
+        "enum": [
+          "characters",
+          "tokens"
+        ],
+        "title": "ConstraintMeasurement",
+        "type": "string"
+      },
+      "FieldInputConstraint": {
+        "description": "Normative limit for one capability input field.",
+        "properties": {
+          "measurement": {
+            "$ref": "#/components/schemas/ConstraintMeasurement",
+            "default": "characters"
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max"
+          },
+          "overflow": {
+            "$ref": "#/components/schemas/OverflowPolicy",
+            "default": "reject"
+          },
+          "semantic": {
+            "default": true,
+            "title": "Semantic",
+            "type": "boolean"
+          },
+          "byModel": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ModelFieldConstraint"
+            },
+            "title": "Bymodel",
+            "type": "object"
+          }
+        },
+        "title": "FieldInputConstraint",
+        "type": "object"
+      },
+      "ModelFieldConstraint": {
+        "description": "Per-model overlay on a field constraint.",
+        "properties": {
+          "max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max"
+          },
+          "overflow": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OverflowPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "title": "ModelFieldConstraint",
+        "type": "object"
+      },
+      "OverflowPolicy": {
+        "description": "What Hydracept does when a field exceeds its measured maximum.",
+        "enum": [
+          "reject",
+          "chunk",
+          "prune"
+        ],
+        "title": "OverflowPolicy",
+        "type": "string"
+      },
+      "PublicCapabilityDescriptor": {
+        "description": "Anonymous discovery shape \u2014 no provider/routing/operator internals.",
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "modality": {
+            "$ref": "#/components/schemas/CapabilityModality"
+          },
+          "inputSchema": {
+            "additionalProperties": true,
+            "title": "Inputschema",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "Outputschema",
+            "type": "object"
+          },
+          "executionModes": {
+            "items": {
+              "$ref": "#/components/schemas/CapabilityExecutionMode"
+            },
+            "title": "Executionmodes",
+            "type": "array"
+          },
+          "idempotencyRequired": {
+            "default": false,
+            "title": "Idempotencyrequired",
+            "type": "boolean"
+          },
+          "estimateAvailable": {
+            "default": false,
+            "title": "Estimateavailable",
+            "type": "boolean"
+          },
+          "family": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Family"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Category"
+          },
+          "constraints": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Constraints"
+          },
+          "features": {
+            "additionalProperties": true,
+            "title": "Features",
+            "type": "object"
+          },
+          "billingModes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CapabilityBillingModes"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "inputConstraints": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldInputConstraint"
+            },
+            "title": "Inputconstraints",
+            "type": "object"
+          },
+          "inputMediaTypes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Inputmediatypes",
+            "type": "array"
+          },
+          "pricing": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pricing"
+          },
+          "credentialSources": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Credentialsources"
+          },
+          "defaultCredentialSource": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Defaultcredentialsource"
+          },
+          "execution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CapabilityExecutionFacts"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CapabilityOutputShape"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "interaction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CapabilityInteractionFacts"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "funding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CapabilityFundingFacts"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "readySummary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Readysummary"
+          },
+          "routingProfiles": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Routingprofiles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "modality"
+        ],
+        "title": "PublicCapabilityDescriptor",
+        "type": "object"
+      },
+      "PublicCapabilityListResponse": {
+        "description": "Public GET /v1/capabilities envelope.",
+        "properties": {
+          "bundleVersion": {
+            "title": "Bundleversion",
+            "type": "string"
+          },
+          "bundleHash": {
+            "title": "Bundlehash",
+            "type": "string"
+          },
+          "capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/PublicCapabilityDescriptor"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          }
+        },
+        "required": [
+          "bundleVersion",
+          "bundleHash"
+        ],
+        "title": "PublicCapabilityListResponse",
+        "type": "object"
+      },
+      "DiscoveredExecutionTarget": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "apis": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Apis",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "maturity": {
+            "title": "Maturity",
+            "type": "string"
+          },
+          "eligible": {
+            "default": true,
+            "title": "Eligible",
+            "type": "boolean"
+          },
+          "availableNow": {
+            "title": "Availablenow",
+            "type": "boolean"
+          },
+          "availabilityReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Availabilityreason"
+          },
+          "readerDelivery": {
+            "default": false,
+            "title": "Readerdelivery",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "model",
+          "apis",
+          "kind",
+          "maturity",
+          "availableNow"
+        ],
+        "title": "DiscoveredExecutionTarget",
+        "type": "object"
+      },
+      "ExecutionTargetList": {
+        "properties": {
+          "capability": {
+            "title": "Capability",
+            "type": "string"
+          },
+          "defaultTarget": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Defaulttarget"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/DiscoveredExecutionTarget"
+            },
+            "title": "Targets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "capability"
+        ],
+        "title": "ExecutionTargetList",
+        "type": "object"
+      },
+      "CapabilityBenchmarkDiscoveryResponse": {
+        "properties": {
+          "capability": {
+            "title": "Capability",
+            "type": "string"
+          },
+          "policyVersion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Policyversion"
+          },
+          "coverageStatus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Coveragestatus"
+          },
+          "benchmarkPolicyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Benchmarkpolicyid"
+          },
+          "workloadProfileId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Workloadprofileid"
+          },
+          "derivedScoreHash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Derivedscorehash"
+          },
+          "routingProfiles": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Routingprofiles",
+            "type": "array"
+          },
+          "targets": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Targets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "capability"
+        ],
+        "title": "CapabilityBenchmarkDiscoveryResponse",
+        "type": "object"
+      },
+      "PanelDefinitionListResponse": {
+        "properties": {
+          "definitions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Definitions",
+            "type": "array"
+          }
+        },
+        "title": "PanelDefinitionListResponse",
+        "type": "object"
+      },
+      "PanelDefinitionVersionView": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "definitionId": {
+            "title": "Definitionid",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "capabilityKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Capabilitykey"
+          },
+          "capabilityVersion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Capabilityversion"
+          },
+          "presentation": {
+            "$ref": "#/components/schemas/PanelPresentation"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/PanelPolicy"
+          },
+          "allowedOrigins": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowedorigins",
+            "type": "array"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/SurfaceActionDefinition"
+            },
+            "title": "Actions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "definitionId",
+          "version",
+          "presentation",
+          "policy",
+          "allowedOrigins"
+        ],
+        "title": "PanelDefinitionVersionView",
+        "type": "object"
+      },
+      "PanelDefinitionView": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "organizationId": {
+            "title": "Organizationid",
+            "type": "string"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Projectid"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "displayName": {
+            "title": "Displayname",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "origin": {
+            "default": "hydracept",
+            "enum": [
+              "hydracept",
+              "project"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "currentVersion": {
+            "$ref": "#/components/schemas/PanelDefinitionVersionView"
+          },
+          "createdAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Updatedat"
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "key",
+          "displayName",
+          "status",
+          "currentVersion"
+        ],
+        "title": "PanelDefinitionView",
+        "type": "object"
+      },
+      "PanelSessionCreated": {
+        "properties": {
+          "sessionId": {
+            "title": "Sessionid",
+            "type": "string"
+          },
+          "accessToken": {
+            "title": "Accesstoken",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "title": "Expiresat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "accessToken",
+          "expiresAt"
+        ],
+        "title": "PanelSessionCreated",
+        "type": "object"
+      },
+      "PanelSessionView": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "organizationId": {
+            "title": "Organizationid",
+            "type": "string"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "environment": {
+            "title": "Environment",
+            "type": "string"
+          },
+          "panelDefinitionVersionId": {
+            "title": "Paneldefinitionversionid",
+            "type": "string"
+          },
+          "externalSubject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Externalsubject"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "allowedOrigins": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowedorigins",
+            "type": "array"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "title": "Expiresat",
+            "type": "string"
+          },
+          "maxSpendMicros": {
+            "title": "Maxspendmicros",
+            "type": "integer"
+          },
+          "maxJobs": {
+            "title": "Maxjobs",
+            "type": "integer"
+          },
+          "jobsCreated": {
+            "title": "Jobscreated",
+            "type": "integer"
+          },
+          "initialInputs": {
+            "additionalProperties": true,
+            "title": "Initialinputs",
+            "type": "object"
+          },
+          "lockedInputs": {
+            "additionalProperties": true,
+            "title": "Lockedinputs",
+            "type": "object"
+          },
+          "revokedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Revokedat"
+          },
+          "createdAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Createdat"
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "projectId",
+          "environment",
+          "panelDefinitionVersionId",
+          "status",
+          "allowedOrigins",
+          "expiresAt",
+          "maxSpendMicros",
+          "maxJobs",
+          "jobsCreated",
+          "initialInputs",
+          "lockedInputs"
+        ],
+        "title": "PanelSessionView",
+        "type": "object"
+      },
+      "PanelLaunchCodeIssued": {
+        "properties": {
+          "launchCode": {
+            "title": "Launchcode",
+            "type": "string"
+          },
+          "sessionId": {
+            "title": "Sessionid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "launchCode",
+          "sessionId"
+        ],
+        "title": "PanelLaunchCodeIssued",
+        "type": "object"
+      },
+      "PanelBootstrapSession": {
+        "properties": {
+          "expiresAt": {
+            "format": "date-time",
+            "title": "Expiresat",
+            "type": "string"
+          },
+          "remainingSpendMicros": {
+            "title": "Remainingspendmicros",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expiresAt",
+          "remainingSpendMicros"
+        ],
+        "title": "PanelBootstrapSession",
+        "type": "object"
+      },
+      "PanelBootstrap": {
+        "properties": {
+          "protocolVersion": {
+            "default": "hydracept.panel.v1",
+            "title": "Protocolversion",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "default": 1,
+            "title": "Schemaversion",
+            "type": "integer"
+          },
+          "capabilityVersion": {
+            "title": "Capabilityversion",
+            "type": "string"
+          },
+          "session": {
+            "$ref": "#/components/schemas/PanelBootstrapSession"
+          },
+          "capability": {
+            "title": "Capability",
+            "type": "string"
+          },
+          "billingModes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CapabilityBillingModes"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "presentation": {
+            "$ref": "#/components/schemas/PanelPresentation"
+          },
+          "effectivePolicy": {
+            "$ref": "#/components/schemas/PanelPolicy"
+          },
+          "initialInputs": {
+            "additionalProperties": true,
+            "title": "Initialinputs",
+            "type": "object"
+          },
+          "lockedInputs": {
+            "additionalProperties": true,
+            "title": "Lockedinputs",
+            "type": "object"
+          },
+          "allowedOrigins": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowedorigins",
+            "type": "array"
+          }
+        },
+        "required": [
+          "capabilityVersion",
+          "session",
+          "capability",
+          "presentation",
+          "effectivePolicy",
+          "allowedOrigins"
+        ],
+        "title": "PanelBootstrap",
+        "type": "object"
       }
     },
     "securitySchemes": {

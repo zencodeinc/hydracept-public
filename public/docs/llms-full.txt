@@ -11,7 +11,7 @@ Full documentation: https://hydracept.com/llms-full.txt
 - Plugin id: hydracept-agent-plugin
 - In a git checkout: python -m hydracept init --apply --yes --json (binds stdio MCP to workspace secrets). Reload MCP once. Do not copy the workspace key into Plugins → Configure.
 - Stdio MCP (coding-agent default): python -m hydracept mcp serve
-- Hydracept panel (PyPI hydracept >= 0.3.9): one MCP App ui://hydracept/app.html; seven states, not seven iframes
+- Hydracept panel (PyPI hydracept >= 0.5.1): one MCP App ui://hydracept/app.html; seven states, not seven iframes
 - Hosted MCP (no checkout: ChatGPT, MCP Registry): https://api.hydracept.com/mcp
 - Install: python -m hydracept agents install --auto
 - Project surfaces: python -m hydracept surface apply PATH
@@ -23,8 +23,12 @@ Full documentation: https://hydracept.com/llms-full.txt
 Free for individual developers. BYOK at 0% Hydracept fee.
 Managed inference: PAYG wallet + 6% service fee where enabled.
 Deferred processing: eligible durable text jobs run at 50% of standard token rates. Pins opt in with processing: deferred.
-Hydracept is an execution control plane for software and agents that need external capabilities, providing discovery, quoting, execution, durable jobs, recoverable history, artifacts, receipts, provenance, budgets, and provider abstraction.
 Hydracept is an execution control plane for software and agents that need external capabilities — discovery, quoting, execution, durable jobs, recoverable history, artifacts, receipts, provenance, budgets, and provider abstraction. Games and media are important capability families, not the whole product. BYOK with 0% markup; managed inference is provider price + 6%. Durable text jobs on eligible models use deferred processing at 50% of standard token rates. One capability when you need it; a production backbone when you need more. Repeated use is not required to justify the first call. Hydracept is not a runtime game-engine inference plugin.
+
+## Client release
+- Current published client: 0.5.1 (PyPI hydracept, npm @hydracept/sdk, NuGet Hydracept.Client)
+- Migration guide: https://docs.hydracept.com/migrating-0.5.0/
+- Stream invoke SSE: GET /v1/executions/{executionId}/events (clients < 0.5.0 hit LEGACY_ROUTE_REMOVED on removed routes)
 
 ## Entity
 Hydracept is:
@@ -53,7 +57,6 @@ Hosted MCP: https://api.hydracept.com/mcp
 - Retry with a new idempotencyKey. On QUOTE_MISMATCH omit stale execution quoteId/estimateId.
 - Reuse explicit selectedArtifactId when present; do not confuse reuse with approval, favorite, review, or repository promotion.
 - Pinned execution remains separate and by-id; project job history is not a pinned-run history API.
-- Stream invoke token SSE: GET /v1/executions/{executionId}/events (text/event-stream). Poll terminal state with GET /v1/jobs/{jobId}. Durable job lifecycle cursor history remains GET /v1/jobs/{jobId}/events.
 
 ## Deferred processing
 - Discover: features.deferredProcessing on GET /v1/capabilities/{key}
@@ -135,6 +138,9 @@ Bootstrap: python -m hydracept init --apply --yes --json
 - https://hydracept.com/music-generation
 - https://hydracept.com/godot-ai-assets
 - https://hydracept.com/unreal-ai-assets
+- https://hydracept.com/changelog
+- https://hydracept.com/trust
+- https://hydracept.com/license
 
 ## Image production (image.generate.v1)
 - Transparent PNG output (`requestTransparentOutput`)
@@ -163,6 +169,8 @@ URL: https://docs.hydracept.com/
 Hydracept is an execution control plane for software and agents that need external capabilities. Games and media are important examples.
 
 Discovery, quoting, durable jobs, artifacts, receipts, and recoverable project history. BYOK is free; managed inference adds a 6% service fee. Eligible durable text jobs use deferred processing at 50% of standard token rates.
+
+**Current client release: 0.5.0** (breaking — see [Migrating to 0.5.0](./migrating-0.5.0/)).
 
 ## 5-minute path
 
@@ -850,7 +858,7 @@ If a workflow deliberately binds execution to a previously returned quote, the s
 
 Use jobs for image, audio, 3D mesh, and any generation that may take longer than one HTTP request.
 
-`text.general.fast.v1` still offers `invoke_sync`, but that path is edge-held: about **60 seconds / 2048 `maxOutputTokens`**. Larger completions must use `POST /v1/capabilities/text.general.fast.v1/jobs`. For durable jobs the effective output cap is **derived by the platform** from the model, the context window, and the response schema, so callers do not need to compute a token budget; `maxOutputTokens` is an optional hint. Catalog `features.syncInvoke` and `features.durableJob` document those envelopes separately. Durable jobs share the durable-text worker; concurrency is hardware-bounded so one job does not block another of the same variety. `executionConstraints.maxDurationSeconds` is the **provider execution** deadline after the job starts (default **120s**, max **600**), not queue wait. Queue timeout, execution timeout, and post-submit ambiguity are different error codes (`QueueTimeout`, `ExecutionTimeout`, `TRANSPORT_AMBIGUOUS`).
+`text.general.fast.v1` still offers `invoke_sync`. That call is held until the provider read timeout (600s). There is no separate token ceiling. Sync and durable jobs both derive the output cap from the model, the context window, and the response schema; `maxOutputTokens` is an optional hint. Eligible durable jobs use deferred processing and may wait 900s. The activity deadline is the shared durable ceiling (default and max 7200s), which stays above that provider wait. Queue timeout, execution timeout, and post-submit ambiguity are different error codes (`QueueTimeout`, `ExecutionTimeout`, `TRANSPORT_AMBIGUOUS`).
 
 Durable text jobs (`executionModes` includes `job_async`) on eligible models also use **deferred processing**: Hydracept waits for the cheaper latency-tolerant provider tier and charges **50% of standard token rates**. Check `features.deferredProcessing` on the capability descriptor, or read [Deferred processing](../deferred-processing/). Synchronous invoke and stream stay on standard processing.
 
@@ -1044,7 +1052,7 @@ Include:
 - `input` — capability-specific payload
 - `execution` — `executionPreference`, `billingMode` (`byok` | `managed`). **Omit `quoteId`** unless the job input is byte-for-byte the sealed quote
 - `idempotencyKey` — optional; the API mints one if missing
-- `execution.executionConstraints.maxDurationSeconds` — optional **provider execution** deadline in seconds after the job starts (not queue wait). `text.general.fast.v1` defaults to 120s (max 600). Queue wait uses a separate deadline. A job that never starts fails with `QueueTimeout`. A job that starts and then exceeds the provider deadline fails with `ExecutionTimeout` only if Hydracept observed the attempt end; after provider submission began, an abandoned wait is `TRANSPORT_AMBIGUOUS`. `timeoutSeconds` is accepted as an alias for the execution deadline.
+- `execution.executionConstraints.maxDurationSeconds` — optional **activity** deadline in seconds after the job starts (not queue wait). Durable text, including `text.general.fast.v1`, uses the shared ceiling (default and max 7200s). That ceiling stays above the provider HTTP wait (600s standard read, 900s deferred). Queue wait uses a separate deadline. A job that never starts fails with `QueueTimeout`. A job that exceeds the provider deadline with no output and no reported tokens fails with `ExecutionTimeout`; usage is zero and a new idempotency key is safe. If partial output was already published and usage was not reported, the job stays open and a `job.progress` event says provider usage is unknown. `timeoutSeconds` is accepted as an alias for the execution deadline.
 
 Example for `image.generate.v1` (BYOK):
 
@@ -1078,6 +1086,18 @@ Managed inference (wallet-funded) can omit `quoteId` — the API seals a retail 
 ```
 
 See [Billing](../billing/) for wallet top-up, [Deferred processing](../deferred-processing/) for the 50% durable-text discount, and [Capabilities](../capabilities/) for `billingModes` discovery (omitted on domain and CPU capabilities).
+
+## Stream invoke (SSE)
+
+Stream invoke publishes token-level events on the execution SSE path (not durable job lifecycle history):
+
+```http
+GET /v1/executions/{executionId}/events
+Authorization: Bearer <HYDRACEPT_API_KEY>
+Accept: text/event-stream
+```
+
+Durable job lifecycle cursors remain on `GET /v1/jobs/{jobId}/events`. Clients **0.5.0+** target the execution path; older `GET /v1/invocations/{id}/events` callers receive **410** `LEGACY_ROUTE_REMOVED`. See [Migrating to 0.5.0](../migrating-0.5.0/).
 
 ## Find project jobs
 
@@ -1139,6 +1159,39 @@ Job payloads include `nextAction` (`poll`, `download_artifacts`, `retry_new`, `p
 Once a known ID is lost, use project history rather than asking a human to recover it manually.
 
 Jobs may include a `variantSet` when the capability accepts `variantCount` in input (image and audio generation). Each variant is a separate artifact with `variantIndex` on the job payload. `variantSet` reports `requestedCount`, `completedCount`, `failedCount`, and `selectedArtifactId`.
+
+## Partial output during a job
+
+`readerDelivery` publishes partial text from one durable text job before the receipt is sealed. It is not streaming invoke, and a completion callback that runs once with the finished output is not this contract. Any client can poll it. Synchronous invoke rejects it.
+
+```json
+{ "readerDelivery": { "boundary": "paragraph" } }
+```
+
+Use it only on a durable `text.*` job, with no `responseSchema` and no tools. Hydracept makes one provider call on the route you selected. It does not switch models to enable this. Discover support before submit: `GET /v1/capabilities/{key}/execution-targets` and read `readerDelivery` on each target. `features.readerDelivery` names the providers that can publish during the call, states that the opt-in stays on standard processing, and states that the selected route is not changed.
+
+While the call runs, the job appends `job.reader_text` events. Concatenate `payload.text` in `payload.sequence` order. That concatenation is the sealed output. A later cleanup does not rewrite text already published. If the sealed body would differ, the job fails and the published events stay as stored.
+
+`provisional` is always true. It means the span is published output, not the sealed result. Do not treat a partial event as the finished job output.
+
+Replay:
+
+```http
+GET /v1/jobs/{jobId}/events?type=job.reader_text&cursor={lastCursor}
+Authorization: Bearer <HYDRACEPT_API_KEY>
+```
+
+- Events are ordered by ascending event id.
+- `cursor` is exclusive: the response contains events whose id is greater than `cursor`.
+- `nextCursor` is set only when another page remains. Persist the last event's `cursor` yourself; Hydracept does not store your position.
+- The same cursor is the same event. Ignore a cursor you have already applied.
+- `payload.sequence` is the 1-based index for this job. A gap, or the same sequence on a new cursor, means the stream is not usable. Do not append that event.
+
+After any `job.reader_text` event is stored, a retry of that job does not start another provider call. The published output stays. If the original call cannot be continued, the job fails with `TRANSPORT_AMBIGUOUS` and `retry.newKeySafe` is false.
+
+If the provider call ends without reporting usage, the failure receipt records provider cost as unknown (`providerCost.status` `unknown`, amount null). That is not a zero-cost success.
+
+This path uses standard token rates. Deferred processing does not publish partial output. Compare one call with two calls on the same model and the same pricing lane. Compare deferred completion with standard partial output separately: that second comparison is the price of earlier access. `features.readerDelivery` records `processingTier: standard` and `deferredDiscountApplies: false`. The job receipt's `pricing.providerCost` is the measured spend when usage was reported.
 
 ## Select a variant
 
@@ -1232,7 +1285,7 @@ It applies to:
 - Eligible durable text jobs (`POST /v1/capabilities/{key}/jobs`) — **default**
 - Eligible OpenAI Responses pins (`POST /v1/inference/pinned` and bulk items) — **opt in** with `processing: "deferred"`
 
-Interactive invoke and stream stay on standard processing. Image, audio, video, and 3D jobs are unchanged — those providers do not expose this discount today.
+Interactive invoke and stream stay on standard processing. A durable job with `readerDelivery` also stays on standard processing, because a deferred call does not publish partial output before it finishes. That standard rate is a different comparison from running one provider call instead of two: keep the model and the pricing lane the same when you compare call counts. Image, audio, video, and 3D jobs are unchanged — those providers do not expose this discount today.
 
 ## When it applies
 
@@ -1242,6 +1295,7 @@ Interactive invoke and stream stay on standard processing. Image, audio, video, 
 | `POST /v1/inference/pinned` and `/pinned/bulk` | **Standard by default.** Opt in with `processing: "deferred"` on eligible OpenAI Responses pins. Same pin, one logical model execution, no truncation rewrite, no Flex→Standard fallback. Flex-capacity 429s retry inside the admission deadline and are recorded on the receipt. Omitted execution timeouts on Flex pins use the 600s platform max. |
 | `POST /v1/capabilities/{key}/invoke` | Standard |
 | Stream | Standard |
+| Durable job with `readerDelivery` | Standard. The same call publishes partial output before the receipt is sealed. |
 
 Discover support on the capability descriptor:
 
@@ -1937,7 +1991,7 @@ A **job that was successfully admitted and later failed is different**: `GET /v1
 | `402` | Funding required, budget prevent-mode block, or managed wallet insufficient |
 | `403` | Your API key, project, or environment is not allowed to make this request |
 | `404` | Capability, job, or resource not found |
-| `410` | Resource gone (expired session or retired endpoint) |
+| `410` | Resource gone (expired session or retired endpoint). Legacy runtime routes return `LEGACY_ROUTE_REMOVED` with a `use` migration hint. |
 | `409` | Conflict (including idempotency conflicts) |
 | `422` | Request validation failed |
 | `429` | Rate limited |
@@ -2082,6 +2136,21 @@ A retry is a new execution attempt: copy the inspected request input, remove the
 Durable job submits accept `idempotencyKey` (minted if omitted). Replaying the same key with the same payload returns the existing `jobId` for queued, running, succeeded, and failed jobs — a client poll timeout is not a Hydracept failure. `409 IdempotencyConflict` is only for a **different** normalized payload on that key; those bodies include `jobId`. Follow the job's `nextAction` / `retry.newKeySafe` before minting a new key. `TRANSPORT_AMBIGUOUS` is never new-key-safe.
 
 `409` with `detail.code` `QUOTE_MISMATCH` means a previously sealed `quoteId` no longer matches the job body. Omit `execution.quoteId` and submit with a **new** `idempotencyKey`.
+
+## Legacy route removal (410)
+
+Hydracept **0.5.0** removed legacy runtime routes (`POST /v1/invocations`, legacy `POST /v1/jobs`, invocation lifecycle GETs, and `GET /v1/invocations/{id}/events`). Callers on older clients receive:
+
+```json
+{
+  "code": "LEGACY_ROUTE_REMOVED",
+  "message": "GET /v1/invocations/{id}/events was removed. Stream tokens on the execution SSE path.",
+  "use": "GET /v1/executions/fex_01234567890123456789012345/events",
+  "retryable": false
+}
+```
+
+Upgrade to **hydracept / @hydracept/sdk / Hydracept.Client 0.5.0+** and follow [Migrating to 0.5.0](../migrating-0.5.0/).
 
 ## Related
 
@@ -2245,9 +2314,9 @@ Install into a coding agent:
 See [Agent plugin distribution](../agent-plugin-distribution/).
 
 
-## MCP interaction panel (stdio, 0.3.9+)
+## MCP interaction panel (stdio, 0.5.0+)
 
-After `python -m hydracept init --apply --yes --json`, stdio MCP exposes `hydracept_interaction_surface` for seven semantic states of one App (`ui://hydracept/app.html`). Follow `presentation.agentAction`. `present_and_yield` means present the surface and stop the turn. `presentation.status` `mount_requested` means present the App; `mounted`/`already_mounted` means the App is the UI; `fallback`/`unsupported` means use the structured fallback. The panel is presentation-only — it does not execute, charge, or write the repository. Reload MCP after upgrading to hydracept 0.3.17+ (0.3.12+ is the floor for init to reuse `gh`/`gcloud` without a browser). Funding display in 0.3.13+ no longer labels customer-visible `$0` as aggregate/trial credit when execution is funded by operator grants. Structured capability input should be passed with `--input-file` / `--body` rather than inline JSON on PowerShell.
+After `python -m hydracept init --apply --yes --json`, stdio MCP exposes `hydracept_interaction_surface` for seven semantic states of one App (`ui://hydracept/app.html`). Follow `presentation.agentAction`. `present_and_yield` means present the surface and stop the turn. `presentation.status` `mount_requested` means present the App; `mounted`/`already_mounted` means the App is the UI; `fallback`/`unsupported` means use the structured fallback. The panel is presentation-only — it does not execute, charge, or write the repository. Reload MCP after upgrading to **hydracept 0.5.0+** (required for current HTTP routes; see [Migrating to 0.5.0](../migrating-0.5.0/)). Funding display in 0.3.13+ no longer labels customer-visible `$0` as aggregate/trial credit when execution is funded by operator grants. Structured capability input should be passed with `--input-file` / `--body` rather than inline JSON on PowerShell.
 
 ## Recommended agent path
 
@@ -2444,15 +2513,86 @@ with HydraceptWorkspace.open() as hydracept:
     result = hydracept.invoke("text.general.fast.v1", {"input": {"prompt": "hello"}})
 ```
 
-See [Quick Start](../) and [Durable jobs](../jobs/).
+See [Quick Start](../), [Migrating to 0.5.0](../migrating-0.5.0/), and [Durable jobs](../jobs/).
 
-## Current release (0.3.17)
+## Current release (0.5.1)
 
-`pip install -U hydracept` installs the current PyPI cut. Use `python -m hydracept run <key> --input-file request.json --json` for structured inputs (PowerShell-safe, including UTF-8 BOM and UTF-16 files). `python -m hydracept capabilities describe` includes `nextAction.exampleInput` for constructing that file. `python -m hydracept funding status --json` reports customer-visible managed credit separately from the active trial bucket and execution-available funding. Receipts copy funding from admission evidence; missing evidence stays `unknown` and is never displayed as BYOK or managed trial. Hydracept-covered executions report `$0` `customerCharge` while retail `price` remains visible. Domain and CPU capabilities omit inference `billingModes`.
+Production requires **`pip install -U "hydracept>=0.5.1"`**. Publish **0.5.1** to PyPI, npm, and NuGet before deploying this API revision.
 
-## MCP interaction panel (0.3.9+)
+`hydracept init --apply --yes` reports provider keys found locally and uploads **only** when you pass **`--adopt-keys`** (all discovered) or **`--adopt-key-providers openai,...`**. Use **`--no-adopt`** to skip uploads entirely. Older clients call HTTP routes that return **410** `LEGACY_ROUTE_REMOVED`. See [Migrating to 0.5.0](../migrating-0.5.0/).
 
-Stdio MCP (`python -m hydracept mcp serve`) ships one Hydracept App at `ui://hydracept/app.html` with seven semantic surfaces: `project.connect`, `capability.launch`, `connection.resolve`, `authorization.preflight`, `job.progress`, `artifact.review`, and `change.promote`. Use `hydracept_interaction_surface` when a human decision or structured input is required. Unattended `init --apply --yes --json` binds or creates when unambiguous. Upgrade with `pip install -U hydracept` (0.3.17+ required for current funding display, receipt charge truth, and PowerShell `--input-file`; 0.3.12+ for init to reuse `gh`/`gcloud` without a browser).
+Use `python -m hydracept run <key> --input-file request.json --json` for structured inputs (PowerShell-safe, including UTF-8 BOM and UTF-16 files). `python -m hydracept capabilities describe` includes `nextAction.exampleInput` for constructing that file. `python -m hydracept funding status --json` reports customer-visible managed credit separately from the active trial bucket and execution-available funding. Receipts copy funding from admission evidence; missing evidence stays `unknown` and is never displayed as BYOK or managed trial. Hydracept-covered executions report `$0` `customerCharge` while retail `price` remains visible. Domain and CPU capabilities omit inference `billingModes`.
+
+## MCP interaction panel (0.5.0+)
+
+Stdio MCP (`python -m hydracept mcp serve`) ships one Hydracept App at `ui://hydracept/app.html` with seven semantic surfaces: `project.connect`, `capability.launch`, `connection.resolve`, `authorization.preflight`, `job.progress`, `artifact.review`, and `change.promote`. Use `hydracept_interaction_surface` when a human decision or structured input is required. Unattended `init --apply --yes --json` binds or creates when unambiguous. Reload MCP after upgrading to **hydracept 0.5.0+**.
+
+## Migrating to 0.5.0
+URL: https://docs.hydracept.com/migrating-0.5.0/
+
+# Migrating to Hydracept 0.5.0
+
+Hydracept **0.5.0** is a breaking client and HTTP contract release. Upgrade all SDKs and the PyPI CLI to **>= 0.5.0** before calling production.
+
+## Upgrade packages
+
+```bash
+pip install -U "hydracept>=0.5.0"
+npm install @hydracept/sdk@^0.5.0
+# NuGet: Hydracept.Client 0.5.0+
+```
+
+Reload stdio MCP after upgrading the Python package.
+
+## `hydracept init` provider keys (0.5.1)
+
+`hydracept init --apply --yes` **does not** upload provider API keys from your laptop unless you opt in:
+
+- **`--adopt-keys`** — upload every provider key discovered locally; or use **`--adopt-key-providers`** with a comma list.
+- **`--no-adopt`** — never upload during init (default when neither flag is set).
+
+Init prints how many keys were found but not uploaded. Adoption requires a browser session or setup grant (API-key-only init will not silently adopt).
+
+## Wallet `consumedMicros` vs receipt cents
+
+The wallet API reports **exact micro-USD debits** (`consumedMicros`, `availableMicros`). Receipt `pricing.actualCharge` may round to **ceiling cents** for display. Sub‑~1,500 micro-USD retail usage can be **free-absorbed** (no wallet consume transaction) while still succeeding.
+
+## HTTP route changes
+
+| Removed (410 `LEGACY_ROUTE_REMOVED`) | Use instead |
+|--------------------------------------|-------------|
+| `POST /v1/invocations` | `POST /v1/capabilities/{key}/invoke` |
+| `POST /v1/jobs` (legacy) | `POST /v1/capabilities/{key}/jobs` |
+| `GET /v1/invocations/{id}` | `GET /v1/jobs/{jobId}` |
+| `GET /v1/invocations/{id}/receipt` | `GET /v1/jobs/{jobId}/receipt` |
+| `POST /v1/invocations/{id}/cancel` | `POST /v1/jobs/{jobId}/cancel` |
+| `GET /v1/invocations/{id}/events` (SSE) | `GET /v1/executions/{executionId}/events` |
+
+410 responses include a machine-readable `code` of `LEGACY_ROUTE_REMOVED`, a concrete `use` path (for example `GET /v1/executions/fex_01234567890123456789012345/events`), and `"retryable": false`.
+
+## Streaming (SSE)
+
+Stream invoke token events:
+
+```http
+GET /v1/executions/{executionId}/events
+Authorization: Bearer <HYDRACEPT_API_KEY>
+Accept: text/event-stream
+```
+
+Durable job lifecycle history remains on `GET /v1/jobs/{jobId}/events` (cursor poll).
+
+Python: `iter_execution_stream_events` · TypeScript: `iterExecutionStreamEvents` / `runtime.streamExecutionEvents` · .NET: `StreamExecutionEventsAsync`.
+
+## CLI removals
+
+Top-level `hydracept invoke`, `hydracept job`, and `hydracept receipt` were removed. Use `hydracept run`, `hydracept jobs submit`, and job inspect/receipt commands on unified job routes.
+
+## SDK removals
+
+Legacy helpers (`runtime.invoke`, `submitJob`, invocation GET/cancel/receipt helpers) were removed from the TypeScript, Python, and .NET clients.
+
+See the [public changelog](https://hydracept.com/changelog/) and [Errors](../errors/) for `LEGACY_ROUTE_REMOVED`.
 
 ## Consumer Boundary
 URL: https://docs.hydracept.com/consumer-boundary/

@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 from hydracept.cli.init_resolver import INIT_SCHEMA_VERSION, run_init
+
+from http_test_helpers import FakeResponse, pending_bootstrap_session_get
 
 
 @pytest.fixture(autouse=True)
@@ -32,7 +35,22 @@ def test_init_requires_apply_json() -> None:
 def test_init_interaction_required_without_session(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("HYDRACEPT_API_KEY", raising=False)
     monkeypatch.setattr("hydracept.cli.init_resolver.load_session", lambda: None)
-    result = run_init(tmp_path, apply=True, yes=True, json_output=True)
+    session_id = "bs_json_contract"
+    with patch(
+        "hydracept.cli.init_resolver.httpx.post",
+        return_value=FakeResponse(
+            {
+                "sessionId": session_id,
+                "connectUrl": f"https://app.hydracept.com/connect/{session_id}?token=t",
+                "expiresAt": "2030-01-01T00:00:00+00:00",
+            }
+        ),
+    ):
+        with patch(
+            "hydracept.cli.init_resolver.httpx.get",
+            side_effect=pending_bootstrap_session_get(session_id),
+        ):
+            result = run_init(tmp_path, apply=True, yes=True, json_output=True)
     assert result.exit_code == 0
     assert result.payload["status"] == "interaction_required"
     assert result.payload.get("stage") == "authentication"

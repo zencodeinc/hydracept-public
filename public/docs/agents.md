@@ -76,9 +76,9 @@ Install into a coding agent:
 See [Agent plugin distribution](../agent-plugin-distribution/).
 <!-- docs:endif -->
 
-## MCP interaction panel (stdio, 0.3.9+)
+## MCP interaction panel (stdio, 0.5.0+)
 
-After `python -m hydracept init --apply --yes --json`, stdio MCP exposes `hydracept_interaction_surface` for seven semantic states of one App (`ui://hydracept/app.html`). Follow `presentation.agentAction`. `present_and_yield` means present the surface and stop the turn. `presentation.status` `mount_requested` means present the App; `mounted`/`already_mounted` means the App is the UI; `fallback`/`unsupported` means use the structured fallback. The panel is presentation-only — it does not execute, charge, or write the repository. Reload MCP after upgrading to hydracept 0.3.17+ (0.3.12+ is the floor for init to reuse `gh`/`gcloud` without a browser). Funding display in 0.3.13+ no longer labels customer-visible `$0` as aggregate/trial credit when execution is funded by operator grants. Structured capability input should be passed with `--input-file` / `--body` rather than inline JSON on PowerShell.
+After `python -m hydracept init --apply --yes --json`, stdio MCP exposes `hydracept_interaction_surface` for seven semantic states of one App (`ui://hydracept/app.html`). Follow `presentation.agentAction`. `present_and_yield` means present the surface and stop the turn. `presentation.status` `mount_requested` means present the App; `mounted`/`already_mounted` means the App is the UI; `fallback`/`unsupported` means use the structured fallback. The panel is presentation-only — it does not execute, charge, or write the repository. Reload MCP after upgrading to **hydracept 0.5.0+** (required for current HTTP routes; see [Migrating to 0.5.0](../migrating-0.5.0/)). Funding display in 0.3.13+ no longer labels customer-visible `$0` as aggregate/trial credit when execution is funded by operator grants. Structured capability input should be passed with `--input-file` / `--body` rather than inline JSON on PowerShell.
 
 ## Recommended agent path
 

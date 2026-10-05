@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import type { HydraceptHttp } from './http.js';
 import { iterExecutionStreamEvents } from './sse.js';
 import type { HydraceptRuntimeEvent } from './types.js';
@@ -71,9 +73,19 @@ export function createHydraceptRuntimeApi(http: HydraceptHttp) {
     },
 
     invokeCapability<T = unknown>(key: string, body: unknown, init: RequestInit = {}): Promise<T> {
-      return http.fetchJson<T>(`/capabilities/${encodeURIComponent(key)}/invoke`, {
+      if (body !== undefined && body !== null && (typeof body !== 'object' || Array.isArray(body))) {
+        throw new TypeError('invokeCapability body must be a plain object when provided');
+      }
+      const payload =
+        body && typeof body === 'object' && !Array.isArray(body)
+          ? { ...(body as Record<string, unknown>) }
+          : {};
+      if (!('idempotencyKey' in payload)) {
+        payload.idempotencyKey = `invoke-${randomUUID()}`;
+      }
+      return http.fetchJsonWithRetry<T>(`/capabilities/${encodeURIComponent(key)}/invoke`, {
         method: 'POST',
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload),
         ...init,
       });
     },

@@ -23,6 +23,8 @@ from hydracept.cli.session_store import HumanSession
 from hydracept.cli.init_resolver import run_init
 from hydracept.cli.project import write_project_binding
 
+from http_test_helpers import pending_bootstrap_session_get
+
 
 def _field(value: str | None, confidence: str = "high", provenance: str = "test") -> ContextField:
     return ContextField(value=value, confidence=confidence, provenance=provenance)  # type: ignore[arg-type]
@@ -489,7 +491,13 @@ def test_ambiguous_projects_return_interaction(tmp_path: Path, monkeypatch: pyte
         }
         post.return_value.status_code = 200
         post.return_value.raise_for_status = lambda: None
-        result = run_init(tmp_path, apply=True, yes=True, json_output=True)
+        with patch(
+            "hydracept.cli.init_resolver.httpx.get",
+            side_effect=pending_bootstrap_session_get(
+                "bs_pick", connect_url="https://api.hydracept.com/connect/bs_pick"
+            ),
+        ):
+            result = run_init(tmp_path, apply=True, yes=True, json_output=True)
     assert result.payload["status"] == "interaction_required"
     assert result.payload["reason"] == "project_selection"
     assert result.payload["identity"]["authenticated"] is True
@@ -529,7 +537,13 @@ def test_corrupt_binding_does_not_auto_create(tmp_path: Path, monkeypatch: pytes
         }
         post.return_value.status_code = 200
         post.return_value.raise_for_status = lambda: None
-        result = run_init(tmp_path, apply=True, yes=True, json_output=True)
+        with patch(
+            "hydracept.cli.init_resolver.httpx.get",
+            side_effect=pending_bootstrap_session_get(
+                "bs_corrupt", connect_url="https://api.hydracept.com/connect/bs_corrupt"
+            ),
+        ):
+            result = run_init(tmp_path, apply=True, yes=True, json_output=True)
     assert result.payload["status"] == "configuration_required"
     assert result.payload["reason"] == "corrupt_local_binding"
     assert created == []

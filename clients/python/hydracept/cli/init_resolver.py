@@ -24,7 +24,7 @@ from hydracept.cli.installed_workspace import (
     InstalledWorkspaceStatus,
     validate_installed_workspace,
 )
-from hydracept.cli.connections_cmd import adopt_from_env, adopt_provider_secret
+from hydracept.cli.connections_cmd import adopt_provider_secret
 from hydracept.cli.doctor import DEFAULT_SMOKE_CAPABILITY, build_doctor_report, doctor_exit_code
 from hydracept.cli.mcp_bind import bind_workspace_mcp
 from hydracept.cli.exit_codes import AUTH, DOCTOR_FAILED, SUCCESS, USAGE
@@ -1100,6 +1100,91 @@ def _ensure_binding_suggested_name(
     return updated
 
 
+def _parse_adopt_providers(raw: str | None) -> frozenset[str] | None:
+    if raw is None:
+        return None
+    text = raw.strip()
+    if text.lower() in {"none", "false", "no"}:
+        return frozenset()
+    if not text:
+        return frozenset({"*"})
+    return frozenset(part.strip().lower() for part in text.split(",") if part.strip())
+
+
+def _discover_and_maybe_adopt_providers(
+    project_root: Path,
+    *,
+    missing: list[str],
+    adopt_providers: frozenset[str] | None,
+    project_id: str,
+    environment: str,
+    env_file: Path | None,
+    setup_grant: str | None,
+    yes: bool,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Return (discovered, adopted) summaries. Adoption is opt-in via adopt_providers."""
+    from hydracept.cli.provider_discovery import discover_provider
+
+    discovered: list[dict[str, Any]] = []
+    adopted: list[dict[str, Any]] = []
+    if not missing:
+        return discovered, adopted
+    allow = adopt_providers if adopt_providers is not None else None
+    for provider in missing:
+        found = discover_provider(provider, project_root, extra_env_file=env_file)
+        if found is None:
+            continue
+        discovered.append(
+            {
+                "provider": provider,
+                "source": found.source,
+                "uploaded": False,
+            }
+        )
+        if allow is None:
+            if not sys.stdin.isatty():
+                continue
+            masked = found.secret[:4] + "…" if len(found.secret) > 4 else "****"
+            prompt = (
+                f"Upload {provider} credentials from {found.source} (key {masked}) to Hydracept? [y/N] "
+            )
+            if input(prompt).strip().lower() not in {"y", "yes"}:
+                continue
+        elif "*" not in allow and provider not in allow:
+            continue
+        elif not yes and sys.stdin.isatty():
+            masked = found.secret[:4] + "…" if len(found.secret) > 4 else "****"
+            prompt = (
+                f"Upload {provider} credentials from {found.source} (key {masked}) to Hydracept? [y/N] "
+            )
+            if input(prompt).strip().lower() not in {"y", "yes"}:
+                continue
+        elif not sys.stdin.isatty() and allow is not None and "*" in allow:
+            continue
+        try:
+            outcome = adopt_provider_secret(
+                provider=provider,
+                secret=found.secret,
+                project_id=project_id,
+                environment=environment,
+                setup_grant=setup_grant,
+            )
+            adopted.append(
+                {
+                    "provider": provider,
+                    "source": found.source,
+                    "result": outcome.get("result", "connected"),
+                    "uploaded": True,
+                }
+            )
+            for item in discovered:
+                if item.get("provider") == provider:
+                    item["uploaded"] = True
+        except SessionClientError:
+            raise
+    return discovered, adopted
+
+
 def run_init(
     project_root: Path,
     *,
@@ -1117,6 +1202,8 @@ def run_init(
     identity_provider: str | None = None,
     explicit_project: str | None = None,
     explicit_environment: str | None = None,
+    adopt_providers: frozenset[str] | None = None,
+    no_adopt: bool = False,
 ) -> InitResult:
     if not apply:
         return _interaction(
@@ -1376,49 +1463,21 @@ def run_init(
     write_project_binding(project_root, binding)
     readiness = _fetch_readiness(api, api_key, profile)
     adopt_results: list[dict[str, Any]] = []
+    discovered_providers: list[dict[str, Any]] = []
 
-    if not ci_mode:
+    if not ci_mode and not no_adopt:
         missing = _missing_providers(readiness)
         if missing and (load_session() is not None or setup_grant):
-            for provider in missing:
-                from hydracept.cli.provider_discovery import discover_provider
-
-                discovered = discover_provider(provider, project_root, extra_env_file=env_file)
-                if discovered is None:
-                    continue
-                try:
-                    outcome = adopt_provider_secret(
-                        provider=provider,
-                        secret=discovered.secret,
-                        project_id=project_id,
-                        environment=environment,
-                        setup_grant=setup_grant,
-                    )
-                    adopt_results.append(
-                        {
-                            "provider": provider,
-                            "source": discovered.source,
-                            "result": outcome.get("result", "connected"),
-                        }
-                    )
-                except SessionClientError as exc:
-                    if exc.status_code == 409:
-                        return _bootstrap_interaction(
-                            "provider_connection_conflict",
-                            project_root,
-                            api,
-                            binding,
-                            wait=wait,
-                            poll_seconds=poll_seconds,
-                            json_output=json_output,
-                        )
-        elif missing and load_session() is not None:
             try:
-                adopt_results = adopt_from_env(
+                discovered_providers, adopt_results = _discover_and_maybe_adopt_providers(
                     project_root,
-                    providers=missing,
+                    missing=missing,
+                    adopt_providers=adopt_providers,
+                    project_id=project_id,
+                    environment=environment,
                     env_file=env_file,
                     setup_grant=setup_grant,
+                    yes=yes,
                 )
             except SessionClientError as exc:
                 if exc.status_code == 409:
@@ -1458,7 +1517,11 @@ def run_init(
         "action": "created" if project_resolution.get("created") else "reused",
     }
     payload["installation"] = {"configured": True, "action": install_action}
-    payload["providers"] = _providers_section(readiness, adopt_results)
+    providers_payload = _providers_section(readiness, adopt_results)
+    if discovered_providers or adopt_results:
+        providers_payload["discovered"] = discovered_providers
+        providers_payload["adopted"] = adopt_results
+    payload["providers"] = providers_payload
     payload["capabilities"] = _capabilities_section(readiness)
     payload["doctor"] = doctor_init_fields(report, doctor_code)
     _attach_mcp(project_root, payload)

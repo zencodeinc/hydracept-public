@@ -84,6 +84,11 @@ JOB_ERROR_TAXONOMY: dict[str, dict[str, Any]] = {
         "The provider did not respond in time. Retry after a short wait; the platform may "
         "reseal to an alternate route."
     ),
+    "ProviderSubmissionUnknown": _undecided(
+        "The provider may have accepted the request but the outcome is not yet known. Poll "
+        "the job status and reconcile with the provider before retrying; do not submit a "
+        "new idempotencyKey until you confirm whether the original request ran."
+    ),
     "ExecutionTimeout": _resolved(
         "The execution exceeded its wall-clock budget. Reduce the work or raise the "
         "timeout, then submit with a new idempotencyKey."

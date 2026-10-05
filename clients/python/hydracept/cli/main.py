@@ -122,6 +122,18 @@ def _print_init_ready(payload: dict[str, Any]) -> None:
     email_hint = str(local_identity.get("emailHint") or "").strip()
     if email_hint:
         console.print(f"[yellow]Note:[/yellow] {email_hint}")
+    providers = payload.get("providers") if isinstance(payload.get("providers"), dict) else {}
+    discovered = providers.get("discovered") if isinstance(providers.get("discovered"), list) else []
+    uploaded = sum(1 for row in discovered if isinstance(row, dict) and row.get("uploaded"))
+    if discovered:
+        not_uploaded = len(discovered) - uploaded
+        if uploaded:
+            console.print(f"[green]✓[/green] uploaded {uploaded} provider key(s) from local env")
+        if not_uploaded:
+            console.print(
+                f"[yellow]Note:[/yellow] found {not_uploaded} provider key(s) locally; not uploaded "
+                "(use --adopt-keys to upload, or --no-adopt to silence discovery)"
+            )
     console.print("[green]✓[/green] ready")
 
 
@@ -410,11 +422,42 @@ def init_cmd(
         "--project-name",
         help="Suggested Hydracept project name (default: folder name or HYDRACEPT_PROJECT_NAME)",
     ),
+    adopt_keys: bool = typer.Option(
+        False,
+        "--adopt-keys",
+        help="Upload all discovered provider keys from local env (opt-in)",
+    ),
+    adopt_key_providers: str = typer.Option(
+        "",
+        "--adopt-key-providers",
+        help="Comma-separated provider ids to upload (alternative to --adopt-keys)",
+    ),
+    no_adopt: bool = typer.Option(
+        False,
+        "--no-adopt",
+        help="Never upload provider keys during init (default)",
+    ),
 ) -> None:
     """Idempotent workspace bootstrap. Reuses GitHub CLI or HYDRACEPT_API_KEY when present."""
     if unified_bootstrap_enabled():
         grant = (os.environ.get(setup_grant_env) or "").strip() if setup_grant_env else None
         suggested = (project_name or "").strip() or None
+        from hydracept.cli.init_resolver import _parse_adopt_providers
+
+        if no_adopt and adopt_keys:
+            raise typer.BadParameter("Cannot combine --adopt-keys with --no-adopt")
+        if no_adopt:
+            adopt_providers: frozenset[str] | None = frozenset()
+        elif adopt_keys:
+            if not sys.stdin.isatty():
+                raise typer.BadParameter(
+                    "--adopt-keys requires an interactive terminal; use --adopt-key-providers instead"
+                )
+            adopt_providers = frozenset({"*"})
+        elif (adopt_key_providers or "").strip():
+            adopt_providers = _parse_adopt_providers(adopt_key_providers)
+        else:
+            adopt_providers = None
         result = run_init(
             project_root,
             api_url=api,
@@ -429,6 +472,8 @@ def init_cmd(
             explicit_project=project.strip() or None,
             explicit_environment=environment.strip() or None,
             project_name=suggested,
+            adopt_providers=adopt_providers,
+            no_adopt=no_adopt,
         )
         if json_output:
             console.print_json(data=result.payload)

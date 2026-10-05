@@ -24,9 +24,9 @@ def _workspace() -> ResolvedWorkspace:
 
 def test_bound_client_invoke_merges_workspace_context() -> None:
     client = HydraceptClient("https://api.hydracept.com", "hapt_test", workspace=_workspace())
-    with patch.object(client, "_post", return_value={"ok": True}) as post:
+    with patch("hydracept.client.post_json_with_retry", return_value={"ok": True}) as post:
         client.invoke_capability("text.general.fast.v1", {"input": {"prompt": "hi"}})
-    body = post.call_args.args[1]
+    body = post.call_args.args[2]
     assert body["context"]["projectId"] == "cpr_bound"
     assert body["context"]["productId"] == "cpr_bound"
 

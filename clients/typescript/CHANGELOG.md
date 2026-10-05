@@ -1,8 +1,16 @@
 # Changelog
 
+## 0.5.1 — 2026-10-03 (unreleased on npm)
+
+- `invokeCapability` supplies a unique `idempotencyKey` when the caller body omits one (matches Python 0.5.1).
+
 ## 0.5.0 — 2026-10-02
 
 **Breaking:** Removed legacy runtime helpers (`runtime.invoke`, `runtime.submitJob`, `runtime.getInvocation`, `runtime.cancelInvocation`, `runtime.getReceipt`). Use `invokeCapability`, `submitCapabilityJob`, and unified job routes (`getJob`, `cancelJob`, `getJobReceipt`). Stream token SSE moved from `GET /v1/invocations/{id}/events` to `GET /v1/executions/{id}/events` (`iterExecutionStreamEvents`, `runtime.streamExecutionEvents`).
+
+## 0.4.5 — 2026-09-28 (released)
+
+- Align npm `@hydracept/sdk` with the 0.4.5 public client constellation (provider cost accounting fields, MCP registry metadata parity with PyPI).
 
 ## 0.3.5 — 2026-09-04
 

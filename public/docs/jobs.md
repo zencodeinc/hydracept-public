@@ -18,7 +18,7 @@ Include:
 - `input` — capability-specific payload
 - `execution` — `executionPreference`, `billingMode` (`byok` | `managed`). **Omit `quoteId`** unless the job input is byte-for-byte the sealed quote
 - `idempotencyKey` — optional; the API mints one if missing
-- `execution.executionConstraints.maxDurationSeconds` — optional **provider execution** deadline in seconds after the job starts (not queue wait). `text.general.fast.v1` defaults to 120s (max 600). Queue wait uses a separate deadline. A job that never starts fails with `QueueTimeout`. A job that starts and then exceeds the provider deadline fails with `ExecutionTimeout` only if Hydracept observed the attempt end; after provider submission began, an abandoned wait is `TRANSPORT_AMBIGUOUS`. `timeoutSeconds` is accepted as an alias for the execution deadline.
+- `execution.executionConstraints.maxDurationSeconds` — optional **activity** deadline in seconds after the job starts (not queue wait). Durable text, including `text.general.fast.v1`, uses the shared ceiling (default and max 7200s). That ceiling stays above the provider HTTP wait (600s standard read, 900s deferred). Queue wait uses a separate deadline. A job that never starts fails with `QueueTimeout`. A job that exceeds the provider deadline with no output and no reported tokens fails with `ExecutionTimeout`; usage is zero and a new idempotency key is safe. If partial output was already published and usage was not reported, the job stays open and a `job.progress` event says provider usage is unknown. `timeoutSeconds` is accepted as an alias for the execution deadline.
 
 Example for `image.generate.v1` (BYOK):
 
@@ -52,6 +52,18 @@ Managed inference (wallet-funded) can omit `quoteId` — the API seals a retail 
 ```
 
 See [Billing](../billing/) for wallet top-up, [Deferred processing](../deferred-processing/) for the 50% durable-text discount, and [Capabilities](../capabilities/) for `billingModes` discovery (omitted on domain and CPU capabilities).
+
+## Stream invoke (SSE)
+
+Stream invoke publishes token-level events on the execution SSE path (not durable job lifecycle history):
+
+```http
+GET /v1/executions/{executionId}/events
+Authorization: Bearer <HYDRACEPT_API_KEY>
+Accept: text/event-stream
+```
+
+Durable job lifecycle cursors remain on `GET /v1/jobs/{jobId}/events`. Clients **0.5.0+** target the execution path; older `GET /v1/invocations/{id}/events` callers receive **410** `LEGACY_ROUTE_REMOVED`. See [Migrating to 0.5.0](../migrating-0.5.0/).
 
 ## Find project jobs
 

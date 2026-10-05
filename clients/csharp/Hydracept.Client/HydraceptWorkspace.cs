@@ -140,7 +140,8 @@ public sealed class HydraceptWorkspace : IDisposable
         if (!looksLikeEnvelope)
             payload = new JsonObject { ["input"] = payload };
 
-        payload["idempotencyKey"] = idempotencyKey;
+        if (payload["idempotencyKey"] is null)
+            payload["idempotencyKey"] = idempotencyKey;
         if (maxCostUsd is { } maxCost)
         {
             var execution = payload["execution"] as JsonObject ?? new JsonObject();

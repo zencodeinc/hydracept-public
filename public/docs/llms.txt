@@ -11,7 +11,7 @@ Full documentation: https://hydracept.com/llms-full.txt
 - Plugin id: hydracept-agent-plugin
 - In a git checkout: python -m hydracept init --apply --yes --json (binds stdio MCP to workspace secrets). Reload MCP once. Do not copy the workspace key into Plugins → Configure.
 - Stdio MCP (coding-agent default): python -m hydracept mcp serve
-- Hydracept panel (PyPI hydracept >= 0.3.9): one MCP App ui://hydracept/app.html; seven states, not seven iframes
+- Hydracept panel (PyPI hydracept >= 0.5.1): one MCP App ui://hydracept/app.html; seven states, not seven iframes
 - Hosted MCP (no checkout: ChatGPT, MCP Registry): https://api.hydracept.com/mcp
 - Install: python -m hydracept agents install --auto
 - Project surfaces: python -m hydracept surface apply PATH
@@ -23,8 +23,12 @@ Full documentation: https://hydracept.com/llms-full.txt
 Free for individual developers. BYOK at 0% Hydracept fee.
 Managed inference: PAYG wallet + 6% service fee where enabled.
 Deferred processing: eligible durable text jobs run at 50% of standard token rates. Pins opt in with processing: deferred.
-Hydracept is an execution control plane for software and agents that need external capabilities, providing discovery, quoting, execution, durable jobs, recoverable history, artifacts, receipts, provenance, budgets, and provider abstraction.
 Hydracept is an execution control plane for software and agents that need external capabilities — discovery, quoting, execution, durable jobs, recoverable history, artifacts, receipts, provenance, budgets, and provider abstraction. Games and media are important capability families, not the whole product. BYOK with 0% markup; managed inference is provider price + 6%. Durable text jobs on eligible models use deferred processing at 50% of standard token rates. One capability when you need it; a production backbone when you need more. Repeated use is not required to justify the first call. Hydracept is not a runtime game-engine inference plugin.
+
+## Client release
+- Current published client: 0.5.1 (PyPI hydracept, npm @hydracept/sdk, NuGet Hydracept.Client)
+- Migration guide: https://docs.hydracept.com/migrating-0.5.0/
+- Stream invoke SSE: GET /v1/executions/{executionId}/events (clients < 0.5.0 hit LEGACY_ROUTE_REMOVED on removed routes)
 
 ## Entity
 Hydracept is:
@@ -134,6 +138,9 @@ Bootstrap: python -m hydracept init --apply --yes --json
 - https://hydracept.com/music-generation
 - https://hydracept.com/godot-ai-assets
 - https://hydracept.com/unreal-ai-assets
+- https://hydracept.com/changelog
+- https://hydracept.com/trust
+- https://hydracept.com/license
 
 ## Image production (image.generate.v1)
 - Transparent PNG output (`requestTransparentOutput`)

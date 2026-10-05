@@ -2,7 +2,7 @@
 
 TypeScript client for the Hydracept public API — an execution control plane for software and agents that need external capabilities.
 
-Free for individual developers. BYOK. No inference markup.
+Free for individual developers. BYOK at 0% Hydracept fee; managed inference is provider price + 6%.
 
 ```bash
 npm install @hydracept/sdk

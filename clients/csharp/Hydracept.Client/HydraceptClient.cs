@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace Hydracept.Client;
@@ -42,6 +43,12 @@ public sealed class HydraceptClient : IHydraceptClient
             _http.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", options.BearerToken);
         }
+
+        var agent = string.IsNullOrWhiteSpace(options.ClientAgent)
+            ? "hydracept/0.0.0 csharp-sdk"
+            : options.ClientAgent.Trim();
+        _http.DefaultRequestHeaders.TryAddWithoutValidation("X-Hydracept-Client", agent);
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd(agent);
     }
 
     public async IAsyncEnumerable<HydraceptSseEvent> StreamExecutionEventsAsync(
@@ -203,12 +210,48 @@ public sealed class HydraceptClient : IHydraceptClient
     public Task<JsonElement> InvokeCapabilityAsync(
         string capabilityKey,
         object body,
-        CancellationToken cancellationToken = default) =>
-        PostJsonAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var idempotencyKey = Guid.NewGuid().ToString("N");
+        var payload = HydraceptWorkspace.BuildRunPayload(body, idempotencyKey, maxCostUsd: null);
+        return PostJsonWithRetryAsync(
             $"v1/capabilities/{Uri.EscapeDataString(capabilityKey)}/invoke",
-            body,
+            payload,
             headers: null,
             cancellationToken);
+    }
+
+    private async Task<JsonElement> PostJsonWithRetryAsync(
+        string relativePath,
+        object? body,
+        IEnumerable<KeyValuePair<string, string>>? headers,
+        CancellationToken cancellationToken)
+    {
+        var idempotencyHeaders = IdempotencyHeaders(body, headers);
+        var (status, text) = await HydraceptHttpRetry.SendWithRetryAsync(
+            async () =>
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, Normalize(relativePath));
+                foreach (var header in idempotencyHeaders)
+                    request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+
+                if (body is not null)
+                    request.Content = JsonContent.Create(body, options: JsonOptions);
+                return await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            },
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        JsonElement document = default;
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            using var parsed = JsonDocument.Parse(text);
+            document = parsed.RootElement.Clone();
+        }
+
+        if ((int)status is < 200 or >= 300)
+            throw ToApiException(status, document, text, relativePath);
+        return document;
+    }
 
     public Task<JsonElement> SubmitCapabilityJobAsync(
         string capabilityKey,
@@ -360,6 +403,31 @@ public sealed class HydraceptClient : IHydraceptClient
         GetBytesAsync(
             $"v1/jobs/{Uri.EscapeDataString(jobId)}/artifacts/{Uri.EscapeDataString(artifactId)}",
             cancellationToken);
+
+    private static IEnumerable<KeyValuePair<string, string>> IdempotencyHeaders(
+        object? body,
+        IEnumerable<KeyValuePair<string, string>>? headers)
+    {
+        var list = headers?.ToList() ?? new List<KeyValuePair<string, string>>();
+        if (list.Exists(h => string.Equals(h.Key, "Idempotency-Key", StringComparison.OrdinalIgnoreCase)))
+            return list;
+        var key = TryIdempotencyKey(body);
+        if (!string.IsNullOrWhiteSpace(key))
+            list.Insert(0, new KeyValuePair<string, string>("Idempotency-Key", key!));
+        return list;
+    }
+
+    private static string? TryIdempotencyKey(object? body)
+    {
+        if (body is JsonObject jsonObject && jsonObject["idempotencyKey"] is JsonValue value)
+            return value.GetValue<string>();
+        if (body is JsonElement element
+            && element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty("idempotencyKey", out var prop)
+            && prop.ValueKind == JsonValueKind.String)
+            return prop.GetString();
+        return null;
+    }
 
     private static string Normalize(string relativePath) =>
         relativePath.TrimStart('/');

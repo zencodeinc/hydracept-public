@@ -15,6 +15,8 @@ export type HydraceptClientOptions = {
   /** When true, paths already include /v1 (or proxy strips it). */
   pathsAreV1Relative?: boolean;
   fetchImpl?: typeof fetch;
+  packageVersion?: string;
+  clientAgent?: string;
 };
 
 export type HydraceptHttpError = Error & {

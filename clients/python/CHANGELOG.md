@@ -1,15 +1,20 @@
 # Changelog
 
+## 0.5.1 — 2026-10-03 (unreleased on PyPI)
+
+- `hydracept init` no longer uploads provider API keys unless you pass `--adopt-keys` (or confirm per provider on a TTY). `--yes` does not imply adoption; discovered keys are reported in JSON under `providers.discovered`.
+- `HydraceptClient.invoke_capability` sends a unique `idempotencyKey` by default (matching job submit behavior).
+- OpenAI text execution targets advertise **`pinned-responses`** (pinned inference wire label) instead of public **`responses`** ingress; DeepSeek pinned pins still use wire label `responses` against chat-completions adapters.
+
 ## 0.5.0 — 2026-10-02 (released)
 
 **Breaking:** Legacy HTTP routes `POST /v1/invocations`, `POST /v1/jobs`, and invocation lifecycle GETs return **410 Gone**. Use `POST /v1/capabilities/{key}/invoke|jobs` and `GET /v1/jobs/{jobId}` (+ receipt/cancel). Stream SSE helper renamed to `iter_execution_stream_events` targeting `GET /v1/executions/{executionId}/events`.
 
-## 0.4.6 — 2026-09-28 (released)
+## 0.4.6 — folded into 0.5.0 (2026-09-28, never published)
 
-- `hydracept init` surfaces comped-beta / email verification hints from identity assertion (`emailHint` on `localIdentity`) when GitHub noreply email is unverified
-- `hydracept_job_inspect` returns `executedPrompt` for the admitted prompt. Durable text jobs fill it from the prompt record when no input payload was stored. `hydracept_jobs_find` stays prompt-free and says to inspect one job to read the prompt.
+- Unreleased on PyPI; changes shipped in **0.5.0** (`hydracept init` email hints, `hydracept_job_inspect` `executedPrompt`, and related MCP/CLI polish).
 
-## 0.4.5 — 2026-09-26 (unreleased)
+## 0.4.5 — 2026-09-28 (released)
 
 - Provider cost accounting is now explicit and auditable. `providerCostUsd` is Hydracept's **actual provider COGS** (what it paid/consumed), not the retail price basis: it is `null` when unknown, never `0`, and is accompanied by `pricing.providerCost` with `basis`/`status` (and a pinned `priceScheduleId` for usage-priced cost). The upstream retail price basis moved to the new `providerPriceBasisUsd` / `providerCostBasis: "provider-cogs"`. An estimate is never promoted to actual cost, and a failure no longer implies `$0`.
 - PyPI README carries the Official MCP Registry ownership line (`mcp-name: com.hydracept/hydracept`, matching `hydracept-plugin` `mcp-registry/server.json`); package metadata adds classifiers and project URLs (docs, public source, issues, hosted MCP, registry manifest)

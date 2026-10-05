@@ -6,6 +6,8 @@ Hydracept is an execution control plane for software and agents that need extern
 
 Discovery, quoting, durable jobs, artifacts, receipts, and recoverable project history. BYOK is free; managed inference adds a 6% service fee. Eligible durable text jobs use deferred processing at 50% of standard token rates.
 
+**Current client release: 0.5.0** (breaking — see [Migrating to 0.5.0](./migrating-0.5.0/)).
+
 ## 5-minute path
 
 For one asset: `python -m hydracept run image.generate.v1 --prompt "..." --json` (composes init). For a full walkthrough, see [5-minute game asset](./five-minute-game-asset/). One-off tasks are supported — a single capability call does not require an integration commitment.

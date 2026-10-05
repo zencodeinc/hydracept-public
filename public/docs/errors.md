@@ -13,7 +13,7 @@ A **job that was successfully admitted and later failed is different**: `GET /v1
 | `402` | Funding required, budget prevent-mode block, or managed wallet insufficient |
 | `403` | Your API key, project, or environment is not allowed to make this request |
 | `404` | Capability, job, or resource not found |
-| `410` | Resource gone (expired session or retired endpoint) |
+| `410` | Resource gone (expired session or retired endpoint). Legacy runtime routes return `LEGACY_ROUTE_REMOVED` with a `use` migration hint. |
 | `409` | Conflict (including idempotency conflicts) |
 | `422` | Request validation failed |
 | `429` | Rate limited |
@@ -158,6 +158,21 @@ A retry is a new execution attempt: copy the inspected request input, remove the
 Durable job submits accept `idempotencyKey` (minted if omitted). Replaying the same key with the same payload returns the existing `jobId` for queued, running, succeeded, and failed jobs — a client poll timeout is not a Hydracept failure. `409 IdempotencyConflict` is only for a **different** normalized payload on that key; those bodies include `jobId`. Follow the job's `nextAction` / `retry.newKeySafe` before minting a new key. `TRANSPORT_AMBIGUOUS` is never new-key-safe.
 
 `409` with `detail.code` `QUOTE_MISMATCH` means a previously sealed `quoteId` no longer matches the job body. Omit `execution.quoteId` and submit with a **new** `idempotencyKey`.
+
+## Legacy route removal (410)
+
+Hydracept **0.5.0** removed legacy runtime routes (`POST /v1/invocations`, legacy `POST /v1/jobs`, invocation lifecycle GETs, and `GET /v1/invocations/{id}/events`). Callers on older clients receive:
+
+```json
+{
+  "code": "LEGACY_ROUTE_REMOVED",
+  "message": "GET /v1/invocations/{id}/events was removed. Stream tokens on the execution SSE path.",
+  "use": "GET /v1/executions/fex_01234567890123456789012345/events",
+  "retryable": false
+}
+```
+
+Upgrade to **hydracept / @hydracept/sdk / Hydracept.Client 0.5.0+** and follow [Migrating to 0.5.0](../migrating-0.5.0/).
 
 ## Related
 
