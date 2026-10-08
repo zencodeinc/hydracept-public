@@ -25,6 +25,13 @@ export type {
   HydraceptAssetOut,
   HydraceptAssetPage,
 } from './types.js';
+export type {
+  HydraceptCapabilityJobSubmitResponse,
+  HydraceptJobReceiptResponse,
+  HydraceptJobStatusResponse,
+  HydraceptPinnedInferenceResponse,
+  HydraceptPinnedReceiptResponse,
+} from './public-runtime-types.js';
 
 export type HydraceptClient = {
   http: HydraceptHttp;

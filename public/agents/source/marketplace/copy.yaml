@@ -56,23 +56,30 @@ starterPrompts:
       Hydracept capability discovery, quoting, execution, and receipts.
 keywords:
   - hydracept
+  - ai-agent-infrastructure
+  - agent-execution
+  - ai-execution
   - mcp
-  - execution-control-plane
   - agent-tools
-  - durable-jobs
-  - receipts
+  - ai-capabilities
   - multi-provider
+  - durable-jobs
   - byok
-  - text-generation
+  - receipts
   - image-generation
-  - domains
-  - dns
+  - video-generation
+  - audio-generation
+  - 3d-generation
   - game-assets
-  - cursor
-  - claude-code
   - unity
-  - gamedev
   - sprite-sheet
   - transparent-png
   - reference-image
+  - gamedev
   - game-ai
+  - execution-control-plane
+  - text-generation
+  - domains
+  - dns
+  - cursor
+  - claude-code

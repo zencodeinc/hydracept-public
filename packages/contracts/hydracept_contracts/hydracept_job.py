@@ -51,8 +51,7 @@ class HydraceptJobProgress(BaseModel):
     ``updatedAt`` is required whenever progress is present, so a reader can always tell
     how fresh the projection is. ``percent`` and ``etaSeconds`` are optional on purpose:
     they are present only when the authority (a provider that reports them) can compute
-    them. The contract forbids fabricating either one (ADR-035), so an unknown value is
-    omitted rather than defaulted to ``0``.
+    them. Unknown values are omitted rather than defaulted to ``0``.
     """
 
     phase: str
@@ -270,6 +269,11 @@ JOB_ERROR_TAXONOMY: Mapping[str, JobErrorGuidance] = {
         "The stored provider credential does not belong to this project. Reconnect the "
         "provider with credentials for this project, then retry."
     ),
+    HydraceptErrorCode.PROVIDER_CREDENTIAL_UNAVAILABLE.value: _resolved(
+        "The stored provider credential could not be decrypted, or no BYOK credential is "
+        "bound for this provider. Re-register that provider's key; Hydracept will not "
+        "substitute platform credentials for BYOK."
+    ),
     HydraceptErrorCode.QUOTE_MISMATCH.value: _resolved(
         "The quote is stale or does not match the server's pricing. Omit quoteId/estimateId "
         "and submit with a new idempotencyKey to reseal pricing."
@@ -390,7 +394,7 @@ class HydraceptJob(BaseModel):
         default=None,
         alias="actualCost",
         description=(
-            "Provider COGS when the receipt has evidence for it; null when unknown. "
+            "Provider cost when the receipt has evidence for it; null when unknown. "
             "Never the customer charge (that is pricing.charge.customerCharge) and "
             "never a fabricated 0."
         ),
@@ -399,7 +403,7 @@ class HydraceptJob(BaseModel):
         default=None,
         description=(
             "Canonical terminal pricing once a receipt is sealed: charge (customer) "
-            "and providerCost (COGS evidence) as distinct dimensions."
+            "and providerCost (provider cost evidence) as distinct dimensions."
         ),
     )
     currency: str = "USD"
@@ -418,7 +422,7 @@ class HydraceptJob(BaseModel):
     request_snapshot: dict[str, Any] | None = Field(
         default=None,
         alias="requestSnapshot",
-        description="Canonical submitted request for Studio re-run (not receipt).",
+        description="Canonical submitted request for rerunning the same inputs in Studio (not the sealed receipt).",
     )
     next_action: str | None = Field(default=None, alias="nextAction")
     poll_after_seconds: int | None = Field(default=None, alias="pollAfterSeconds")
@@ -567,12 +571,12 @@ class HydraceptReceipt(BaseModel):
     estimated_cost: float | None = Field(
         default=None,
         alias="estimatedCost",
-        description="Deprecated 0.2 shim of pricing.quote.customerTotal. Do not use internally.",
+        description="Legacy compatibility field mirroring pricing.quote.customerTotal. Prefer pricing.quote.",
     )
     actual_cost: float | None = Field(
         default=None,
         alias="actualCost",
-        description="Deprecated 0.2 shim of pricing.charge.customerCharge (amount owed). Do not use internally.",
+        description="Legacy compatibility field mirroring pricing.charge.customerCharge. Prefer pricing.charge.",
     )
     currency: str = "USD"
     artifacts: list[HydraceptJobArtifactRef] = Field(default_factory=list)

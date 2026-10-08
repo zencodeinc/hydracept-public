@@ -7,11 +7,15 @@ dotnet add package Hydracept.Client
 ```
 
 ```csharp
-var client = new HydraceptClient(new HydraceptClientOptions
-{
-    BaseUrl = "https://api.hydracept.com",
-    BearerToken = Environment.GetEnvironmentVariable("HYDRACEPT_API_KEY"),
-});
+using Hydracept.Client;
+
+var client = new HydraceptClient(
+    new HttpClient(),
+    new HydraceptClientOptions
+    {
+        BaseUrl = "https://api.hydracept.com",
+        BearerToken = Environment.GetEnvironmentVariable("HYDRACEPT_API_KEY"),
+    });
 
 var pinned = await client.CreatePinnedInferenceAsync(new
 {
@@ -20,6 +24,8 @@ var pinned = await client.CreatePinnedInferenceAsync(new
     input = "ping",
 });
 ```
+
+`HydraceptClient(HydraceptClientOptions)` is for docs-only samples: it allocates a new `HttpClient` you do not control for reuse or disposal. Prefer injecting a shared `HttpClient` in production apps.
 
 Pinned Execution implements RIP (`POST /v1/inference/pinned`). Provenance helpers: `CreateRunManifestAsync`, `GetLockfileAsync`, `VerifyLockfileAsync`.
 

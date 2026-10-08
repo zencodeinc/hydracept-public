@@ -1,8 +1,8 @@
-# Bake-offs (model comparisons)
+# Model comparisons
 
-Hydracept **Bake-offs** run the same generation intent across multiple providers or recipe variants, then capture your judgement. The API resource is called a **comparison**.
+Hydracept **comparisons** run the same generation intent across multiple providers or recipe variants, then capture your judgement. The API resource is called a **comparison**.
 
-## Create a provider bake-off (image)
+## Create a provider comparison (image)
 
 ```http
 POST /v1/capabilities/image.generate.v1/comparisons
@@ -26,7 +26,7 @@ POST /v1/capabilities/image.generate.v1/comparisons
     { "axis": "provider", "providerPin": "openai-image" },
     { "axis": "provider", "providerPin": "google-image" }
   ],
-  "idempotencyKey": "bakeoff-potion-v1"
+  "idempotencyKey": "comparison-potion-v1"
 }
 ```
 
@@ -59,7 +59,7 @@ Judgement body:
 
 After judgement, the response reveals provider, model, and cost for each candidate.
 
-## Recipe bake-off (audio SFX)
+## Recipe comparison (audio SFX)
 
 When only one provider is available, compare input variants:
 
@@ -79,5 +79,5 @@ TypeScript (`@hydracept/sdk`):
 ```ts
 await client.runtime.createComparison('image.generate.v1', body);
 await client.runtime.getComparison(comparisonId);
-await client.runtime.submitComparisonJudgement(comparisonId, { decision: 'winner', overallWinnerEntryId });
+await client.runtime.submitComparisonJudgement(comparisonId, judgement);
 ```

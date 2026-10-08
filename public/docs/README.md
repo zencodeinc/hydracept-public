@@ -2,11 +2,11 @@
 
 <!-- docs:marker:quick-start -->
 
-Hydracept is an execution control plane for software and agents that need external capabilities. Games and media are important examples.
+Hydracept is an execution control plane for software teams and coding agents that need to call external AI capabilities through one public API. Games and media are important capability families, not the whole product.
 
-Discovery, quoting, durable jobs, artifacts, receipts, and recoverable project history. BYOK is free; managed inference adds a 6% service fee. Eligible durable text jobs use deferred processing at 50% of standard token rates.
+Discover capabilities, submit invoke or durable jobs, track progress, download artifacts, and keep a receipt for every run. BYOK is 0% Hydracept fee; managed inference is provider price + 6%. Eligible durable text jobs use deferred processing at 50% of standard token rates.
 
-**Current client release: 0.5.0** (breaking — see [Migrating to 0.5.0](./migrating-0.5.0/)).
+**Current client release: {{HYDRACEPT_PUBLISHED_CLIENT}}** (see [Migrating to 0.5.0](./migrating-0.5.0/) if you are below 0.5.0).
 
 ## 5-minute path
 
@@ -87,7 +87,7 @@ curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
   https://api.hydracept.com/v1/capabilities
 ```
 
-The live catalog is `GET /v1/capabilities` (or `python -m hydracept agent-context`). Do not freeze a launch-key list from this README.
+The live catalog is `GET /v1/capabilities` (or `python -m hydracept agent-context`). Do not freeze a launch-key list from the docs index.
 
 See [Capabilities](./capabilities/) for how capability keys work.
 

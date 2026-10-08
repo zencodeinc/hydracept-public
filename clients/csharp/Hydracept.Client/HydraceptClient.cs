@@ -26,6 +26,11 @@ public sealed class HydraceptClient : IHydraceptClient
     {
     }
 
+    public HydraceptClient(HydraceptClientOptions options)
+        : this(new HttpClient(), options)
+    {
+    }
+
     public HydraceptClient(HttpClient http, HydraceptClientOptions? options)
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));

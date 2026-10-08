@@ -92,6 +92,8 @@ Audio capabilities (`audio.sfx.generate.v1`, `audio.voice.generate.v1`, `audio.m
 
 3D capabilities (`model.generate.3d.v1`, `model.generate.3d.from-image.v1`) run on Meshy. Use `model.generate.3d.v1` when you have turnaround view artifacts; use `model.generate.3d.from-image.v1` to chain OpenAI turnaround generation from a single concept image. See [5-minute 3D asset](../five-minute-3d-asset/).
 
+`decision.evaluate.v1` evaluates structured state against typed questions. Send `state` (text, object, or array) and `questions`. Each question is `boolean`, `choice`, or `score`. Do not send `model` or chat `messages`; the sealed route selects the model. Output tokens are reported and priced at zero. Sync invoke and durable jobs are both available.
+
 ## Available capabilities
 
 Discover the live catalog with `GET /v1/capabilities` or `python -m hydracept agent-context`. The live catalog is the source of truth, not a frozen list in this page.

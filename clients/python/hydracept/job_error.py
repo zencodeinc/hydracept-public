@@ -154,6 +154,11 @@ JOB_ERROR_TAXONOMY: dict[str, dict[str, Any]] = {
         "The stored provider credential does not belong to this project. Reconnect the "
         "provider with credentials for this project, then retry."
     ),
+    "ProviderCredentialUnavailable": _resolved(
+        "The stored provider credential could not be decrypted, or no BYOK credential is "
+        "bound for this provider. Re-register that provider's key; Hydracept will not "
+        "substitute platform credentials for BYOK."
+    ),
     "QUOTE_MISMATCH": _resolved(
         "The quote is stale or does not match the server's pricing. Omit quoteId/estimateId "
         "and submit with a new idempotencyKey to reseal pricing."

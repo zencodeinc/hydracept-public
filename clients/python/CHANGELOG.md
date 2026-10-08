@@ -1,6 +1,14 @@
 # Changelog
 
-## 0.5.1 — 2026-10-03 (unreleased on PyPI)
+## 0.5.2 (unreleased)
+
+- Public job error taxonomy: `ProviderCredentialUnavailable` when a stored BYOK credential cannot be decrypted, or when no BYOK credential is bound for the candidate provider. Re-register the key for that provider. BYOK does not fall back to platform keys.
+- Invoke results include `selectedCandidateId`, `servedCandidateId`, `credentialMode`, and `credentialSource`. `servedCandidateId` is `provider:model:capability` for the client that ran, using the model that client posted. A dated snapshot echoed by the provider does not replace it. `credentialSource` is `customer` or `platform` from the key that was resolved. Replays of the same idempotency key return those stored values.
+- Package keywords, the stdio MCP server, and the bundled `hydracept` skill lead with the execution plane. `resolve_capability` takes the user's words. `estimate_capability` is no longer registered as an MCP tool.
+- PyPI README includes a copy-paste `HydraceptClient` discovery sample; wheel/sdist include `LICENSE`.
+- `HydraceptClient` omits the `Authorization` header when the token is empty or omitted.
+
+## 0.5.1 — 2026-10-05 (released)
 
 - `hydracept init` no longer uploads provider API keys unless you pass `--adopt-keys` (or confirm per provider on a TTY). `--yes` does not imply adoption; discovered keys are reported in JSON under `providers.discovered`.
 - `HydraceptClient.invoke_capability` sends a unique `idempotencyKey` by default (matching job submit behavior).

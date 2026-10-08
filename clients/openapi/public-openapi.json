@@ -6,27 +6,27 @@
     "x-hydracept-caller-context-limits": {
       "metadataMaxBytes": {
         "value": 16384,
-        "reason": "Keeps forge_executions JSONB rows bounded; not a substitute for object storage."
+        "reason": "Keeps caller metadata bounded; use object storage for large payloads."
       },
       "tagsMaxCount": {
         "value": 32,
-        "reason": "Matches practical indexed-label cardinality (AWS allows 50 tags per resource)."
+        "reason": "Practical limit for correlation labels on a single job."
       },
       "tagMaxLength": {
         "value": 256,
-        "reason": "Fits composite correlation refs (e.g. story:<uuid>:chapter:<n>) within AWS tag value headroom."
+        "reason": "Fits composite correlation refs (for example story:<uuid>:chapter:<n>)."
       },
       "externalRefMaxLength": {
         "value": 255,
-        "reason": "Postgres varchar(255) column width on forge_executions.external_ref."
+        "reason": "Maximum length for your external reference id on a job."
       },
       "metadataMaxDepth": {
         "value": 32,
-        "reason": "Prevents pathological nesting from RecursionError during canonical JSON encoding."
+        "reason": "Prevents excessively nested metadata objects."
       },
-      "enforcement": "Published values are hard ceilings. HYDRACEPT_CALLER_METADATA_MAX_BYTES, HYDRACEPT_CALLER_TAGS_MAX_COUNT, HYDRACEPT_CALLER_TAG_MAX_LENGTH, HYDRACEPT_CALLER_EXTERNAL_REF_MAX_LENGTH, and HYDRACEPT_CALLER_METADATA_MAX_DEPTH may tighten a deployment. Values below 1 or above these ceilings are clamped to the ceiling."
+      "enforcement": "Published values are hard ceilings for the public API. Hydracept may enforce lower limits on a deployment. Values below 1 or above these ceilings are clamped to the ceiling."
     },
-    "description": "Discovery, quoting, durable jobs, artifacts, and receipts. Public integration surface for Hydracept capabilities and jobs. Authenticate with a Hydracept API key (Bearer). The info.version field tracks the current published Hydracept client release, not a separate HTTP API semver."
+    "description": "One API to run external AI capabilities\u2014with durable jobs, receipts, and BYOK. Public integration surface for Hydracept capabilities and jobs. Authenticate with a Hydracept API key (Bearer). The info.version field tracks the current published Hydracept client release, not a separate HTTP API semver."
   },
   "paths": {
     "/v1/adapter-aliases": {
@@ -80,14 +80,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -155,14 +166,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -241,14 +263,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -327,14 +363,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -423,14 +473,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -519,14 +583,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -605,14 +683,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -699,14 +791,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -783,14 +889,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -853,44 +973,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "402": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -957,44 +1061,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "402": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -1062,14 +1150,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -1137,14 +1236,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -1209,14 +1319,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -1297,14 +1418,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -1385,14 +1517,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -1457,14 +1600,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -1512,14 +1666,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -1566,14 +1734,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -1618,14 +1800,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -1669,14 +1868,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "402": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -1720,14 +1936,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "402": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -1770,14 +2003,19 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -1793,7 +2031,7 @@
     "/v1/capabilities/{capability_key}/estimate": {
       "post": {
         "summary": "Quote Capability Charge",
-        "description": "HTTP alias of POST /quote. Same 0.3 RetailEstimateResponse (pricing.quote).",
+        "description": "HTTP alias of POST /quote. Same RetailEstimateResponse body (pricing.quote).",
         "operationId": "estimate_capability_for_workspace_v1_capabilities__capability_key__estimate_post",
         "parameters": [
           {
@@ -1828,44 +2066,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "402": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -1889,7 +2114,7 @@
     "/v1/capabilities/{capability_key}/quote": {
       "post": {
         "summary": "Quote Capability Charge",
-        "description": "0.3 retail quote. Nested pricing.quote is financial authority. Does not reserve or charge funds.",
+        "description": "Retail quote. Nested pricing.quote is financial authority. Does not reserve or charge funds.",
         "operationId": "estimate_capability_for_workspace_v1_capabilities__capability_key__quote_post",
         "parameters": [
           {
@@ -1924,44 +2149,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "402": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -2010,44 +2222,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
           },
-          "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -2088,44 +2281,22 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
           },
-          "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+          "404": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -2166,44 +2337,22 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
           },
-          "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+          "404": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -2253,74 +2402,34 @@
             }
           },
           "402": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           },
           "409": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           },
           "422": {
-            "description": "Validation error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
           },
           "500": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -2340,7 +2449,7 @@
     "/v1/capabilities/image.generate.v1/jobs": {
       "post": {
         "summary": "Submit Image Generation Job",
-        "description": "Preserve both sealed billing authority and the Image 2.5 model selection.",
+        "description": "Submit an image generation job using the quoted model and billing mode from the request.",
         "operationId": "submit_image_generate_job_v1_capabilities_image_generate_v1_jobs_post",
         "requestBody": {
           "required": true,
@@ -2364,44 +2473,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "402": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -2458,44 +2554,34 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "402": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -2575,44 +2661,19 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -2654,14 +2715,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -2723,14 +2795,7 @@
             }
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -2778,14 +2843,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -2809,7 +2888,7 @@
           "capabilities"
         ],
         "summary": "List Job Events",
-        "description": "Append-only lifecycle stream for a job (ADR-035).\n\nThis is the authority for what happened, in order. Progress history, delivery, and\nretention project this stream; none of them re-derive lifecycle facts from mutable\nstate. Ordering is by the monotonic event id, which is also the cursor.",
+        "description": "Append-only lifecycle stream for a job.\n\nEvents are ordered by monotonic cursor ids. Use the cursor parameter to page forward.",
         "operationId": "list_job_events_v1_jobs__job_id__events_get",
         "parameters": [
           {
@@ -2884,14 +2963,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -2960,14 +3053,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -2988,7 +3092,7 @@
           "capabilities"
         ],
         "summary": "Get Job Request Snapshot",
-        "description": "Canonical submitted request for Studio re-run \u2014 not the sealed receipt.",
+        "description": "Canonical submitted request for rerunning the same inputs in Studio \u2014 not the sealed receipt.",
         "operationId": "get_job_request_snapshot_v1_jobs__job_id__request_get",
         "parameters": [
           {
@@ -3015,14 +3119,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3068,14 +3186,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3133,14 +3265,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3185,14 +3331,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3257,14 +3417,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3309,14 +3483,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3361,14 +3549,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3444,14 +3646,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3498,14 +3714,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3553,14 +3780,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3618,14 +3859,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3673,14 +3928,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3729,14 +3998,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3775,14 +4058,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3831,14 +4125,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "402": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3886,14 +4194,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "402": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3940,14 +4262,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -3997,14 +4333,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -4055,14 +4405,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -4109,14 +4470,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -4166,14 +4541,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -4220,14 +4609,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -4278,14 +4678,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -4329,44 +4740,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -4419,44 +4811,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -4504,44 +4877,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -4597,44 +4954,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -4681,44 +5022,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -4766,44 +5088,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -4851,44 +5157,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -4936,44 +5226,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5010,44 +5284,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
           },
           "403": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           },
           "429": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
           },
           "503": {
-            "description": "Public error envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5067,7 +5322,7 @@
           "external",
           "comparisons"
         ],
-        "summary": "Create comparison (bake-off)",
+        "summary": "Create multi-provider comparison",
         "operationId": "create_capability_comparison_v1_capabilities__capability_key__comparisons_post",
         "parameters": [
           {
@@ -5104,14 +5359,37 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "402": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5131,8 +5409,8 @@
           "external",
           "comparisons"
         ],
-        "summary": "Estimate bake-off comparison cost",
-        "description": "Estimates the cost of a multi-provider bake-off comparison. This is not the retail capability quote (POST /quote). Do not send any id from this response as execution.quoteId.",
+        "summary": "Estimate multi-provider comparison cost",
+        "description": "Estimates the cost of running the same input across multiple provider options. This is not the retail capability quote (POST /quote). Do not send any id from this response as execution.quoteId.",
         "operationId": "estimate_capability_comparison_v1_capabilities__capability_key__comparisons_estimate_post",
         "parameters": [
           {
@@ -5169,14 +5447,34 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "402": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "400": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5196,7 +5494,7 @@
           "external",
           "comparisons"
         ],
-        "summary": "List default bake-off competitors",
+        "summary": "List default comparison provider options",
         "operationId": "get_competitor_options_v1_capabilities__capability_key__comparisons_competitor_options_get",
         "parameters": [
           {
@@ -5223,14 +5521,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5266,14 +5578,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5310,14 +5633,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5369,14 +5703,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5422,14 +5767,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5484,14 +5840,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5551,14 +5918,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5608,14 +5989,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5751,14 +6146,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5809,14 +6215,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5876,14 +6296,19 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5915,14 +6340,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -5969,14 +6405,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6031,14 +6481,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6085,14 +6549,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6147,14 +6625,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6210,14 +6702,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6274,14 +6780,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6328,14 +6851,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6371,14 +6908,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6417,14 +6965,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6475,14 +7034,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6530,14 +7100,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6585,14 +7169,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6636,14 +7231,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6690,14 +7296,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6745,14 +7365,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6809,14 +7443,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6861,14 +7509,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6924,14 +7586,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -6997,14 +7673,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7070,14 +7760,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7144,14 +7848,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7200,14 +7918,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7260,14 +7992,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7321,14 +8067,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7390,14 +8150,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7453,14 +8227,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7516,14 +8304,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7592,14 +8394,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7652,14 +8468,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7704,14 +8534,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7766,14 +8610,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7827,14 +8685,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7870,14 +8742,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7921,14 +8804,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -7975,14 +8872,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -8029,14 +8940,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -8083,14 +9011,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -8145,14 +9087,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -8199,14 +9155,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -8254,14 +9224,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -8319,14 +9303,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -8384,14 +9382,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "409": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -8437,14 +9452,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -8490,14 +9516,25 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -8544,14 +9581,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -8609,14 +9660,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -8663,14 +9728,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -8812,14 +9891,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -8876,14 +9969,28 @@
             }
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
           }
         },
         "x-hydracept-surface": "public_api",
@@ -9245,7 +10352,7 @@
               }
             ],
             "title": "Estimateid",
-            "description": "Inbound alias of quoteId. Internals consume quoteId / pricing.quote."
+            "description": "Inbound alias of quoteId. Prefer quoteId and pricing.quote."
           },
           "maximumCharge": {
             "anyOf": [
@@ -9287,7 +10394,7 @@
               }
             ],
             "title": "Externalref",
-            "description": "Opaque caller-owned correlation reference. Never sent to providers. Max 255 characters (forge_executions column width)."
+            "description": "Opaque caller-owned correlation reference. Never sent to providers. Max 255 characters."
           },
           "tags": {
             "items": {
@@ -9473,7 +10580,7 @@
               }
             ],
             "title": "Externalref",
-            "description": "Opaque caller-owned correlation reference. Never sent to providers. Max 255 characters (forge_executions column width)."
+            "description": "Opaque caller-owned correlation reference. Never sent to providers. Max 255 characters."
           },
           "tags": {
             "items": {
@@ -9691,6 +10798,7 @@
           "mesh",
           "embedding",
           "moderation",
+          "decision",
           "infrastructure"
         ],
         "title": "CapabilityModality"
@@ -10678,6 +11786,50 @@
             ],
             "title": "Resolvedmodel"
           },
+          "selectedCandidateId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selectedcandidateid"
+          },
+          "servedCandidateId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servedcandidateid"
+          },
+          "credentialMode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credentialmode"
+          },
+          "credentialSource": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credentialsource"
+          },
           "externalRef": {
             "anyOf": [
               {
@@ -10906,7 +12058,7 @@
               }
             ],
             "title": "Actualcost",
-            "description": "Provider COGS when the receipt has evidence for it; null when unknown. Never the customer charge (that is pricing.charge.customerCharge) and never a fabricated 0."
+            "description": "Provider cost when the receipt has evidence for it; null when unknown. Never the customer charge (that is pricing.charge.customerCharge) and never a fabricated 0."
           },
           "pricing": {
             "anyOf": [
@@ -10917,7 +12069,7 @@
                 "type": "null"
               }
             ],
-            "description": "Canonical terminal pricing once a receipt is sealed: charge (customer) and providerCost (COGS evidence) as distinct dimensions."
+            "description": "Canonical terminal pricing once a receipt is sealed: charge (customer) and providerCost (provider cost evidence) as distinct dimensions."
           },
           "currency": {
             "type": "string",
@@ -11024,7 +12176,7 @@
               }
             ],
             "title": "Requestsnapshot",
-            "description": "Canonical submitted request for Studio re-run (not receipt)."
+            "description": "Canonical submitted request for rerunning the same inputs in Studio (not the sealed receipt)."
           },
           "nextAction": {
             "anyOf": [
@@ -11272,7 +12424,7 @@
           "updatedAt"
         ],
         "title": "HydraceptJobProgress",
-        "description": "Where a durable job has reached, as reported by the activity that owns the work.\n\n``updatedAt`` is required whenever progress is present, so a reader can always tell\nhow fresh the projection is. ``percent`` and ``etaSeconds`` are optional on purpose:\nthey are present only when the authority (a provider that reports them) can compute\nthem. The contract forbids fabricating either one (ADR-035), so an unknown value is\nomitted rather than defaulted to ``0``."
+        "description": "Where a durable job has reached, as reported by the activity that owns the work.\n\n``updatedAt`` is required whenever progress is present, so a reader can always tell\nhow fresh the projection is. ``percent`` and ``etaSeconds`` are optional on purpose:\nthey are present only when the authority (a provider that reports them) can compute\nthem. Unknown values are omitted rather than defaulted to ``0``."
       },
       "HydraceptJobResult": {
         "properties": {
@@ -11478,7 +12630,7 @@
               }
             ],
             "title": "Estimatedcost",
-            "description": "Deprecated 0.2 shim of pricing.quote.customerTotal. Do not use internally."
+            "description": "Legacy compatibility field mirroring pricing.quote.customerTotal. Prefer pricing.quote."
           },
           "actualCost": {
             "anyOf": [
@@ -11490,7 +12642,7 @@
               }
             ],
             "title": "Actualcost",
-            "description": "Deprecated 0.2 shim of pricing.charge.customerCharge (amount owed). Do not use internally."
+            "description": "Legacy compatibility field mirroring pricing.charge.customerCharge. Prefer pricing.charge."
           },
           "currency": {
             "type": "string",
@@ -11840,7 +12992,7 @@
               }
             ],
             "title": "Estimateid",
-            "description": "Inbound/outbound alias of quoteId. Internals consume quoteId / pricing.quote."
+            "description": "Inbound/outbound alias of quoteId. Prefer quoteId and pricing.quote."
           },
           "pricingVersion": {
             "anyOf": [
@@ -11994,7 +13146,7 @@
         },
         "type": "object",
         "title": "HydraceptReceiptPricing",
-        "description": "Canonical 0.3 money model. 0.2 micros fields are serialization shims."
+        "description": "Canonical pricing on a receipt. Legacy micros fields remain for compatibility."
       },
       "HydraceptReceiptProvenance": {
         "properties": {
@@ -13824,7 +14976,7 @@
         },
         "type": "object",
         "title": "ReceiptProviderCost",
-        "description": "Provider COGS evidence. ``amount`` is null when unknown \u2014 never ``0``.\n\n``basis``/``status`` explain how the amount was obtained; a usage-priced cost\nnames the pinned ``priceScheduleId`` so a later catalog change cannot silently\nrewrite historical COGS."
+        "description": "Provider cost evidence. ``amount`` is null when unknown \u2014 never ``0``.\n\n``basis``/``status`` explain how the amount was obtained; a usage-priced cost\nnames the pinned ``priceScheduleId`` so a later catalog change cannot silently\nrewrite historical provider cost."
       },
       "ReceiptProviderUsage": {
         "properties": {
@@ -14173,7 +15325,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "RetailEstimateRequest",
-        "description": "Quote request using the same canonical envelope as invoke/jobs.\n\n0.3 quote-only shims (``billingMode``, ``options``, top-level ``model``)\nare normalized before this closed envelope is validated. Downstream request\nsemantics are ``context`` / ``input`` / ``execution``; the serializer below\nis only an adapter to the existing pricing engine's input shape."
+        "description": "Quote request using the same canonical envelope as invoke/jobs.\n\nLegacy top-level fields (``billingMode``, ``options``, top-level ``model``)\nare normalized into ``context`` / ``input`` / ``execution`` before validation."
       },
       "RetailEstimateResponse": {
         "properties": {
@@ -14214,7 +15366,7 @@
               }
             ],
             "title": "Estimateid",
-            "description": "Inbound/outbound alias of quoteId. Internals consume quoteId / pricing.quote."
+            "description": "Alias of quoteId for older clients. Prefer quoteId and pricing.quote."
           },
           "capabilityKey": {
             "anyOf": [
@@ -14283,7 +15435,7 @@
                 "type": "null"
               }
             ],
-            "description": "Deprecated shim of pricing.quote.customerTotal."
+            "description": "Legacy alias of pricing.quote.customerTotal. Prefer pricing.quote."
           },
           "maximumAuthorizedCharge": {
             "anyOf": [
@@ -14294,7 +15446,7 @@
                 "type": "null"
               }
             ],
-            "description": "Deprecated shim of pricing.quote.maximumCustomerTotal."
+            "description": "Legacy alias of pricing.quote.maximumCustomerTotal. Prefer pricing.quote."
           },
           "expiresAt": {
             "anyOf": [
@@ -14317,7 +15469,7 @@
         },
         "type": "object",
         "title": "RetailEstimateResponse",
-        "description": "0.3 retail quote. ``estimateId`` / top-level charge fields are serialization shims."
+        "description": "Retail quote before execution. ``estimateId`` mirrors ``quoteId`` for compatibility."
       },
       "RetailPricingContract": {
         "properties": {
@@ -15216,7 +16368,7 @@
       },
       "PublicError": {
         "additionalProperties": true,
-        "description": "Machine-readable API error returned for 402, 409, and 5xx responses.",
+        "description": "Machine-readable API error envelope for failed HTTP responses on the public surface.",
         "properties": {
           "code": {
             "title": "Code",
@@ -15305,6 +16457,41 @@
         ],
         "title": "PublicError",
         "type": "object"
+      },
+      "PublicValidationErrorBody": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PublicError"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "detail": {
+                "description": "Pydantic validation errors (legacy FastAPI shape)",
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ValidationError"
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "description": "Execution-contract repair payload on capability invoke/jobs",
+                    "additionalProperties": true
+                  }
+                ]
+              },
+              "validationErrors": {
+                "description": "Same validation errors under the public envelope",
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          }
+        ]
       },
       "BillingModeAvailability": {
         "properties": {
@@ -16502,6 +17689,28 @@
         "scheme": "bearer",
         "bearerFormat": "Hydracept API key",
         "description": "Machine credential issued by Hydracept. Send as Authorization: Bearer <HYDRACEPT_API_KEY>."
+      }
+    },
+    "responses": {
+      "PublicError": {
+        "description": "Structured public error envelope (`code`, `message`, `requestId`, \u2026)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/PublicError"
+            }
+          }
+        }
+      },
+      "PublicValidationError": {
+        "description": "Validation failure: public envelope plus Pydantic `detail` / `validationErrors`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/PublicValidationErrorBody"
+            }
+          }
+        }
       }
     }
   },

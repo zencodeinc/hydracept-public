@@ -34,7 +34,7 @@ Your total                  $1.06
 Check capability discovery for managed availability:
 
 - `GET /v1/capabilities` — inference capabilities include `billingModes.byok` and `billingModes.managed`; domain and CPU processing omit `billingModes`
-- `POST /v1/capabilities/{key}/quote` — firm retail price before you run a job (does not reserve funds). `POST .../estimate` is a 0.2 serialization shim.
+- `POST /v1/capabilities/{key}/quote` — firm retail price before you run a job (does not reserve funds). `POST .../estimate` is the same quote route under an older path name.
 
 Receipts keep the fee snapshot they were created under. Historical charges are never recomputed when the catalog fee changes.
 
@@ -49,8 +49,6 @@ Genuinely useful for evaluation, hobby projects, and occasional generation.
 - BYOK and managed execution
 - All generally available capability types
 
-Two concurrent durable jobs is the conversion pressure — not capability gating.
-
 ## Builder ($19 / month)
 
 For a serious individual developer who has outgrown Free.
@@ -60,8 +58,6 @@ For a serious individual developer who has outgrown Free.
 - 4,000 lightweight inferences / hour
 - 90-day history
 - Personal provider vault, receipts, artifacts, and normal routing
-
-Primary upgrade trigger: *two concurrent jobs is slowing me down.*
 
 ## Team ($149 / month)
 

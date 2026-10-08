@@ -66,12 +66,22 @@ server = MCPServer(
     website_url="https://hydracept.com",
     icons=hydracept_mcp_icons(),
     instructions=(
+        "Hydracept executes external capabilities for agents. "
+        "Pass the user's words to resolve_capability. Do not ask for a capability key and do not pick a key from memory. "
+        "Then optionally hydracept_quote_capability, then hydracept_run on the resolved key. "
+        "Call hydracept_job_status only when the result says to poll. "
+        "Call hydracept_download_artifact and hydracept_get_receipt when the job produced them. "
+        "Specialists stay listed: hydracept_submit_job returns immediately; "
+        "hydracept_invoke is for synchronous read-only calls; "
+        "pinned tools are exact model pins; "
+        "provenance tools run after a receipt. "
+        "hydracept_ui_* tools are the panel, not the agent. "
         "Hydracept public capability jobs, pinned execution, and project surfaces. "
         "Credentials resolve from workspace only. "
         "One capability call is enough — do not assume repeated usage is required. "
         "hydracept_run composes init when needed and waits for terminal completion by default; "
         "pass wait=false when an immediate durable-job continuation is preferred. "
-        "Project surface tools require cwd to be the game checkout. "
+        "Project surface tools require cwd to be the project checkout. "
         "hydracept_submit_job and hydracept_job_status return immediately. "
         "If nextAction is poll, wait pollAfterSeconds and call hydracept_job_status again. "
         "Do not call hydracept_ui_* tools; those are for the Hydracept panel iframe only. "
@@ -464,14 +474,13 @@ def hydracept_capabilities(key: str = "", query: str = "") -> dict[str, Any]:
 
 @server.tool()
 def resolve_capability(intent: str, requirements: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Determine whether Hydracept already provides a suitable capability. Does not spend money."""
+    """Semantic router. Pass the user's words as intent. Does not spend money. Do not ask for a capability key."""
     payload: dict[str, Any] = {"intent": intent}
     if requirements:
         payload["requirements"] = requirements
     return _tool_call(lambda: _client().resolve_capability(payload))
 
 
-@server.tool()
 def estimate_capability(
     capability_key: str = "",
     body: dict[str, Any] | None = None,
@@ -1325,6 +1334,8 @@ def hydracept_ui_connect_project(
     from hydracept.mcp.interaction_hydration import attach_hydrated_interaction
 
     def _run() -> dict[str, Any]:
+        from hydracept.client_identity import resolve_hydracept_client_component
+
         result = run_init(
             _project_root(),
             apply=True,
@@ -1333,6 +1344,7 @@ def hydracept_ui_connect_project(
             wait=False,
             project_name=(displayName or project_name or None) or None,
             environment=environment or None,
+            client_component=resolve_hydracept_client_component(default="mcp"),
         )
         payload = dict(result.payload or {})
         payload.setdefault("exitCode", result.exit_code)

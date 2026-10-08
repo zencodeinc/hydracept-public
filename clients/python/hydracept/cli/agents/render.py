@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from hydracept.cli.agent_status import AGENT_PACK_VERSION, MANIFEST_NAME
-from hydracept.cli.mcp_bind import stdio_args, stdio_command
+from hydracept.cli.mcp_bind import stdio_args, stdio_command, stdio_server_entry
 
 HOSTS = ("cursor", "claude", "antigravity")
 SKILL_NAMES = (
@@ -84,17 +84,13 @@ def render_cursor(project_root: Path, repo_root: Path | None = None) -> list[str
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(src, dest)
             written.append(str(dest))
-    command, args = _mcp_command(cursor=True, project_root=root)
+    entry = stdio_server_entry(project_root=root, cursor_placeholder=True)
+    env = dict(entry.get("env") or {})
+    env["HYDRACEPT_CLIENT_COMPONENT"] = "plugin"
+    entry["env"] = env
     _write_json(
         plugin_root / "mcp.json",
-        {
-            "mcpServers": {
-                "hydracept": {
-                    "command": command,
-                    "args": args,
-                }
-            }
-        },
+        {"mcpServers": {"hydracept": entry}},
     )
     _write_json(
         plugin_root / "hooks" / "hooks.json",

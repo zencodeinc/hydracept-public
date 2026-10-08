@@ -14,6 +14,11 @@ def _detail_payload(payload: Any) -> Any:
 
 
 def parse_error_fields(payload: Any) -> tuple[str, str]:
+    if isinstance(payload, dict):
+        code = str(payload.get("code") or "").strip()
+        message = str(payload.get("message") or "").strip()
+        if code and message:
+            return code, message
     detail = _detail_payload(payload)
     if isinstance(detail, dict):
         code = str(detail.get("code") or "").strip()

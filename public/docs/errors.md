@@ -1,6 +1,8 @@
 # Errors
 
-Failed API calls return an HTTP status code. Structured capability errors return their Hydracept error information in a `detail` object; some standard HTTP errors use a string or validation details in `detail`.
+Failed API calls return an HTTP status code and a JSON **public error envelope** with `code`, `message`, `requestId`, and `retryable` (plus optional recovery fields such as `nextAction`). Older SDKs also accept nested `detail` objects on some capability routes; new responses use the top-level envelope.
+
+401 responses include a `WWW-Authenticate` header. Common stable codes include `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `CAPABILITY_NOT_FOUND`, `UNKNOWN_CAPABILITY`, `METHOD_NOT_ALLOWED`, and `VALIDATION_ERROR`.
 
 A **job that was successfully admitted and later failed is different**: `GET /v1/jobs/{jobId}` returns the job resource with terminal status `failed` and `error: {code, message}`. Do not confuse an HTTP request error with the error recorded on a durable job.
 
@@ -39,7 +41,7 @@ When an endpoint returns a structured capability error, its body has this shape:
 }
 ```
 
-`BudgetExceeded` is returned only when a project or caller has opted into **prevent** mode. Default is no enforcement: spend ceilings are accounting, not a refuse gate. Opt in with `budget.enforcement` / `executionConstraints.budgetEnforcement` (`warn` or `prevent`) plus ceilings, or project `budget_policy_json.enforcement`.
+`BudgetExceeded` is returned only when a project or caller has opted into **prevent** mode. Default is no enforcement: spend ceilings are accounting, not a refuse gate. Opt in with `budget.enforcement` / `executionConstraints.budgetEnforcement` (`warn` or `prevent`) plus ceilings, or your project budget policy enforcement setting in Studio.
 
 | Mode | Admission |
 |------|-----------|
@@ -49,7 +51,7 @@ When an endpoint returns a structured capability error, its body has this shape:
 
 Setting `maxCostUsd` / `maximumEstimatedCost` on a request without an explicit mode is caller opt-in to **prevent** for that call.
 
-`detail.code` is the stable Hydracept error code. `detail.message` is a human-readable explanation. Validation failures may use a different `detail` shape.
+`code` is the stable Hydracept error code. `message` is a human-readable explanation. Capability admission errors may still nest extra fields under `detail` for backward compatibility.
 
 ### Unknown or conflicting execution fields
 

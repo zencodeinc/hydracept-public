@@ -32,15 +32,14 @@ Hydracept is an execution control plane for software and agents that need extern
 
 ## Entity
 Hydracept is:
-- multi-provider AI generation API
-- Unity AI generation
-- reference-image generation
-- transparent game assets
-- cohesive sprite sheets
-- agent MCP
+- AI agent execution infrastructure
+- external capabilities for AI agents
+- durable AI jobs
+- AI execution receipts
+- BYOK capability execution
 
-Workflow: AI game assets from Cursor or Claude: reference image → cohesive sheet → transparent slices → Unity project, routed across providers with price and receipt provenance.
-Canonical page: https://hydracept.com/agent-game-assets
+Workflow: An agent describes the work in plain language. Hydracept resolves a capability, quotes the spend, executes it synchronously or as a durable job, and returns artifacts with a receipt.
+Canonical page: https://hydracept.com/agent-execution-infrastructure
 Plugin homepage: https://hydracept.com/plugin
 Install in Cursor or Claude Code: python -m hydracept init --apply --yes --json
 Packages: @hydracept/sdk (npm), hydracept (PyPI), Hydracept.Client (NuGet), com.hydracept.unity (UPM)
@@ -77,6 +76,7 @@ When managed execution is available, no provider account is required for the cal
 - One transparent 1024x1024 icon
 - A 2-second UI confirmation sound
 - A rough 3D model from a reference
+- A yes-or-no decision over structured state
 - Domain availability check
 - Short localization translation
 - Higher-quality reasoning pass
@@ -102,8 +102,10 @@ Bootstrap: python -m hydracept init --apply --yes --json
 - https://hydracept.com/docs/
 
 ## Discovery pages
-- https://hydracept.com/agent-game-assets
+- https://hydracept.com/agent-execution-infrastructure
+- https://hydracept.com/receipts
 - https://hydracept.com/pricing
+- https://hydracept.com/agent-game-assets
 - https://hydracept.com/plugin
 - https://hydracept.com/pinned-execution
 - https://hydracept.com/games
@@ -141,6 +143,17 @@ Bootstrap: python -m hydracept init --apply --yes --json
 - https://hydracept.com/changelog
 - https://hydracept.com/trust
 - https://hydracept.com/license
+- https://hydracept.com/capabilities/image-generation
+- https://hydracept.com/capabilities/video-generation
+- https://hydracept.com/capabilities/voice
+- https://hydracept.com/capabilities/music
+- https://hydracept.com/capabilities/sound-effects
+- https://hydracept.com/capabilities/3d
+- https://hydracept.com/capabilities/domains
+- https://hydracept.com/capabilities/translation
+- https://hydracept.com/capabilities/text-structured
+- https://hydracept.com/capabilities/text-reasoning
+- https://hydracept.com/capabilities/compute
 
 ## Image production (image.generate.v1)
 - Transparent PNG output (`requestTransparentOutput`)
@@ -166,11 +179,11 @@ URL: https://docs.hydracept.com/
 
 
 
-Hydracept is an execution control plane for software and agents that need external capabilities. Games and media are important examples.
+Hydracept is an execution control plane for software teams and coding agents that need to call external AI capabilities through one public API. Games and media are important capability families, not the whole product.
 
-Discovery, quoting, durable jobs, artifacts, receipts, and recoverable project history. BYOK is free; managed inference adds a 6% service fee. Eligible durable text jobs use deferred processing at 50% of standard token rates.
+Discover capabilities, submit invoke or durable jobs, track progress, download artifacts, and keep a receipt for every run. BYOK is 0% Hydracept fee; managed inference is provider price + 6%. Eligible durable text jobs use deferred processing at 50% of standard token rates.
 
-**Current client release: 0.5.0** (breaking — see [Migrating to 0.5.0](./migrating-0.5.0/)).
+**Current client release: 0.5.1** (see [Migrating to 0.5.0](./migrating-0.5.0/) if you are below 0.5.0).
 
 ## 5-minute path
 
@@ -247,7 +260,7 @@ curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
   https://api.hydracept.com/v1/capabilities
 ```
 
-The live catalog is `GET /v1/capabilities` (or `python -m hydracept agent-context`). Do not freeze a launch-key list from this README.
+The live catalog is `GET /v1/capabilities` (or `python -m hydracept agent-context`). Do not freeze a launch-key list from the docs index.
 
 See [Capabilities](./capabilities/) for how capability keys work.
 
@@ -867,6 +880,8 @@ Audio capabilities (`audio.sfx.generate.v1`, `audio.voice.generate.v1`, `audio.m
 `image.generate.v1` width and height snap up to multiples of 16 (Open Graph 1200×630 becomes 1200×640).
 
 3D capabilities (`model.generate.3d.v1`, `model.generate.3d.from-image.v1`) run on Meshy. Use `model.generate.3d.v1` when you have turnaround view artifacts; use `model.generate.3d.from-image.v1` to chain OpenAI turnaround generation from a single concept image. See [5-minute 3D asset](../five-minute-3d-asset/).
+
+`decision.evaluate.v1` evaluates structured state against typed questions. Send `state` (text, object, or array) and `questions`. Each question is `boolean`, `choice`, or `score`. Do not send `model` or chat `messages`; the sealed route selects the model. Output tokens are reported and priced at zero. Sync invoke and durable jobs are both available.
 
 ## Available capabilities
 
@@ -1869,7 +1884,7 @@ Your total                  $1.06
 Check capability discovery for managed availability:
 
 - `GET /v1/capabilities` — inference capabilities include `billingModes.byok` and `billingModes.managed`; domain and CPU processing omit `billingModes`
-- `POST /v1/capabilities/{key}/quote` — firm retail price before you run a job (does not reserve funds). `POST .../estimate` is a 0.2 serialization shim.
+- `POST /v1/capabilities/{key}/quote` — firm retail price before you run a job (does not reserve funds). `POST .../estimate` is the same quote route under an older path name.
 
 Receipts keep the fee snapshot they were created under. Historical charges are never recomputed when the catalog fee changes.
 
@@ -1884,8 +1899,6 @@ Genuinely useful for evaluation, hobby projects, and occasional generation.
 - BYOK and managed execution
 - All generally available capability types
 
-Two concurrent durable jobs is the conversion pressure — not capability gating.
-
 ## Builder ($19 / month)
 
 For a serious individual developer who has outgrown Free.
@@ -1895,8 +1908,6 @@ For a serious individual developer who has outgrown Free.
 - 4,000 lightweight inferences / hour
 - 90-day history
 - Personal provider vault, receipts, artifacts, and normal routing
-
-Primary upgrade trigger: *two concurrent jobs is slowing me down.*
 
 ## Team ($149 / month)
 
@@ -1978,7 +1989,9 @@ URL: https://docs.hydracept.com/errors/
 
 # Errors
 
-Failed API calls return an HTTP status code. Structured capability errors return their Hydracept error information in a `detail` object; some standard HTTP errors use a string or validation details in `detail`.
+Failed API calls return an HTTP status code and a JSON **public error envelope** with `code`, `message`, `requestId`, and `retryable` (plus optional recovery fields such as `nextAction`). Older SDKs also accept nested `detail` objects on some capability routes; new responses use the top-level envelope.
+
+401 responses include a `WWW-Authenticate` header. Common stable codes include `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `CAPABILITY_NOT_FOUND`, `UNKNOWN_CAPABILITY`, `METHOD_NOT_ALLOWED`, and `VALIDATION_ERROR`.
 
 A **job that was successfully admitted and later failed is different**: `GET /v1/jobs/{jobId}` returns the job resource with terminal status `failed` and `error: {code, message}`. Do not confuse an HTTP request error with the error recorded on a durable job.
 
@@ -2017,7 +2030,7 @@ When an endpoint returns a structured capability error, its body has this shape:
 }
 ```
 
-`BudgetExceeded` is returned only when a project or caller has opted into **prevent** mode. Default is no enforcement: spend ceilings are accounting, not a refuse gate. Opt in with `budget.enforcement` / `executionConstraints.budgetEnforcement` (`warn` or `prevent`) plus ceilings, or project `budget_policy_json.enforcement`.
+`BudgetExceeded` is returned only when a project or caller has opted into **prevent** mode. Default is no enforcement: spend ceilings are accounting, not a refuse gate. Opt in with `budget.enforcement` / `executionConstraints.budgetEnforcement` (`warn` or `prevent`) plus ceilings, or your project budget policy enforcement setting in Studio.
 
 | Mode | Admission |
 |------|-----------|
@@ -2027,7 +2040,7 @@ When an endpoint returns a structured capability error, its body has this shape:
 
 Setting `maxCostUsd` / `maximumEstimatedCost` on a request without an explicit mode is caller opt-in to **prevent** for that call.
 
-`detail.code` is the stable Hydracept error code. `detail.message` is a human-readable explanation. Validation failures may use a different `detail` shape.
+`code` is the stable Hydracept error code. `message` is a human-readable explanation. Capability admission errors may still nest extra fields under `detail` for backward compatibility.
 
 ### Unknown or conflicting execution fields
 
@@ -2510,14 +2523,17 @@ Workspace-aware invoke:
 from hydracept import HydraceptWorkspace
 
 with HydraceptWorkspace.open() as hydracept:
-    result = hydracept.invoke("text.general.fast.v1", {"input": {"prompt": "hello"}})
+    result = hydracept.invoke(
+        "text.general.fast.v1",
+        {"input": {"messages": [{"role": "user", "content": "hello"}]}},
+    )
 ```
 
 See [Quick Start](../), [Migrating to 0.5.0](../migrating-0.5.0/), and [Durable jobs](../jobs/).
 
 ## Current release (0.5.1)
 
-Production requires **`pip install -U "hydracept>=0.5.1"`**. Publish **0.5.1** to PyPI, npm, and NuGet before deploying this API revision.
+Install the latest published client: **`pip install -U "hydracept>=0.5.1"`**.
 
 `hydracept init --apply --yes` reports provider keys found locally and uploads **only** when you pass **`--adopt-keys`** (all discovered) or **`--adopt-key-providers openai,...`**. Use **`--no-adopt`** to skip uploads entirely. Older clients call HTTP routes that return **410** `LEGACY_ROUTE_REMOVED`. See [Migrating to 0.5.0](../migrating-0.5.0/).
 

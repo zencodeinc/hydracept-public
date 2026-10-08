@@ -18,6 +18,7 @@ class CapabilityModality(StrEnum):
     MESH = "mesh"
     EMBEDDING = "embedding"
     MODERATION = "moderation"
+    DECISION = "decision"
     INFRASTRUCTURE = "infrastructure"
 
 
@@ -127,6 +128,7 @@ def taxonomy_for_capability(key: str, modality: CapabilityModality) -> tuple[str
         CapabilityModality.TEXT: ("text", "generation"),
         CapabilityModality.EMBEDDING: ("text", "analysis"),
         CapabilityModality.MODERATION: ("text", "analysis"),
+        CapabilityModality.DECISION: ("decision", "evaluation"),
         CapabilityModality.INFRASTRUCTURE: ("domain", "infrastructure"),
     }
     return by_modality.get(modality, ("productivity", "other"))

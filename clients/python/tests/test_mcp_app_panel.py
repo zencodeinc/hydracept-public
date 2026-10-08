@@ -486,6 +486,27 @@ def test_run_and_submit_attach_full_interaction(monkeypatch) -> None:
     assert submitted["interaction"]["data"]["jobId"] == "job_submit"
 
 
+def test_ui_connect_uses_plugin_client_component_from_env(monkeypatch, tmp_path: Path) -> None:
+    from hydracept.cli.init_resolver import InitResult
+    from hydracept.mcp.server import hydracept_ui_connect_project
+
+    captured: dict[str, object] = {}
+
+    def fake_init(root, **kwargs):
+        captured.update(kwargs)
+        return InitResult(exit_code=0, payload={"status": "ready"})
+
+    monkeypatch.setenv("HYDRACEPT_CLIENT_COMPONENT", "plugin")
+    monkeypatch.setattr("hydracept.cli.init_resolver.run_init", fake_init)
+    monkeypatch.setattr("hydracept.mcp.server._project_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        "hydracept.mcp.interaction_hydration.attach_hydrated_interaction",
+        lambda result, *a, **k: result,
+    )
+    hydracept_ui_connect_project(displayName="Arena")
+    assert captured.get("client_component") == "plugin"
+
+
 def test_ui_connect_forwards_environment(monkeypatch, tmp_path: Path) -> None:
     from hydracept.cli.init_resolver import InitResult
     from hydracept.mcp.server import hydracept_ui_connect_project

@@ -1,13 +1,20 @@
 import { randomUUID } from 'node:crypto';
 
 import type { HydraceptHttp } from './http.js';
+import type {
+  HydraceptCapabilityJobSubmitResponse,
+  HydraceptJobReceiptResponse,
+  HydraceptJobStatusResponse,
+  HydraceptPinnedInferenceResponse,
+  HydraceptPinnedReceiptResponse,
+} from './public-runtime-types.js';
 import { iterExecutionStreamEvents } from './sse.js';
 import type { HydraceptRuntimeEvent } from './types.js';
 
-/** Runtime helpers used by trusted product backends (product-backend). */
+/** Runtime helpers for the Hydracept public job and capability API. */
 export function createHydraceptRuntimeApi(http: HydraceptHttp) {
   return {
-    getJob<T = unknown>(jobId: string): Promise<T> {
+    getJob<T = HydraceptJobStatusResponse>(jobId: string): Promise<T> {
       return http.fetchJsonWithRetry<T>(`/jobs/${encodeURIComponent(jobId)}`);
     },
 
@@ -90,7 +97,7 @@ export function createHydraceptRuntimeApi(http: HydraceptHttp) {
       });
     },
 
-    submitCapabilityJob<T = unknown>(
+    submitCapabilityJob<T = HydraceptCapabilityJobSubmitResponse>(
       key: string,
       body: unknown,
       init: RequestInit = {},
@@ -127,7 +134,7 @@ export function createHydraceptRuntimeApi(http: HydraceptHttp) {
       });
     },
 
-    getJobReceipt<T = unknown>(jobId: string): Promise<T> {
+    getJobReceipt<T = HydraceptJobReceiptResponse>(jobId: string): Promise<T> {
       return http.fetchJson<T>(`/jobs/${encodeURIComponent(jobId)}/receipt`);
     },
 
@@ -159,7 +166,10 @@ export function createHydraceptRuntimeApi(http: HydraceptHttp) {
       return http.fetchJson<T>(`/jobs/${encodeURIComponent(jobId)}/cancel`, { method: 'POST' });
     },
 
-    createPinnedInference<T = unknown>(body: unknown, init: RequestInit = {}): Promise<T> {
+    createPinnedInference<T = HydraceptPinnedInferenceResponse>(
+      body: unknown,
+      init: RequestInit = {},
+    ): Promise<T> {
       return http.fetchJson<T>('/inference/pinned', {
         method: 'POST',
         body: JSON.stringify(body),
@@ -179,7 +189,7 @@ export function createHydraceptRuntimeApi(http: HydraceptHttp) {
       return http.fetchJson<T>(`/inference/pinned/bulk/${encodeURIComponent(bulkId)}`);
     },
 
-    getPinnedReceipt<T = unknown>(receiptId: string): Promise<T> {
+    getPinnedReceipt<T = HydraceptPinnedReceiptResponse>(receiptId: string): Promise<T> {
       return http.fetchJson<T>(`/inference/pinned/${encodeURIComponent(receiptId)}`);
     },
 

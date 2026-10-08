@@ -117,7 +117,7 @@ class CapabilityExecutionOptions(BaseModel):
     estimate_id: str | None = Field(
         default=None,
         alias="estimateId",
-        description="Inbound alias of quoteId. Internals consume quoteId / pricing.quote.",
+        description="Inbound alias of quoteId. Prefer quoteId and pricing.quote.",
     )
     maximum_charge: dict | None = Field(default=None, alias="maximumCharge")
     execution_constraints: ExecutionConstraints | None = Field(

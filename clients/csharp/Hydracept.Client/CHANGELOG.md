@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.5.1 — 2026-10-03 (unreleased on NuGet)
+## 0.5.2 (unreleased)
+
+- NuGet README sample compiles (`using Hydracept.Client` and `HydraceptClient(HttpClient, options)`).
+- Optional `HydraceptClient(HydraceptClientOptions)` convenience constructor for DI-free samples.
+- Package includes `LICENSE`.
+
+## 0.5.1 — 2026-10-05 (released)
 
 - `InvokeCapabilityAsync` no longer overwrites a caller-supplied `idempotencyKey`; defaults one only when absent.
 

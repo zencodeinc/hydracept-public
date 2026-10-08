@@ -51,8 +51,9 @@ def test_init_interaction_required_without_session(tmp_path: Path, monkeypatch: 
             side_effect=pending_bootstrap_session_get(session_id),
         ):
             result = run_init(tmp_path, apply=True, yes=True, json_output=True)
-    assert result.exit_code == 0
+    assert result.exit_code == 4
     assert result.payload["status"] == "interaction_required"
+    assert result.payload.get("blocking") is True
     assert result.payload.get("stage") == "authentication"
     assert result.payload["identity"]["status"] == "pending"
     assert result.payload["project"]["status"] == "pending"

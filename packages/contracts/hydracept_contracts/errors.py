@@ -47,6 +47,7 @@ class HydraceptErrorCode(StrEnum):
     ESTIMATE_EXCEEDS_MAX_COST = "EstimateExceedsMaxCost"
     FUNDING_REQUIRED = "FundingRequired"
     PROJECT_CREDENTIAL_MISMATCH = "ProjectCredentialMismatch"
+    PROVIDER_CREDENTIAL_UNAVAILABLE = "ProviderCredentialUnavailable"
     QUOTE_MISMATCH = "QUOTE_MISMATCH"
     ESTIMATE_MISMATCH = "ESTIMATE_MISMATCH"
     REESTIMATE_REQUIRED = "REESTIMATE_REQUIRED"

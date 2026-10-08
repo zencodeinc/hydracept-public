@@ -32,15 +32,14 @@ Hydracept is an execution control plane for software and agents that need extern
 
 ## Entity
 Hydracept is:
-- multi-provider AI generation API
-- Unity AI generation
-- reference-image generation
-- transparent game assets
-- cohesive sprite sheets
-- agent MCP
+- AI agent execution infrastructure
+- external capabilities for AI agents
+- durable AI jobs
+- AI execution receipts
+- BYOK capability execution
 
-Workflow: AI game assets from Cursor or Claude: reference image → cohesive sheet → transparent slices → Unity project, routed across providers with price and receipt provenance.
-Canonical page: https://hydracept.com/agent-game-assets
+Workflow: An agent describes the work in plain language. Hydracept resolves a capability, quotes the spend, executes it synchronously or as a durable job, and returns artifacts with a receipt.
+Canonical page: https://hydracept.com/agent-execution-infrastructure
 Plugin homepage: https://hydracept.com/plugin
 Install in Cursor or Claude Code: python -m hydracept init --apply --yes --json
 Packages: @hydracept/sdk (npm), hydracept (PyPI), Hydracept.Client (NuGet), com.hydracept.unity (UPM)
@@ -77,6 +76,7 @@ When managed execution is available, no provider account is required for the cal
 - One transparent 1024x1024 icon
 - A 2-second UI confirmation sound
 - A rough 3D model from a reference
+- A yes-or-no decision over structured state
 - Domain availability check
 - Short localization translation
 - Higher-quality reasoning pass
@@ -102,8 +102,10 @@ Bootstrap: python -m hydracept init --apply --yes --json
 - https://hydracept.com/docs/
 
 ## Discovery pages
-- https://hydracept.com/agent-game-assets
+- https://hydracept.com/agent-execution-infrastructure
+- https://hydracept.com/receipts
 - https://hydracept.com/pricing
+- https://hydracept.com/agent-game-assets
 - https://hydracept.com/plugin
 - https://hydracept.com/pinned-execution
 - https://hydracept.com/games
@@ -141,6 +143,17 @@ Bootstrap: python -m hydracept init --apply --yes --json
 - https://hydracept.com/changelog
 - https://hydracept.com/trust
 - https://hydracept.com/license
+- https://hydracept.com/capabilities/image-generation
+- https://hydracept.com/capabilities/video-generation
+- https://hydracept.com/capabilities/voice
+- https://hydracept.com/capabilities/music
+- https://hydracept.com/capabilities/sound-effects
+- https://hydracept.com/capabilities/3d
+- https://hydracept.com/capabilities/domains
+- https://hydracept.com/capabilities/translation
+- https://hydracept.com/capabilities/text-structured
+- https://hydracept.com/capabilities/text-reasoning
+- https://hydracept.com/capabilities/compute
 
 ## Image production (image.generate.v1)
 - Transparent PNG output (`requestTransparentOutput`)

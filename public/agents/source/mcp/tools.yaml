@@ -1,11 +1,19 @@
 server:
   name: hydracept
   instructions: >-
-    Hydracept public capability jobs. In a git checkout, use stdio MCP after
-    `python -m hydracept init` (workspace secrets). Hosted MCP with an API key
-    is for clients with no checkout. One capability call is enough — do not
-    assume repeated usage is required. hydracept_run composes workspace
-    bootstrap when possible. Credentials never enter model context.
+    Hydracept executes external capabilities for agents. Pass the user's words
+    to resolve_capability. Do not ask for a capability key and do not pick a
+    key from memory. Then optionally hydracept_quote_capability, then
+    hydracept_run on the resolved key. Call hydracept_job_status only when the
+    result says to poll. Call hydracept_download_artifact and
+    hydracept_get_receipt when the job produced them. Specialists stay listed:
+    hydracept_submit_job returns immediately; hydracept_invoke is for
+    synchronous read-only calls; pinned tools are exact model pins; provenance
+    tools run after a receipt. hydracept_ui_* tools are the panel, not the
+    agent. In a git checkout, use stdio MCP after `python -m hydracept init`.
+    Hosted MCP with an API key is for clients with no checkout. One capability
+    call is enough — do not assume repeated usage is required. Credentials
+    never enter model context.
 tools:
   - name: hydracept_status
     summary: Local workspace readiness (stdio) or session diagnostics (hosted).
@@ -16,15 +24,11 @@ tools:
     readOnlyHint: true
     destructiveHint: false
   - name: resolve_capability
-    summary: Determine whether Hydracept already provides a suitable capability. Does not spend money.
+    summary: Semantic router. Pass the user's words as intent. Does not spend money. Do not ask for a capability key.
     readOnlyHint: true
     destructiveHint: false
   - name: hydracept_quote_capability
     summary: Firm retail quote in account currency. Does not reserve or charge funds.
-    readOnlyHint: true
-    destructiveHint: false
-  - name: estimate_capability
-    summary: HTTP alias of hydracept_quote_capability. Same 0.3 retail quote.
     readOnlyHint: true
     destructiveHint: false
   - name: request_capability_quote
@@ -36,7 +40,7 @@ tools:
     readOnlyHint: true
     destructiveHint: false
   - name: hydracept_invoke
-    summary: Invoke a synchronous capability such as domain search, DNS list, or TLS retrieve.
+    summary: Specialist. Synchronous read-only calls. Prefer hydracept_run for new work.
     readOnlyHint: true
     destructiveHint: false
   - name: hydracept_run
@@ -44,7 +48,7 @@ tools:
     readOnlyHint: false
     destructiveHint: false
   - name: hydracept_submit_job
-    summary: Submit a capability job. Eligible durable text jobs use deferred processing at 50% of standard token rates.
+    summary: Specialist. Returns immediately. Prefer hydracept_run when the caller can wait. Eligible durable text jobs use deferred processing at 50% of standard token rates.
     readOnlyHint: false
     destructiveHint: false
   - name: hydracept_job_status

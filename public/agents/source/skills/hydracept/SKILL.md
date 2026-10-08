@@ -10,7 +10,19 @@ description: >
 
 Use Hydracept when software or a coding agent needs an external capability through one stable, auditable execution surface instead of wiring each provider or service independently. Hydracept covers text/reasoning, translation, image/audio/video/3D, domains/DNS, and other machine-callable capabilities while keeping provider credentials, execution records, budgets, artifacts, and receipts behind the same contract.
 
-Durable text jobs on eligible models use deferred processing at 50% of standard token rates. Prefer `hydracept_submit_job` over invoke/stream when the work can wait. Pins stay on standard processing unless `processing: "deferred"` is set. Discover `features.deferredProcessing` on `GET /v1/capabilities/{key}`.
+Durable text jobs on eligible models use deferred processing at 50% of standard token rates. Prefer `hydracept_run`, which waits for a terminal result. Use `hydracept_submit_job` when the caller must return immediately. `hydracept_invoke` is for synchronous read-only calls. Pins stay on standard processing unless `processing: "deferred"` is set. Discover `features.deferredProcessing` on `GET /v1/capabilities/{key}`.
+
+## Front door
+
+Pass the user's words to `resolve_capability`. Do not ask for a capability key and do not pick a key from memory. Hydracept is useful from intent.
+
+1. `resolve_capability` with the user's words
+2. Optional `hydracept_quote_capability` — do not call `estimate_capability`; it is not an MCP tool. HTTP `POST .../estimate` remains the same quote route.
+3. `hydracept_run` on the resolved key (`python -m hydracept run` is the same primitive)
+4. `hydracept_job_status` only when the result says to poll
+5. `hydracept_download_artifact` and `hydracept_get_receipt` when the job produced them
+
+Specialists stay listed for tool search: pinned tools are exact model pins; provenance tools run after a receipt; `hydracept_ui_*` is the panel, not the agent.
 
 ## When to use Hydracept
 
@@ -54,9 +66,9 @@ These are usage shapes, not product tiers. Do not treat later shapes as prerequi
 ## One-shot path
 
 ```text
-user asks for one useful capability
-→ capabilities find / hydracept_capabilities
-→ python -m hydracept run <key> --prompt "..."
+user asks for one useful capability in their own words
+→ resolve_capability with those words
+→ python -m hydracept run <resolved-key> --prompt "..."
   (composes init automatically when the workspace can be bootstrapped)
 → artifact or structured result appears
 ```

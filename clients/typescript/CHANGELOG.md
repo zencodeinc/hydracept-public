@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.5.1 — 2026-10-03 (unreleased on npm)
+## 0.5.2 (unreleased)
+
+- README samples type-check under `tsc --strict` without extra generics; runtime helpers default to public job/pinned response shapes.
+- Package includes `LICENSE`.
+
+## 0.5.1 — 2026-10-05 (released)
 
 - `invokeCapability` supplies a unique `idempotencyKey` when the caller body omits one (matches Python 0.5.1).
 

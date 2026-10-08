@@ -27,7 +27,7 @@ from hydracept.cli.installed_workspace import (
 from hydracept.cli.connections_cmd import adopt_provider_secret
 from hydracept.cli.doctor import DEFAULT_SMOKE_CAPABILITY, build_doctor_report, doctor_exit_code
 from hydracept.cli.mcp_bind import bind_workspace_mcp
-from hydracept.cli.exit_codes import AUTH, DOCTOR_FAILED, SUCCESS, USAGE
+from hydracept.cli.exit_codes import AUTH, DOCTOR_FAILED, NOT_READY, SUCCESS, USAGE
 from hydracept.cli.login_flow import LoginError, login_with_token
 from hydracept.cli.project import (
     capability_profile,
@@ -143,7 +143,7 @@ def _interaction(
     bootstrap_session_id: str | None = None,
     expires_at: str | None = None,
     wait_available: bool = True,
-    exit_code: int = SUCCESS,
+    exit_code: int = NOT_READY,
     detail: str | None = None,
     local_identity_candidates: list[dict[str, str]] | None = None,
     local_identity: dict[str, Any] | None = None,
@@ -306,11 +306,14 @@ def _post_bootstrap_session(
     api_url: str,
     *,
     binding: dict[str, Any],
+    client_component: str = "cli",
 ) -> tuple[str, str, str | None]:
     """Return the server-issued session id, exact activation URL, and expiry."""
     from hydracept.cli.machine import machine_fingerprint
 
     suggested_name = resolve_suggested_project_name(project_root, binding)
+    from hydracept.cli.client_identity import hydracept_client_headers
+
     response = httpx.post(
         f"{api_url.rstrip('/')}/v1/bootstrap/sessions",
         json={
@@ -322,6 +325,7 @@ def _post_bootstrap_session(
             "environment": binding.get("environment") or "development",
             "detectedProviders": discover_provider_labels(project_root),
         },
+        headers={**hydracept_client_headers(component=client_component)},
         timeout=30.0,
     )
     response.raise_for_status()
@@ -347,6 +351,7 @@ def _resolve_bootstrap_session(
     api_url: str,
     *,
     binding: dict[str, Any],
+    client_component: str = "cli",
 ) -> tuple[str, str, str | None]:
     """Reuse a valid pending session; never make the agent reconstruct its URL."""
     api = api_url.rstrip("/")
@@ -371,6 +376,7 @@ def _resolve_bootstrap_session(
             project_root,
             api,
             binding=binding,
+            client_component=client_component,
         )
         save_bootstrap_session(
             project_root,
@@ -392,9 +398,15 @@ def _create_bootstrap_session(
     api_url: str,
     *,
     binding: dict[str, Any],
+    client_component: str = "cli",
 ) -> tuple[str, str, str | None]:
     if unified_bootstrap_enabled():
-        return _resolve_bootstrap_session(project_root, api_url, binding=binding)
+        return _resolve_bootstrap_session(
+            project_root,
+            api_url,
+            binding=binding,
+            client_component=client_component,
+        )
     return "", _device_verification_url(), None
 
 
@@ -639,9 +651,13 @@ def _bootstrap_interaction(
     json_output: bool = False,
     identity_provider: str | None = None,
     extra: dict[str, Any] | None = None,
+    client_component: str = "cli",
 ) -> InitResult | _BrowserBootstrapResult:
     session_id, connect_url, expires_at = _create_bootstrap_session(
-        project_root, api_url, binding=binding
+        project_root,
+        api_url,
+        binding=binding,
+        client_component=client_component,
     )
     local_candidates: list[dict[str, str]] = []
     local_identity_state: dict[str, Any] = {"attempted": False}
@@ -1204,6 +1220,7 @@ def run_init(
     explicit_environment: str | None = None,
     adopt_providers: frozenset[str] | None = None,
     no_adopt: bool = False,
+    client_component: str = "cli",
 ) -> InitResult:
     if not apply:
         return _interaction(
@@ -1311,6 +1328,7 @@ def run_init(
                 poll_seconds=poll_seconds,
                 json_output=json_output,
                 identity_provider=identity_provider,
+                client_component=client_component,
             )
             if isinstance(browser_outcome, _BrowserBootstrapResult):
                 api_key = browser_outcome.api_key
@@ -1392,6 +1410,7 @@ def run_init(
                         "projectResolution": project_resolution,
                         "detail": _project_selection_detail(identity, project_resolution),
                     },
+                    client_component=client_component,
                 )
                 if isinstance(browser_outcome, _BrowserBootstrapResult):
                     api_key = browser_outcome.api_key
@@ -1425,6 +1444,7 @@ def run_init(
             poll_seconds=poll_seconds,
             json_output=json_output,
             identity_provider=identity_provider,
+            client_component=client_component,
         )
         if isinstance(browser_outcome, _BrowserBootstrapResult):
             api_key = browser_outcome.api_key
@@ -1489,6 +1509,7 @@ def run_init(
                         wait=wait,
                         poll_seconds=poll_seconds,
                         json_output=json_output,
+                        client_component=client_component,
                     )
         readiness = _fetch_readiness(api, api_key, profile)
 

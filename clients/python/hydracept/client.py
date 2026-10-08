@@ -38,6 +38,8 @@ from hydracept.job_lifecycle import (
 )
 from hydracept.job_progress import JobProgress, emit_progress
 
+DEFAULT_BASE_URL = "https://api.hydracept.com"
+
 
 @dataclass(frozen=True)
 class BoundWorkspace:
@@ -56,22 +58,23 @@ class HydraceptClient:
 
     def __init__(
         self,
-        base_url: str,
-        token: str,
+        base_url: str | None = None,
+        token: str | None = None,
         *,
         timeout: float = READ_TIMEOUT_SECONDS,
         workspace: Any | None = None,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
-        self.base_url = base_url.rstrip("/")
-        self.token = token
+        self.base_url = (base_url or DEFAULT_BASE_URL).rstrip("/")
+        self.token = (token or "").strip()
         self.workspace = workspace
         self._timeout = http_timeout(timeout)
         headers = {
-            "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
             **hydracept_client_headers(component="python-sdk"),
         }
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
         self._http = httpx.Client(
             base_url=self.base_url,
             headers=headers,

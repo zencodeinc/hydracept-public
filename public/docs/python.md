@@ -19,14 +19,17 @@ Workspace-aware invoke:
 from hydracept import HydraceptWorkspace
 
 with HydraceptWorkspace.open() as hydracept:
-    result = hydracept.invoke("text.general.fast.v1", {"input": {"prompt": "hello"}})
+    result = hydracept.invoke(
+        "text.general.fast.v1",
+        {"input": {"messages": [{"role": "user", "content": "hello"}]}},
+    )
 ```
 
 See [Quick Start](../), [Migrating to 0.5.0](../migrating-0.5.0/), and [Durable jobs](../jobs/).
 
-## Current release (0.5.1)
+## Current release ({{HYDRACEPT_PUBLISHED_CLIENT}})
 
-Production requires **`pip install -U "hydracept>=0.5.1"`**. Publish **0.5.1** to PyPI, npm, and NuGet before deploying this API revision.
+Install the latest published client: **`pip install -U "hydracept>={{HYDRACEPT_PUBLISHED_CLIENT}}"`**.
 
 `hydracept init --apply --yes` reports provider keys found locally and uploads **only** when you pass **`--adopt-keys`** (all discovered) or **`--adopt-key-providers openai,...`**. Use **`--no-adopt`** to skip uploads entirely. Older clients call HTTP routes that return **410** `LEGACY_ROUTE_REMOVED`. See [Migrating to 0.5.0](../migrating-0.5.0/).
 
