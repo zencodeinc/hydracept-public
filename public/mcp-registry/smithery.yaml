@@ -1,0 +1,21 @@
+# Smithery remote MCP listing for Hydracept (synced to zencodeinc/hydracept-public).
+# Cosmetic metadata is edited in the Smithery panel after URL publish.
+# Docs: https://smithery.ai/docs/build/project-config
+
+name: hydracept
+target: remote
+
+startCommand:
+  type: streamableHttp
+  url: https://api.hydracept.com/mcp/compact
+  configSchema:
+    type: object
+    properties:
+      apiKey:
+        type: string
+        description: Hydracept API key from https://hydracept.com/start
+    required:
+      - apiKey
+    additionalProperties: false
+  exampleConfig:
+    apiKey: "<HYDRACEPT_API_KEY>"
