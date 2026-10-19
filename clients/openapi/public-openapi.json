@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Hydracept Public API",
-    "version": "0.5.1",
+    "version": "0.5.2",
     "x-hydracept-caller-context-limits": {
       "metadataMaxBytes": {
         "value": 16384,
@@ -1837,145 +1837,6 @@
         ]
       }
     },
-    "/v1/capabilities/document.verify.v1/invoke": {
-      "post": {
-        "tags": [
-          "public_api",
-          "external",
-          "capabilities"
-        ],
-        "summary": "Invoke blind document evidence extraction",
-        "operationId": "invoke_document_verify_v1_capabilities_document_verify_v1_invoke_post",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CapabilityInvokeRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HydraceptInvocationResult"
-                }
-              }
-            }
-          },
-          "422": {
-            "$ref": "#/components/responses/PublicValidationError"
-          },
-          "401": {
-            "$ref": "#/components/responses/PublicError"
-          },
-          "403": {
-            "$ref": "#/components/responses/PublicError"
-          },
-          "402": {
-            "$ref": "#/components/responses/PublicError"
-          },
-          "429": {
-            "$ref": "#/components/responses/PublicError"
-          },
-          "409": {
-            "$ref": "#/components/responses/PublicError"
-          },
-          "500": {
-            "$ref": "#/components/responses/PublicError"
-          },
-          "502": {
-            "$ref": "#/components/responses/PublicError"
-          },
-          "503": {
-            "$ref": "#/components/responses/PublicError"
-          }
-        },
-        "x-hydracept-surface": "public_api",
-        "x-hydracept-auth": "service_principal",
-        "x-hydracept-client-codegen": true,
-        "security": [
-          {
-            "HydraceptApiKey": []
-          }
-        ]
-      }
-    },
-    "/v1/capabilities/document.verify.v1/jobs": {
-      "post": {
-        "tags": [
-          "public_api",
-          "external",
-          "capabilities"
-        ],
-        "summary": "Submit blind document evidence job",
-        "operationId": "submit_document_verify_job_v1_capabilities_document_verify_v1_jobs_post",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CapabilityJobRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HydraceptJob"
-                }
-              }
-            }
-          },
-          "422": {
-            "$ref": "#/components/responses/PublicValidationError"
-          },
-          "401": {
-            "$ref": "#/components/responses/PublicError"
-          },
-          "403": {
-            "$ref": "#/components/responses/PublicError"
-          },
-          "402": {
-            "$ref": "#/components/responses/PublicError"
-          },
-          "429": {
-            "$ref": "#/components/responses/PublicError"
-          },
-          "409": {
-            "$ref": "#/components/responses/PublicError"
-          },
-          "500": {
-            "$ref": "#/components/responses/PublicError"
-          },
-          "502": {
-            "$ref": "#/components/responses/PublicError"
-          },
-          "503": {
-            "$ref": "#/components/responses/PublicError"
-          }
-        },
-        "x-hydracept-surface": "public_api",
-        "x-hydracept-auth": [
-          "service_principal",
-          "panel_session"
-        ],
-        "x-hydracept-client-codegen": true,
-        "security": [
-          {
-            "HydraceptApiKey": []
-          }
-        ]
-      }
-    },
     "/v1/capabilities/resolve": {
       "post": {
         "summary": "Resolve Capability",
@@ -2794,6 +2655,9 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
           "403": {
             "$ref": "#/components/responses/PublicError"
           }
@@ -3586,6 +3450,76 @@
         ]
       }
     },
+    "/v1/jobs/{job_id}/public-receipt-verification": {
+      "delete": {
+        "tags": [
+          "public_api",
+          "external",
+          "capabilities"
+        ],
+        "summary": "Revoke public receipt verification for a job",
+        "operationId": "revoke_job_public_receipt_verification_route_v1_jobs__job_id__public_receipt_verification_delete",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Revoke Job Public Receipt Verification Route V1 Jobs  Job Id  Public Receipt Verification Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "service_principal",
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
     "/v1/jobs/{job_id}/artifacts/{artifact_id}": {
       "get": {
         "tags": [
@@ -3613,6 +3547,24 @@
               "type": "string",
               "title": "Artifact Id"
             }
+          },
+          {
+            "name": "includeVerifiableProvenance",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "When the project has includeVerifiableProvenanceInExports enabled, set true to opt this job into public receipt verification and embed the verification URL in PNG/GLB bytes (requires X-Hydracept-Export-Metadata: 1 or ?exportMetadata=1 on the same request). Neutral generator identification uses the export-metadata opt-in and project/org settings.",
+              "title": "Includeverifiableprovenance"
+            },
+            "description": "When the project has includeVerifiableProvenanceInExports enabled, set true to opt this job into public receipt verification and embed the verification URL in PNG/GLB bytes (requires X-Hydracept-Export-Metadata: 1 or ?exportMetadata=1 on the same request). Neutral generator identification uses the export-metadata opt-in and project/org settings."
           }
         ],
         "responses": {
@@ -6942,6 +6894,77 @@
         ]
       }
     },
+    "/v1/billing/wallet/executions/{execution_id}/settlement": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "billing"
+        ],
+        "summary": "Get Execution Wallet Settlement Route",
+        "operationId": "get_execution_wallet_settlement_route_v1_billing_wallet_executions__execution_id__settlement_get",
+        "parameters": [
+          {
+            "name": "execution_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Execution Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Execution Wallet Settlement Route V1 Billing Wallet Executions  Execution Id  Settlement Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": [
+          "service_principal",
+          "human_session"
+        ],
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
     "/v1/billing/wallet/transactions": {
       "get": {
         "tags": [
@@ -9925,6 +9948,64 @@
         ]
       }
     },
+    "/v1/public/receipts/{receipt_id}": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "public"
+        ],
+        "summary": "Get Public Receipt Verification",
+        "operationId": "get_public_receipt_verification_v1_public_receipts__receipt_id__get",
+        "parameters": [
+          {
+            "name": "receipt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Receipt Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Public Receipt Verification V1 Public Receipts  Receipt Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "404": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "anonymous",
+        "x-hydracept-client-codegen": true,
+        "security": []
+      }
+    },
     "/v1/projects/{project_id}/references": {
       "get": {
         "tags": [
@@ -12270,6 +12351,18 @@
             ],
             "title": "Sha256"
           },
+          "exportSha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exportsha256",
+            "description": "SHA-256 of default export bytes (neutral generator metadata) when they differ from sha256."
+          },
           "byteLength": {
             "anyOf": [
               {
@@ -13193,6 +13286,30 @@
               }
             ],
             "title": "Receipthash"
+          },
+          "generator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generator",
+            "description": "Passive first-party generator label when org/project allows attribution."
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url",
+            "description": "Public receipt URL (https://hydracept.com/r/{receiptId}) when attribution is enabled."
           },
           "execution": {
             "anyOf": [
@@ -14598,6 +14715,36 @@
         ],
         "title": "ProjectCreate"
       },
+      "ProjectExportSettingsPatch": {
+        "properties": {
+          "neutralGeneratorIdentificationEnabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neutralgeneratoridentificationenabled",
+            "description": "When false, opt out of default Software/generator identification on PNG/GLB exports."
+          },
+          "includeVerifiableProvenanceInExports": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Includeverifiableprovenanceinexports",
+            "description": "When true, opt in to embedding a public receipt verification URL in PNG/GLB exports (when verification is available)."
+          }
+        },
+        "type": "object",
+        "title": "ProjectExportSettingsPatch"
+      },
       "ProjectJobListItem": {
         "properties": {
           "jobId": {
@@ -14772,6 +14919,16 @@
             "type": "boolean",
             "title": "Clearrepository",
             "default": false
+          },
+          "exportSettings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectExportSettingsPatch"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "environments": {
             "items": {

@@ -57,6 +57,20 @@ export function normalizeSha256Digest(value: string | undefined | null): string 
   return raw;
 }
 
+export function expectedArtifactDownloadSha256(
+  item: Record<string, unknown>,
+  exportHeader?: string | null,
+): string {
+  if (exportHeader) return normalizeSha256Digest(exportHeader);
+  const exportField = item.exportSha256;
+  if (exportField) return normalizeSha256Digest(String(exportField));
+  const nested =
+    item.digest && typeof item.digest === 'object'
+      ? (item.digest as Record<string, unknown>)
+      : {};
+  return normalizeSha256Digest(String(item.sha256 || nested.sha256 || ''));
+}
+
 function filenameForDownload(item: Record<string, unknown>, artifactId: string): string {
   const media = String(item.mediaType || item.mimeType || '')
     .split(';')[0]
@@ -126,17 +140,14 @@ export function createHydraceptJobRunner(
         for (const item of artifacts) {
           const artifactId = String(item.artifactId || item.id || '');
           if (!artifactId) continue;
-          const buffer = await client.http.fetchBytes(
-            `/jobs/${encodeURIComponent(jobId)}/artifacts/${encodeURIComponent(artifactId)}`,
-          );
+          const path = `/jobs/${encodeURIComponent(jobId)}/artifacts/${encodeURIComponent(artifactId)}`;
+          const res = await client.http.fetchResponse(path, {
+            headers: { 'X-Hydracept-Export-Metadata': '1' },
+          });
+          const buffer = await res.arrayBuffer();
           const bytes = new Uint8Array(buffer);
-          const nested =
-            item.digest && typeof item.digest === 'object'
-              ? (item.digest as Record<string, unknown>)
-              : {};
-          const expected = normalizeSha256Digest(
-            String(item.sha256 || nested.sha256 || ''),
-          );
+          const exportHeader = res.headers.get('X-Hydracept-Export-Sha256');
+          const expected = expectedArtifactDownloadSha256(item, exportHeader);
           const actual = createHash('sha256').update(bytes).digest('hex');
           if (expected && expected !== actual) {
             throw new Error(`SHA-256 mismatch for ${artifactId}`);

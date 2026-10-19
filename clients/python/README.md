@@ -49,6 +49,10 @@ python -m hydracept smoke
 
 Native integrations for **Cursor**, **Claude Code**, and **Google Antigravity** ship via the Agent Pack (`agents install`). Session hooks inject local readiness only — smoke is explicit.
 
+## MCP tool profiles
+
+`tools/list` is fixed for the MCP process lifetime. Stdio defaults to **full** (all specialists). Set **`HYDRACEPT_MCP_TOOL_PROFILE=compact`** (or `python -m hydracept mcp serve --tool-profile compact`) for the nine first-time-agent tools. On the **full** profile (stdio default), `tools/list` includes legacy names such as `resolve_capability`, `request_capability_quote`, and `get_capability_request_quote`; matching `hydracept_*` names work on `tools/call` only. On **compact**, `tools/list` uses `hydracept_*` names only. Hosted **`POST https://api.hydracept.com/mcp`** and **`POST /mcp/full`** expose the full tools/list (unchanged for existing clients). **`POST https://api.hydracept.com/mcp/compact`** exposes the compact list (Glama opt-in; the registry remote stays `/mcp`).
+
 ## Agent / CI path (secret via env, not prompt)
 
 ```bash

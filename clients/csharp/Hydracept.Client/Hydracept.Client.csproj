@@ -8,7 +8,7 @@
     <RootNamespace>Hydracept.Client</RootNamespace>
     <AssemblyName>Hydracept.Client</AssemblyName>
     <Description>Thin HTTP + SSE client for the Hydracept public API — execution control plane for software and agents, with a receipt for every run.</Description>
-    <Version>0.5.2</Version>
+    <Version>0.5.3</Version>
     <Authors>Zencode</Authors>
     <PackageId>Hydracept.Client</PackageId>
     <PackageTags>hydracept;ai-agent-infrastructure;agent-execution;ai-execution;mcp;agent-tools;ai-capabilities;multi-provider;durable-jobs;byok;receipts;image-generation;video-generation;audio-generation;3d-generation;game-assets;unity;sprite-sheet;transparent-png;reference-image;gamedev;game-ai</PackageTags>
@@ -18,6 +18,10 @@
     <IsPackable>true</IsPackable>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>false</EmbedUntrackedSources>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <SourceLinkCreate>false</SourceLinkCreate>
   </PropertyGroup>
 
   <ItemGroup>

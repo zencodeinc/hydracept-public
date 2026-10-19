@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock
 
 from hydracept.mcp.panel import APP_URI, create_apps, load_app_html
@@ -358,8 +359,25 @@ def test_download_tool_rejects_conflicting_output_aliases() -> None:
     assert result.structured_content["error"] is True
 
 
-def test_panel_tools_are_callable_without_app_visibility() -> None:
+def _reload_stdio_server(*, profile: str) -> tuple[Any, Any]:
+    import importlib
+    import os
+    import sys
+
+    from hydracept.mcp.tool_profiles import MCP_TOOL_PROFILE_ENV, normalize_mcp_tool_profile
+
+    os.environ[MCP_TOOL_PROFILE_ENV] = normalize_mcp_tool_profile(profile)
+    if "hydracept.mcp.server" in sys.modules:
+        importlib.reload(sys.modules["hydracept.mcp.server"])
     from hydracept.mcp.server import apps, server
+
+    return apps, server
+
+
+def test_panel_tools_are_callable_without_app_visibility() -> None:
+    from hydracept_contracts.mcp_tool_profiles import MCP_TOOL_PROFILE_FULL
+
+    apps, server = _reload_stdio_server(profile=MCP_TOOL_PROFILE_FULL)
 
     visibility = {}
     for binding, _uri in apps._tools:

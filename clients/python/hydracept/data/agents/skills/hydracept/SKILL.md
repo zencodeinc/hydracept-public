@@ -14,15 +14,15 @@ Durable text jobs on eligible models use deferred processing at 50% of standard 
 
 ## Front door
 
-Pass the user's words to `resolve_capability`. Do not ask for a capability key and do not pick a key from memory. Hydracept is useful from intent.
+Pass the user's words to `resolve_capability` (listed on `/mcp`, `/mcp/full`, and stdio default) or `hydracept_resolve_capability` (listed on `/mcp/compact`). Both names work on MCP `tools/call`. Do not ask for a capability key and do not pick a key from memory. Hydracept is useful from intent.
 
-1. `resolve_capability` with the user's words
+1. Resolve with the user's words (`resolve_capability` on full surfaces; `hydracept_resolve_capability` on compact)
 2. Optional `hydracept_quote_capability` — do not call `estimate_capability`; it is not an MCP tool. HTTP `POST .../estimate` remains the same quote route.
 3. `hydracept_run` on the resolved key (`python -m hydracept run` is the same primitive)
 4. `hydracept_job_status` only when the result says to poll
 5. `hydracept_download_artifact` and `hydracept_get_receipt` when the job produced them
 
-Specialists stay listed for tool search: pinned tools are exact model pins; provenance tools run after a receipt; `hydracept_ui_*` is the panel, not the agent.
+On full surfaces, specialists stay listed for tool search: pinned tools are exact model pins; provenance tools run after a receipt. Compact hosted MCP (`POST /mcp/compact`) lists nine tools — use `POST /mcp/full` for the full specialist tools/list. `hydracept_ui_*` is the panel, not the agent.
 
 ## When to use Hydracept
 
@@ -67,7 +67,7 @@ These are usage shapes, not product tiers. Do not treat later shapes as prerequi
 
 ```text
 user asks for one useful capability in their own words
-→ resolve_capability with those words
+→ resolve_capability (or hydracept_resolve_capability on /mcp/compact) with those words
 → python -m hydracept run <resolved-key> --prompt "..."
   (composes init automatically when the workspace can be bootstrapped)
 → artifact or structured result appears
@@ -75,9 +75,9 @@ user asks for one useful capability in their own words
 
 Do not tell the user "set up Hydracept first and then we can…" when `run` can compose bootstrap. If a genuine human boundary occurs (`interaction_required`, purchase, missing funding, irreversible action), surface it normally.
 
-Never ask the user to paste a provider API key when `execution.managedAvailable` is true.
+Never ask the user to paste a provider API key when `execution.managedInferenceAvailable` is true.
 
-`GET /v1/capabilities` exposes `readySummary`, `execution.oneShot`, `execution.managedAvailable`, `execution.trialEligible`, `funding`, `output.kind`, and `billingModes` on inference capabilities. Domain and CPU processing omit `billingModes`. Quotes do not consume managed first-use capacity. Find: `python -m hydracept capabilities find "generate an image"` or `GET /v1/capabilities?q=generate+an+image`.
+`GET /v1/capabilities` exposes `readySummary`, `execution.oneShot`, `execution.managedInferenceAvailable`, `execution.inferenceProviderSetupRequired`, `execution.trialEligible`, `funding.status`, `output.kind`, and `billingModes` on inference capabilities. Domain and CPU processing omit `billingModes`. Quotes do not consume managed first-use capacity. Find: `python -m hydracept capabilities find "generate an image"` or `GET /v1/capabilities?q=generate+an+image`.
 
 ## Operating path (do this, not the undocumented workaround)
 
@@ -134,7 +134,7 @@ upgrade CLI → init → find capability → describe → run → poll → artif
 1. **Discover** — `GET /v1/agent-context` (live), MCP `hydracept_capabilities`, or `https://hydracept.com/.well-known/hydracept.json`.
 2. **Authenticate** — run `python -m hydracept init --apply --yes --json`. If it returns `interaction_required`, stop automation. Follow `presentation.agentAction`: `present_and_yield` means invoke `hydracept_interaction_surface` once and stop the turn. Otherwise present `action.url` verbatim and stop. Do **not** start `--wait` or continue diagnostics until the human confirms activation; only then run `afterCompletion.command`. Hosted MCP uses `Authorization: Bearer <HYDRACEPT_API_KEY>` only when there is no checkout.
 3. **Inspect capabilities** — MCP `hydracept_capabilities` or `GET /v1/capabilities`. Read `pricing.pricingFactors`. Catalog prices are `pricingContext: catalog_default` and are **not** authoritative for execution.
-4. **Resolve gaps** — If the needed work is not listed, call MCP `resolve_capability` (`POST /v1/capabilities/resolve`). Missing capabilities are a normal outcome. `no_match_requestable` may lead to MCP `request_capability_quote` (non-binding; humans pay).
+4. **Resolve gaps** — If the needed work is not listed, call MCP `resolve_capability` / `hydracept_resolve_capability` (`POST /v1/capabilities/resolve`). Missing capabilities are a normal outcome. `no_match_requestable` may lead to MCP `request_capability_quote` / `hydracept_request_capability_quote` (full surfaces only; non-binding; humans pay).
 5. **Quote (optional)** — MCP `hydracept_quote_capability` (`POST /v1/capabilities/{key}/quote`) for a retail quote (`pricing.quote`). Quotes **do not spend or reserve** wallet funds. **Do not** attach a stale `execution.quoteId`. `POST .../estimate` is the same route.
 6. **Run** — `python -m hydracept run` or MCP `hydracept_run`. **Omit `execution.quoteId`.** The API seals pricing at admission. `hydracept_submit_job` remains expert plumbing.
 7. **Domain / DNS** — `hydracept_invoke` for read-only keys (`domain.search.v1`, `domain.list.v1`, DNS list). Filter `domain.list.v1` with `domain` or `nameContains` (not a raw query body) and read `typedOutput`. `hydracept_submit_job` for `domain.register.v1` / transfers (human price approval). `dns.record.create.v1` upserts an existing ALIAS/conflict; otherwise list records then `dns.record.update.v1` with `recordId`.

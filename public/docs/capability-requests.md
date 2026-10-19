@@ -99,8 +99,8 @@ python -m hydracept capability-request quote cr_...
 
 ## MCP
 
-- `request_capability_quote` — create and submit a request (non-binding).
-- `get_capability_request_quote` — read the commission quote.
+- `request_capability_quote` — create and submit a request (non-binding). Full surfaces only (`/mcp`, `/mcp/full`, stdio default). Not listed on `/mcp/compact`.
+- `get_capability_request_quote` — read the commission quote. Full surfaces only; not on `/mcp/compact`.
 
 ## Semantics and guarantees
 

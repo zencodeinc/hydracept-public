@@ -1,5 +1,7 @@
 # @hydracept/sdk
 
+<!-- mcp-name: com.hydracept/hydracept -->
+
 TypeScript client for the Hydracept public API — an execution control plane for software and agents that need external capabilities.
 
 Free for individual developers. BYOK at 0% Hydracept fee; managed inference is provider price + 6%.

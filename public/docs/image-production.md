@@ -105,8 +105,8 @@ For a single asset:
 
 Hydracept treats transparency as an **output contract**. The catalog model record decides the default path:
 
-- **Native alpha** when `nativeTransparentBackground` is true (gpt-image-2, gpt-image-1). Hydracept sends `background: "transparent"` and does **not** chroma-key or run matte v9.
-- **Chroma-key matte** when the model has no native alpha, or when the client sets advanced `transparencyMethod: "matte-v9"`.
+- **Native alpha** when `nativeTransparentBackground` is true (gpt-image-2, gpt-image-1, and later gpt-image-2.x models). Hydracept sends `background: "transparent"` and does **not** chroma-key or run matte v9. A client `transparencyMethod` of `matte-v9` is ignored on these models.
+- **Chroma-key matte** only when the model has no native alpha.
 
 Optional `keyColor` and `transparentRegions` apply only to the matte path.
 

@@ -70,6 +70,15 @@ from hydracept.job_lifecycle import JobWaitTimeout
 
 app = typer.Typer(help="Hydracept public CLI — AI execution control plane.")
 capabilities_app = typer.Typer(help="Capability discovery and invoke")
+
+
+@capabilities_app.callback(invoke_without_command=True)
+def capabilities_group(ctx: typer.Context) -> None:
+    if ctx.invoked_subcommand is None:
+        console.print(ctx.get_help())
+        raise typer.Exit(0)
+
+
 capability_request_app = typer.Typer(help="Non-binding capability implementation requests")
 jobs_app = typer.Typer(help="Durable jobs")
 pinned_app = typer.Typer(help="Pinned Execution (RIP)")
@@ -1006,8 +1015,22 @@ def mcp_serve_cmd(
         "--workspace",
         help="Absolute project root. Authoritative locator for stdio MCP.",
     ),
+    tool_profile: str | None = typer.Option(
+        None,
+        "--tool-profile",
+        help=(
+            "MCP tools/list profile: compact (9-tool default path) or full (all specialists). "
+            "Also set via HYDRACEPT_MCP_TOOL_PROFILE for the process lifetime."
+        ),
+    ),
 ) -> None:
     """Run the Hydracept stdio MCP server."""
+    import os
+
+    from hydracept.mcp.tool_profiles import MCP_TOOL_PROFILE_ENV, normalize_mcp_tool_profile
+
+    if tool_profile is not None:
+        os.environ[MCP_TOOL_PROFILE_ENV] = normalize_mcp_tool_profile(tool_profile)
     from hydracept.mcp.server import configure_workspace, serve_stdio
 
     configure_workspace(workspace or Path.cwd())

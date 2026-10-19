@@ -5,7 +5,13 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from hydracept.jobs import filename_for_download, normalize_sha256_digest, JobRunner
+from hydracept.jobs import (
+    expected_artifact_download_sha256,
+    filename_for_download,
+    normalize_sha256_digest,
+    JobRunner,
+)
+from hydracept_contracts.passive_artifact_metadata import embed_png_export_metadata
 
 
 def test_normalize_sha256_strips_prefix() -> None:
@@ -29,10 +35,10 @@ def test_download_artifacts_accepts_sha256_prefix(tmp_path: Path) -> None:
     digest = hashlib.sha256(payload).hexdigest()
 
     class _Client:
-        def download_job_artifact(self, job_id: str, artifact_id: str) -> bytes:
+        def download_job_artifact_with_headers(self, job_id: str, artifact_id: str) -> tuple[bytes, dict[str, str]]:
             assert job_id == "job_1"
             assert artifact_id == "art_1"
-            return payload
+            return payload, {}
 
     runner = JobRunner(_Client(), workspace=None)  # type: ignore[arg-type]
     paths = runner.download_artifacts(
@@ -58,8 +64,8 @@ def test_download_artifacts_accepts_nested_digest(tmp_path: Path) -> None:
     digest = hashlib.sha256(payload).hexdigest()
 
     class _Client:
-        def download_job_artifact(self, job_id: str, artifact_id: str) -> bytes:
-            return payload
+        def download_job_artifact_with_headers(self, job_id: str, artifact_id: str) -> tuple[bytes, dict[str, str]]:
+            return payload, {}
 
     runner = JobRunner(_Client(), workspace=None)  # type: ignore[arg-type]
     paths = runner.download_artifacts(
@@ -76,3 +82,41 @@ def test_download_artifacts_accepts_nested_digest(tmp_path: Path) -> None:
         tmp_path,
     )
     assert paths == [tmp_path / "art_ogg.ogg"]
+
+
+def test_download_artifacts_verifies_export_sha256(tmp_path: Path) -> None:
+    canonical = b"\x89PNG\r\n\x1a\n" + b"rest-of-png"
+    exported = embed_png_export_metadata(canonical, include_generator=True)
+    export_digest = hashlib.sha256(exported).hexdigest()
+    canonical_digest = hashlib.sha256(canonical).hexdigest()
+
+    class _Client:
+        def download_job_artifact_with_headers(self, job_id: str, artifact_id: str) -> tuple[bytes, dict[str, str]]:
+            assert job_id == "job_1"
+            assert artifact_id == "art_1"
+            return exported, {"X-Hydracept-Export-Sha256": export_digest}
+
+    runner = JobRunner(_Client(), workspace=None)  # type: ignore[arg-type]
+    paths = runner.download_artifacts(
+        "job_1",
+        {
+            "artifacts": [
+                {
+                    "artifactId": "art_1",
+                    "sha256": canonical_digest,
+                    "exportSha256": export_digest,
+                    "mediaType": "image/png",
+                    "filename": "out",
+                }
+            ]
+        },
+        tmp_path,
+    )
+    assert paths == [tmp_path / "out.png"]
+    assert paths[0].read_bytes() == exported
+
+
+def test_expected_artifact_download_sha256_prefers_export_header() -> None:
+    item = {"sha256": "a" * 64, "exportSha256": "b" * 64}
+    assert expected_artifact_download_sha256(item, export_header="c" * 64) == "c" * 64
+    assert expected_artifact_download_sha256(item) == "b" * 64

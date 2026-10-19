@@ -93,7 +93,10 @@ Responses `json_schema`:
 Python SDK:
 
 ```python
+import os
+
 from hydracept import HydraceptClient
+
 client = HydraceptClient(os.environ["HYDRACEPT_API_URL"], os.environ["HYDRACEPT_API_KEY"])
 result = client.create_pinned_inference({
     "pin": {"provider": "openai", "model": "gpt-5.6-sol", "api": "responses"},

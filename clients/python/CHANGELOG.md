@@ -1,6 +1,14 @@
 # Changelog
 
-## 0.5.2 (unreleased)
+## 0.5.3 (unreleased)
+
+- MCP discovery profiles: stdio defaults to **full**; **compact** is opt-in (`HYDRACEPT_MCP_TOOL_PROFILE=compact` or `--tool-profile compact`).
+- **Hosted:** **`POST /mcp/compact`** lists eleven `hydracept_*` tools. **`POST /mcp`** and **`POST /mcp/full`** keep **main-compatible** `tools/list` names and input schemas (38 tools; `resolve_capability`, `request_capability_quote`, `get_capability_request_quote` stay listed; matching `hydracept_*` names are `tools/call` aliases only). Descriptions may improve; schemas are locked to main `9a40f495`.
+- **MCP:** compact adds `hydracept_jobs_find` and `hydracept_cancel_job`. The readiness tool is `hydracept_workspace_status` on compact; full surfaces keep the compatible `hydracept_status` list name, and the new name works on `tools/call`. Cancellation is explicit only, reports accepted/terminal state, and never promises upstream work stopped or that cost was refunded.
+- Vendored MCP tool documentation (`hydracept.mcp.tool_documentation*`) synced with contracts; stdio full profile keeps main-compatible listed names for the commission-quote tools.
+- Selection benchmark (local, not CI): `python scripts/run_mcp_tool_selection_benchmark.py` with `MCP_SELECTION_BENCHMARK_API_KEY`.
+
+## 0.5.2 — 2026-10-07 (released)
 
 - Public job error taxonomy: `ProviderCredentialUnavailable` when a stored BYOK credential cannot be decrypted, or when no BYOK credential is bound for the candidate provider. Re-register the key for that provider. BYOK does not fall back to platform keys.
 - Invoke results include `selectedCandidateId`, `servedCandidateId`, `credentialMode`, and `credentialSource`. `servedCandidateId` is `provider:model:capability` for the client that ran, using the model that client posted. A dated snapshot echoed by the provider does not replace it. `credentialSource` is `customer` or `platform` from the key that was resolved. Replays of the same idempotency key return those stored values.

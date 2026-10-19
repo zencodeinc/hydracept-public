@@ -41,7 +41,7 @@ python -m hydracept agents install --auto
 | CLI (all hosts) | `python -m hydracept agents install --auto` |
 | Cursor | Not in the Cursor Marketplace yet — install from `zencodeinc/hydracept-plugin` (tag v0.1.10) or `python -m hydracept agents install --auto` |
 | Claude Code | `github.com/zencodeinc/hydracept-plugin` (v0.1.10) or `python -m hydracept agents install --auto` |
-| MCP Registry | `com.hydracept/mcp` at `https://api.hydracept.com/mcp` |
+| MCP Registry | `com.hydracept/hydracept` at `https://api.hydracept.com/mcp` |
 
 The marketplace name (`hydracept`) participates in the Claude install command.
 

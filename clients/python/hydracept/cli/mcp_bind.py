@@ -194,8 +194,12 @@ def stdio_server_entry(
     cursor_placeholder: bool = False,
 ) -> dict[str, Any]:
     args = stdio_args(project_root, cursor_placeholder=cursor_placeholder)
+    from hydracept.mcp.tool_profiles import MCP_TOOL_PROFILE_ENV, MCP_TOOL_PROFILE_FULL
+
     env: dict[str, str] = {
         "HYDRACEPT_MCP_GENERATION": binding_generation(project_root, args),
+        # Project checkout agents need specialist/project tools; hosted default stays compact.
+        MCP_TOOL_PROFILE_ENV: MCP_TOOL_PROFILE_FULL,
     }
     if cursor_placeholder or project_root is None:
         env["HYDRACEPT_WORKSPACE"] = CURSOR_WORKSPACE_PLACEHOLDER
@@ -230,7 +234,8 @@ def _is_stdio_hydracept(entry: Any) -> bool:
 def _is_hydracept_owned_entry(entry: Any) -> bool:
     if not isinstance(entry, dict):
         return False
-    return _is_stdio_hydracept(entry) or "api.hydracept.com/mcp" in str(entry.get("url") or "")
+    url = str(entry.get("url") or "")
+    return _is_stdio_hydracept(entry) or "api.hydracept.com/mcp" in url
 
 
 def _entry_generation(entry: Any) -> str:

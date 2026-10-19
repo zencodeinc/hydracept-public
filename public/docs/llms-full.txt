@@ -9,9 +9,9 @@ Full documentation: https://hydracept.com/llms-full.txt
 
 ## Agent plugin
 - Plugin id: hydracept-agent-plugin
-- In a git checkout: python -m hydracept init --apply --yes --json (binds stdio MCP to workspace secrets). Reload MCP once. Do not copy the workspace key into Plugins → Configure.
+- In a git checkout: python -m hydracept init --apply --yes --json (binds stdio MCP). Init may reuse an existing GitHub (`gh`) or Google Cloud (`gcloud`) user login, or HYDRACEPT_API_KEY, instead of opening a browser — see docs/authentication. Reload MCP once. Do not copy the workspace key into Plugins → Configure.
 - Stdio MCP (coding-agent default): python -m hydracept mcp serve
-- Hydracept panel (PyPI hydracept >= 0.5.1): one MCP App ui://hydracept/app.html; seven states, not seven iframes
+- Hydracept panel (PyPI hydracept >= 0.5.2): one MCP App ui://hydracept/app.html; seven states, not seven iframes
 - Hosted MCP (no checkout: ChatGPT, MCP Registry): https://api.hydracept.com/mcp
 - Install: python -m hydracept agents install --auto
 - Project surfaces: python -m hydracept surface apply PATH
@@ -20,30 +20,26 @@ Full documentation: https://hydracept.com/llms-full.txt
 - When a user says “the last job failed” or “use the last good one”, find project history first. Do not ask the human to paste a job id unless history cannot identify the job.
 
 ## Positioning
-Free for individual developers. BYOK at 0% Hydracept fee.
-Managed inference: PAYG wallet + 6% service fee where enabled.
+Hydracept is AI agent execution infrastructure — one public API for external capabilities for AI agents, with durable AI jobs, AI execution receipts, and BYOK capability execution.
+Free plan ($0/mo) for individual developers; paid plans add capacity and org features.
+BYOK at 0% Hydracept fee.
+Managed inference: PAYG wallet + 6% Hydracept service fee on provider cost (no per-call minimum; billed at actual usage).
 Deferred processing: eligible durable text jobs run at 50% of standard token rates. Pins opt in with processing: deferred.
-Hydracept is an execution control plane for software and agents that need external capabilities — discovery, quoting, execution, durable jobs, recoverable history, artifacts, receipts, provenance, budgets, and provider abstraction. Games and media are important capability families, not the whole product. BYOK with 0% markup; managed inference is provider price + 6%. Durable text jobs on eligible models use deferred processing at 50% of standard token rates. One capability when you need it; a production backbone when you need more. Repeated use is not required to justify the first call. Hydracept is not a runtime game-engine inference plugin.
+Hydracept is a public API for software teams and coding agents to discover, quote, and run external AI capabilities (text, image, audio, and more) with durable jobs, artifacts, receipts, budgets, and BYOK or managed billing.
+Hydracept is a public API for discovery, quotes, execution, durable jobs, artifacts, receipts, and budgets. BYOK is 0% Hydracept fee; managed billing is provider cost plus 6%. Eligible durable text jobs can use deferred processing at 50% of standard token rates. Games and media are common examples, not the whole product. Hydracept is not a runtime game-engine inference plugin.
 
 ## Client release
-- Current published client: 0.5.1 (PyPI hydracept, npm @hydracept/sdk, NuGet Hydracept.Client)
+- Current published client: 0.5.2 (PyPI hydracept, npm @hydracept/sdk, NuGet Hydracept.Client)
 - Migration guide: https://docs.hydracept.com/migrating-0.5.0/
 - Stream invoke SSE: GET /v1/executions/{executionId}/events (clients < 0.5.0 hit LEGACY_ROUTE_REMOVED on removed routes)
 
-## Entity
-Hydracept is:
-- AI agent execution infrastructure
-- external capabilities for AI agents
-- durable AI jobs
-- AI execution receipts
-- BYOK capability execution
-
-Workflow: An agent describes the work in plain language. Hydracept resolves a capability, quotes the spend, executes it synchronously or as a durable job, and returns artifacts with a receipt.
+## Learn more
+Example workflow: An agent describes the work in plain language. Hydracept resolves a capability, quotes the spend, executes it synchronously or as a durable job, and returns artifacts with a receipt.
 Canonical page: https://hydracept.com/agent-execution-infrastructure
 Plugin homepage: https://hydracept.com/plugin
-Install in Cursor or Claude Code: python -m hydracept init --apply --yes --json
+Cursor/Claude plugin version (distributionVersion in plugin manifest) is separate from the PyPI/npm client (0.5.x).
 Packages: @hydracept/sdk (npm), hydracept (PyPI), Hydracept.Client (NuGet), com.hydracept.unity (UPM)
-Hosted MCP: https://api.hydracept.com/mcp
+Hosted MCP: https://api.hydracept.com/mcp (compact default for new keys; use /mcp/full for all tools)
 
 ## Job history and recovery
 - Public project list: GET /v1/projects/{projectId}/jobs
@@ -69,7 +65,7 @@ CLI: python -m hydracept run image.generate.v1 --prompt "..."
 Domain: python -m hydracept run domain.search.v1 --prompt "example.com"
 Quote: python -m hydracept quote image.generate.v1 --prompt "..."
 Find: python -m hydracept capabilities find "generate an image"
-Discovery includes readySummary, execution.managedAvailable, and output.kind.
+Discovery includes readySummary, execution.managedInferenceAvailable, execution.trialEligible, funding.status, and output.kind.
 When managed execution is available, no provider account is required for the call.
 
 ## Opportunistic examples
@@ -89,8 +85,9 @@ When managed execution is available, no provider account is required for the cal
 - Docs: https://docs.hydracept.com/billing/
 
 ## Early beta
-- 5-seat early beta: US$25 covered managed inference, no card required. Tell your coding agent: install Hydracept (https://hydracept.com — python -m hydracept init --apply --yes --json) and sign in with GitHub, then email john@zencode.ca with your GitHub email or username for founder approval.
-- Fallback application form: https://hydracept.com/beta
+- Self-serve sign-in (GitHub or Google) at /start — no credit card. Agents: python -m hydracept init --apply --yes --json.
+- Comped managed credit (limited): email support@hydracept.com after sign-in.
+- Optional beta application form: https://hydracept.com/beta
 - If gh lacks user:email scope, finish sign-in in the browser so your real GitHub email is used.
 
 ## Start
@@ -151,6 +148,7 @@ Bootstrap: python -m hydracept init --apply --yes --json
 - https://hydracept.com/capabilities/3d
 - https://hydracept.com/capabilities/domains
 - https://hydracept.com/capabilities/translation
+- https://hydracept.com/capabilities/moderation
 - https://hydracept.com/capabilities/text-structured
 - https://hydracept.com/capabilities/text-reasoning
 - https://hydracept.com/capabilities/compute
@@ -183,7 +181,7 @@ Hydracept is an execution control plane for software teams and coding agents tha
 
 Discover capabilities, submit invoke or durable jobs, track progress, download artifacts, and keep a receipt for every run. BYOK is 0% Hydracept fee; managed inference is provider price + 6%. Eligible durable text jobs use deferred processing at 50% of standard token rates.
 
-**Current client release: 0.5.1** (see [Migrating to 0.5.0](./migrating-0.5.0/) if you are below 0.5.0).
+**Current client release: 0.5.2** (see [Migrating to 0.5.0](./migrating-0.5.0/) if you are below 0.5.0).
 
 ## 5-minute path
 
@@ -810,11 +808,11 @@ Inference capability descriptors include **`billingModes`**, **`pricing`**, and 
 ```json
 {
   "key": "image.generate.v1",
-  "readySummary": "Ready now · managed execution · quote available",
+  "readySummary": "Managed inference available · quote available",
   "execution": {
     "oneShot": true,
-    "managedAvailable": true,
-    "providerSetupRequired": false,
+    "managedInferenceAvailable": true,
+    "inferenceProviderSetupRequired": false,
     "projectLocalRequired": false,
     "estimateAvailable": true,
     "trialEligible": true
@@ -822,7 +820,7 @@ Inference capability descriptors include **`billingModes`**, **`pricing`**, and 
   "funding": {
     "mode": "managed_trial",
     "eligible": true,
-    "status": "ready"
+    "status": "catalog_available"
   },
   "output": { "kind": "artifact", "mediaType": "image/png" },
   "interaction": { "typicallyRequired": false },
@@ -836,9 +834,11 @@ Inference capability descriptors include **`billingModes`**, **`pricing`**, and 
 Find by task: `GET /v1/capabilities?q=generate+an+image` or `python -m hydracept capabilities find "generate an image"`.
 
 - **oneShot** — this capability can be invoked without a product integration commitment
-- **managedAvailable** — no provider account is required for this call when true
+- **managedInferenceAvailable** — catalog-level hint: no provider account is required for this inference call when true and the workspace is runnable
+- **inferenceProviderSetupRequired** — a provider connection is required when true; never ask for a provider key when managed inference is available
 - **trialEligible** — managed first-use policy may cover this capability (server-authoritative remaining balance is on authenticated `funding`)
-- **funding.status** — `ready` or `funding_required` (with `fundingOptions`: managed, BYOK). Do not treat an unbound provider as "cannot execute" when managed first-use remains.
+- **workspaceRunnable** — authenticated caller-relative readiness. Check `workspaceRunnable.runnable` before invoking; when false, use `status` / `requiredAction` instead of treating catalog `execution` as a promise for this workspace.
+- **funding.status** — catalog-level availability: `catalog_available` or `provider_required`. Caller-relative readiness (`ready`, `funding_required`, `missing_provider`) is reported by authenticated `workspaceRunnable`. Do not treat an unbound provider as "cannot execute" when managed first-use remains.
 - **readySummary** — agent-readable readiness (not a usefulness score)
 - **BYOK** — use your provider credentials (0% Hydracept inference fee). See [Connections](../connections/).
 - **Managed** — PAYG wallet + Hydracept service fee (`serviceFeeBps` / 100 = percent). See [Billing](../billing/).
@@ -855,8 +855,16 @@ Content-Type: application/json
 
 ```json
 {
-  "input": { "prompt": "cute slime icon", "model": "auto" },
-  "billingMode": "managed"
+  "context": {
+    "productId": "my-product",
+    "projectId": "cpr_...",
+    "environment": "development"
+  },
+  "input": { "prompt": "cute slime icon", "model": "gpt-image-2.5-flare" },
+  "execution": {
+    "executionPreference": "automatic",
+    "billingMode": "managed"
+  }
 }
 ```
 
@@ -1033,8 +1041,8 @@ python -m hydracept capability-request quote cr_...
 
 ## MCP
 
-- `request_capability_quote` — create and submit a request (non-binding).
-- `get_capability_request_quote` — read the commission quote.
+- `request_capability_quote` — create and submit a request (non-binding). Full surfaces only (`/mcp`, `/mcp/full`, stdio default). Not listed on `/mcp/compact`.
+- `get_capability_request_quote` — read the commission quote. Full surfaces only; not on `/mcp/compact`.
 
 ## Semantics and guarantees
 
@@ -1443,7 +1451,10 @@ Responses `json_schema`:
 Python SDK:
 
 ```python
+import os
+
 from hydracept import HydraceptClient
+
 client = HydraceptClient(os.environ["HYDRACEPT_API_URL"], os.environ["HYDRACEPT_API_KEY"])
 result = client.create_pinned_inference({
     "pin": {"provider": "openai", "model": "gpt-5.6-sol", "api": "responses"},
@@ -1699,8 +1710,8 @@ For a single asset:
 
 Hydracept treats transparency as an **output contract**. The catalog model record decides the default path:
 
-- **Native alpha** when `nativeTransparentBackground` is true (gpt-image-2, gpt-image-1). Hydracept sends `background: "transparent"` and does **not** chroma-key or run matte v9.
-- **Chroma-key matte** when the model has no native alpha, or when the client sets advanced `transparencyMethod: "matte-v9"`.
+- **Native alpha** when `nativeTransparentBackground` is true (gpt-image-2, gpt-image-1, and later gpt-image-2.x models). Hydracept sends `background: "transparent"` and does **not** chroma-key or run matte v9. A client `transparencyMethod` of `matte-v9` is ignored on these models.
+- **Chroma-key matte** only when the model has no native alpha.
 
 Optional `keyColor` and `transparentRegions` apply only to the matte path.
 
@@ -2253,7 +2264,7 @@ URL: https://docs.hydracept.com/agents/
 
 Coding agents can integrate Hydracept from the published docs, OpenAPI, and agent-context endpoints.
 
-Hydracept gives software and agents one stable execution surface for external capabilities including text/reasoning, translation, media generation, domains, and DNS. Job history is part of that public surface: an agent can find what failed or what already worked without turning the human into a job-ID clipboard.
+Hydracept gives software and agents one public API for external capabilities including text, translation, media, domains, and DNS. Job history is part of that surface: an agent can find what failed or what already worked without asking the human to paste job IDs.
 
 A single capability call is a supported usage. CI, SDK embedding, provider pinning, and production workflows are later compounding benefits — not an entrance fee.
 
@@ -2309,7 +2320,7 @@ python -m hydracept consumer-check --strict --json
 
 ## MCP
 
-Hydracept exposes an MCP server for tool-using agents. **In a project checkout, stdio is the default** after `python -m hydracept init`: `python -m hydracept mcp bind` writes `.cursor/mcp.json` and `.mcp.json` so `python -m hydracept mcp serve` uses `.hydracept/secrets.json`. Reload MCP once when init reports `reloadRequired: true`. Do not copy the workspace key into **Plugins → Configure**. Hosted endpoint `https://api.hydracept.com/mcp` is for clients with no checkout. If `hydracept_*` tools are missing, do **not** retry hosted discovery — use stdio or the CLI. Install the latest public package with `pip install -U hydracept`; rely on versioned machine contracts rather than hard-coded patch-version folklore. Hosted MCP cannot apply local project files. Do not treat a cached `.hydracept/agent-context.json` as the capability catalog.
+Hydracept exposes an MCP server for tool-using agents. **In a project checkout, stdio is the default** after `python -m hydracept init`: `python -m hydracept mcp bind` writes `.cursor/mcp.json` and `.mcp.json` so `python -m hydracept mcp serve` uses `.hydracept/secrets.json`. Reload MCP once when init reports `reloadRequired: true`. Do not copy the workspace key into **Plugins → Configure**. Hosted `https://api.hydracept.com/mcp` is for clients with no checkout and defaults to the nine-tool compact list for new API keys; use `https://api.hydracept.com/mcp/full` for all specialist tools. If you need LoRA, pinned inference, or job-history tools on hosted MCP, use `/mcp/full` or stdio. Install `pip install -U hydracept` and read `GET /v1/agent-context` for the live tool list. Hosted MCP cannot apply local project files.
 
 Job recovery tools are available on both stdio and hosted MCP:
 
@@ -2319,7 +2330,7 @@ Job recovery tools are available on both stdio and hosted MCP:
 Install into a coding agent:
 
 - **Plugin homepage:** [https://hydracept.com/plugin](https://hydracept.com/plugin)
-- **Cursor:** Hydracept is not in the Cursor Marketplace yet — use [github.com/zencodeinc/hydracept-plugin](https://github.com/zencodeinc/hydracept-plugin) (v0.1.10) or `python -m hydracept agents install --auto`. Then run `python -m hydracept init --apply --yes --json` and reload MCP only when requested.
+- **Cursor:** Hydracept is not in the Cursor Marketplace yet — use [github.com/zencodeinc/hydracept-plugin](https://github.com/zencodeinc/hydracept-plugin) (plugin distributionVersion **0.1.10**, separate from PyPI client **0.5.x**) or `python -m hydracept agents install --auto`. Then run `python -m hydracept init --apply --yes --json` and reload MCP only when requested.
 - **Claude Code:** install the Hydracept plugin, init in the repo, and reload MCP only when requested.
 - **No checkout (ChatGPT, MCP Registry):** hosted MCP at `https://api.hydracept.com/mcp` with a bearer API key
 - **CLI fallback:** `python -m hydracept agents install --auto` / `python -m hydracept mcp serve` / `python -m hydracept run ...`
@@ -2333,20 +2344,13 @@ After `python -m hydracept init --apply --yes --json`, stdio MCP exposes `hydrac
 
 ## Recommended agent path
 
-1. Read `GET /v1/agent-context` for the live bootstrap command, capability catalog, and rules.
-2. Run `python -m hydracept init --apply --yes --json` in the project root.
-3. If status is `ready`, the JSON `project.resolution` field tells you whether Hydracept reused a binding, matched a repository, or created the workspace project.
-4. If status is `interaction_required`, **stop automation immediately**. Identity may already be authenticated — read `identity` and `projectResolution` before assuming login failed. Do not start `--wait`, doctor, consumer-check, status, or unrelated diagnostics. If `presentation.agentAction` is `present_and_yield` and `hydracept_interaction_surface` is available, invoke it once with the supplied `interaction.context` and make it the final tool call of the turn. Otherwise present `action.url` verbatim and stop. Only after the human confirms completion should the agent run the returned `afterCompletion.command`.
-5. Connect BYOK for sustained inference, or use managed inference. Ordinary new Free accounts receive a one-time **US$0.50 managed trial allowance** for setup/smoke verification; BYOK is 0% Hydracept fee and managed execution is provider price + 6%.
-6. Discover the needed capability live. Do not assume Hydracept is only a game/media tool; the catalog may include text/reasoning, translation, domain/DNS, media, research, and other external operations.
-7. Submit managed work **without** `execution.quoteId`. The API seals pricing at admission. `/quote` is an optional preview; do not reuse a stale `quoteId`.
-8. For image production (Sheet & Slice, transparency, variants), read [Image production](../image-production/). Size a sheet by either the cell (`sheet.normalize.width/height`; canvas = cell × columns,rows) or the canvas (`width`/`height`; cell = canvas ÷ columns,rows); both given must agree. The resulting canvas must meet the model minimum (default 816×816, 16-aligned) and slices may be any size. Read `sheetSlicing`/`canvasFloor` on `GET /v1/capabilities/image.generate.v1`.
-9. For Unity 6 Editor integration, read [Unity integration](../unity-integration/).
-10. Submit and poll durable jobs per [Jobs](../jobs/) using the public capability contract.
-11. If the user says **“the last job failed”**, call `hydracept_jobs_find(intent="failed")` before asking for a job ID, then `hydracept_job_inspect` on the relevant item. Read `error.code`; if retrying, use the `requestSnapshot` input with a new idempotency key.
-12. If the user says **“use the one we picked”** or **“reuse the last good one”**, call `hydracept_jobs_find(intent="reusable", capability_key="...")`, inspect the candidate, and prefer its explicit `selectedArtifactId`. Do not promote, favorite, or approve it implicitly.
-13. Confirm error / rate-limit handling from [Errors](../errors/) and [Rate limits](../rate-limits/).
-14. For a clean-room consumer audit, run `python -m hydracept consumer-check --strict --json` and require `passed: true`.
+1. `pip install -U hydracept` and read `GET /v1/agent-context` for the live bootstrap command and capability list.
+2. Run `python -m hydracept init --apply --yes --json` in the project root (init may reuse `gh`, `gcloud`, or `HYDRACEPT_API_KEY` — see [Authentication](../authentication/)).
+3. If init returns `interaction_required`, stop and let the human finish the browser step; do not run unrelated diagnostics in a loop.
+4. Discover a capability (`python -m hydracept capabilities find "…"` or MCP `hydracept_resolve_capability`) and run it with `python -m hydracept run …` or MCP `hydracept_run`.
+5. For sustained managed use, connect BYOK or fund the wallet. New Free accounts include a one-time **US$0.50** managed trial allowance; afterward managed runs bill at provider cost + **6%** Hydracept service fee (actual usage, no per-call minimum).
+
+See [Jobs](../jobs/), [Billing](../billing/), and [Errors](../errors/) when you need durable polling, pricing detail, or failure handling.
 
 The project list is intentionally prompt-free. Agents can scan failed and reusable jobs without ingesting every historical request. Prompt/request content appears only after the agent deliberately inspects a single job.
 
@@ -2355,8 +2359,8 @@ The project list is intentionally prompt-free. Agents can scan failed and reusab
 | User intent | Hydracept surface |
 |-------------|-------------------|
 | Transparent sprite / icon PNG | `image.generate.v1` + `requestTransparentOutput: true` (native alpha when the catalog model supports it) |
-| Full-bleed plate with interior openings | same; native alpha by default. Advanced chroma: `transparencyMethod: "matte-v9"` + `transparentRegions: "borderConnectedAndEnclosed"` |
-| Force chroma-key matte | `transparencyMethod: "matte-v9"` + optional `keyColor` |
+| Full-bleed openings | `requestTransparentOutput: true`. On gpt-image models this is native alpha. `transparencyMethod: "matte-v9"` is only for models with no native alpha. |
+| Chroma-key matte | `transparencyMethod: "matte-v9"` only for models with no native alpha. Ignored on gpt-image models. |
 | Sprite sheet / contact sheet → individual frames | `sheet.slice`, `sheet.rows`, `sheet.columns`, optional `sheet.animation` |
 | Unity 6 Editor import with provenance | [Unity integration](../unity-integration/) — `hydracept integrations install unity` |
 | Multiple icon takes to pick from | `variantCount` 2–4 |
@@ -2413,7 +2417,7 @@ python -m hydracept agents install --auto
 | CLI (all hosts) | `python -m hydracept agents install --auto` |
 | Cursor | Not in the Cursor Marketplace yet — install from `zencodeinc/hydracept-plugin` (tag v0.1.10) or `python -m hydracept agents install --auto` |
 | Claude Code | `github.com/zencodeinc/hydracept-plugin` (v0.1.10) or `python -m hydracept agents install --auto` |
-| MCP Registry | `com.hydracept/mcp` at `https://api.hydracept.com/mcp` |
+| MCP Registry | `com.hydracept/hydracept` at `https://api.hydracept.com/mcp` |
 
 The marketplace name (`hydracept`) participates in the Claude install command.
 
@@ -2531,9 +2535,9 @@ with HydraceptWorkspace.open() as hydracept:
 
 See [Quick Start](../), [Migrating to 0.5.0](../migrating-0.5.0/), and [Durable jobs](../jobs/).
 
-## Current release (0.5.1)
+## Current release (0.5.2)
 
-Install the latest published client: **`pip install -U "hydracept>=0.5.1"`**.
+Install the latest published client: **`pip install -U "hydracept>=0.5.2"`**.
 
 `hydracept init --apply --yes` reports provider keys found locally and uploads **only** when you pass **`--adopt-keys`** (all discovered) or **`--adopt-key-providers openai,...`**. Use **`--no-adopt`** to skip uploads entirely. Older clients call HTTP routes that return **410** `LEGACY_ROUTE_REMOVED`. See [Migrating to 0.5.0](../migrating-0.5.0/).
 

@@ -7,7 +7,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from hydracept.jobs import filename_for_download, normalize_sha256_digest
+from hydracept.jobs import (
+    expected_artifact_download_sha256,
+    filename_for_download,
+    normalize_sha256_digest,
+)
 from hydracept.run_result import RunArtifact
 
 
@@ -97,7 +101,15 @@ def materialize_job_artifacts(
         else:
             target = dest.parent / Path(filename).name if file_target else dest / Path(filename).name
         try:
-            data = client.download_job_artifact(job_id, artifact_id)
+            if hasattr(client, "download_job_artifact_with_headers"):
+                data, header_map = client.download_job_artifact_with_headers(job_id, artifact_id)
+                export_header = header_map.get("X-Hydracept-Export-Sha256") if isinstance(header_map, dict) else None
+                expected_sha = expected_artifact_download_sha256(
+                    item,
+                    export_header=export_header,
+                )
+            else:
+                data = client.download_job_artifact(job_id, artifact_id)
         except Exception as exc:  # noqa: BLE001
             result.failed = True
             result.error = f"download failed for {artifact_id}: {exc}"

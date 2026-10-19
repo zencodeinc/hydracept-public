@@ -67,7 +67,7 @@ server = MCPServer(
     icons=hydracept_mcp_icons(),
     instructions=(
         "Hydracept executes external capabilities for agents. "
-        "Pass the user's words to resolve_capability. Do not ask for a capability key and do not pick a key from memory. "
+        "Pass the user's words to hydracept_resolve_capability. Do not ask for a capability key and do not pick a key from memory. "
         "Then optionally hydracept_quote_capability, then hydracept_run on the resolved key. "
         "Call hydracept_job_status only when the result says to poll. "
         "Call hydracept_download_artifact and hydracept_get_receipt when the job produced them. "
@@ -153,6 +153,40 @@ def _status_payload(job_id: str, job: dict[str, Any]) -> dict[str, Any]:
 
         payload["presentation"] = job_presentation(payload, apps_supported=True)
     return _hydrate_result(payload)
+
+
+def _cancel_job_envelope(
+    job: dict[str, Any],
+    *,
+    accepted: bool = True,
+    reason: str = "",
+) -> dict[str, Any]:
+    """Truthful cancellation projection: never claim upstream work stopped or a refund."""
+    from hydracept.job_lifecycle import TERMINAL_STATUSES, normalize_job_status
+
+    status = normalize_job_status(job.get("status"))
+    terminal = status in TERMINAL_STATUSES
+    payload: dict[str, Any] = {
+        "jobId": str(job.get("jobId") or job.get("id") or ""),
+        "status": status,
+        "cancellationRequested": True,
+        "cancellationAccepted": accepted,
+        "terminal": terminal,
+        "nextAction": "stop" if terminal else "poll",
+        "note": (
+            "Cancellation request accepted. This does not guarantee upstream provider work "
+            "stopped or that already-incurred cost will be refunded."
+            if accepted
+            else (
+                "Cancellation was not accepted; the job is already terminal or not cancellable. "
+                "This does not guarantee upstream provider work stopped or that already-incurred "
+                "cost will be refunded."
+            )
+        ),
+    }
+    if reason:
+        payload["reason"] = reason
+    return payload
 
 
 class McpToolError(Exception):
@@ -361,8 +395,8 @@ def _unresolved_status_payload(message: str) -> dict[str, Any]:
 
 
 @server.tool()
-def hydracept_status(refresh: bool = False) -> dict[str, Any]:
-    """Local workspace readiness. Set refresh=true for optional network verify."""
+def hydracept_workspace_status(refresh: bool = False) -> dict[str, Any]:
+    """Local workspace authentication and readiness. Set refresh=true for optional network verify."""
     def _run() -> dict[str, Any]:
         try:
             root = _project_root()
@@ -472,8 +506,8 @@ def hydracept_capabilities(key: str = "", query: str = "") -> dict[str, Any]:
     return _tool_call(_run)
 
 
-@server.tool()
-def resolve_capability(intent: str, requirements: dict[str, Any] | None = None) -> dict[str, Any]:
+@server.tool(name="hydracept_resolve_capability")
+def hydracept_resolve_capability(intent: str, requirements: dict[str, Any] | None = None) -> dict[str, Any]:
     """Semantic router. Pass the user's words as intent. Does not spend money. Do not ask for a capability key."""
     payload: dict[str, Any] = {"intent": intent}
     if requirements:
@@ -557,7 +591,7 @@ def hydracept_quote_capability(
         result.setdefault(
             "note",
             "Retail preview only. Omit execution.quoteId on submit unless the job body is unchanged. "
-            "This quoteId is not a commission quote from request_capability_quote. "
+            "This quoteId is not a commission quote from hydracept_request_capability_quote. "
             "spending=none means this customer will not be billed.",
         )
     return result
@@ -698,8 +732,8 @@ def hydracept_run(
     return _tool_call(_run)
 
 
-@server.tool()
-def request_capability_quote(body: dict[str, Any] | None = None) -> dict[str, Any]:
+@server.tool(name="hydracept_request_capability_quote")
+def hydracept_request_capability_quote(body: dict[str, Any] | None = None) -> dict[str, Any]:
     """Create a non-binding capability implementation request. Humans must accept commission quotes. Do not pass commission quoteId as execution.quoteId."""
     def _run() -> dict[str, Any]:
         created = _client().create_capability_request(dict(body or {}))
@@ -719,8 +753,8 @@ def request_capability_quote(body: dict[str, Any] | None = None) -> dict[str, An
     return result
 
 
-@server.tool()
-def get_capability_request_quote(request_id: str) -> dict[str, Any]:
+@server.tool(name="hydracept_get_capability_request_quote")
+def hydracept_get_capability_request_quote(request_id: str) -> dict[str, Any]:
     """Read the human-paid commission quote for a capability request.
 
     This quoteId is never an execution.quoteId.
@@ -779,6 +813,29 @@ def hydracept_job_status(job_id: str = "", jobId: str = "") -> dict[str, Any]:
     """GET /v1/jobs/{jobId} once. If nextAction is poll, wait pollAfterSeconds and call again."""
     identifier = _first_nonempty(job_id, jobId)
     return _tool_call(lambda: _status_payload(identifier, _client().get_job(identifier)))
+
+
+@server.tool()
+def hydracept_cancel_job(job_id: str = "", jobId: str = "") -> dict[str, Any]:
+    """Request cancellation of one job. Not a way to stop a local polling loop. Reports accepted/terminal state; never promises upstream work stopped or a refund."""
+    identifier = _first_nonempty(job_id, jobId)
+
+    def _run() -> dict[str, Any]:
+        if not identifier:
+            raise ValueError("job_id is required")
+        client = _client()
+        try:
+            job = client.cancel_job(identifier)
+        except HydraceptApiError as exc:
+            if exc.response.status_code != 409:
+                raise
+            job = client.get_job(identifier)
+            return _cancel_job_envelope(job, accepted=False, reason=str(exc))
+        return _cancel_job_envelope(
+            job if isinstance(job, dict) else {"jobId": identifier}
+        )
+
+    return _tool_call(_run)
 
 
 def _receipt_from_identifier(identifier: str) -> dict[str, Any]:
@@ -1476,6 +1533,30 @@ def hydracept_ui_promote(path: str) -> dict[str, Any]:
 # Apps tools/resources are collected on `apps` first; the SDK binds them at apply time.
 server._apply_extension(apps)
 server._install_extension_interceptor()
+
+
+def _apply_configured_tool_profile() -> None:
+    from hydracept.mcp.tool_profile_apply import apply_mcp_tool_profile
+    from hydracept.mcp.tool_profile_copy import (
+        enrich_tool_list_metadata_for_profile,
+        mcp_server_instructions,
+    )
+    from hydracept.mcp.tool_profiles import MCP_TOOL_PROFILE_FULL, resolve_mcp_tool_profile
+
+    resolved = apply_mcp_tool_profile(server)
+    if resolved == MCP_TOOL_PROFILE_FULL:
+        from hydracept.mcp.tool_surface_names import apply_full_surface_list_name_renames
+
+        apply_full_surface_list_name_renames(server)
+    tools = list(server._tool_manager.list_tools())
+    enrich_tool_list_metadata_for_profile(tools, profile=resolved, surface="stdio")
+    server._lowlevel_server.instructions = mcp_server_instructions(resolved, surface="stdio")
+    from hydracept.mcp.tool_legacy_apply import install_mcp_tool_legacy_call_aliases
+
+    install_mcp_tool_legacy_call_aliases(server, profile=resolve_mcp_tool_profile())
+
+
+_apply_configured_tool_profile()
 
 
 def serve_stdio() -> None:

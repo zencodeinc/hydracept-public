@@ -2,28 +2,42 @@ server:
   name: hydracept
   instructions: >-
     Hydracept executes external capabilities for agents. Pass the user's words
-    to resolve_capability. Do not ask for a capability key and do not pick a
-    key from memory. Then optionally hydracept_quote_capability, then
-    hydracept_run on the resolved key. Call hydracept_job_status only when the
-    result says to poll. Call hydracept_download_artifact and
-    hydracept_get_receipt when the job produced them. Specialists stay listed:
-    hydracept_submit_job returns immediately; hydracept_invoke is for
+    to resolve_capability (listed on /mcp, /mcp/full, and stdio default;
+    hydracept_resolve_capability on /mcp/compact). Do not ask for a capability
+    key and do not pick a key from memory. Then optionally hydracept_quote_capability,
+    then hydracept_run on the resolved key. Call hydracept_job_status only when the
+    result says to poll; call hydracept_jobs_find when you no longer have the job id.
+    Call hydracept_cancel_job only when the user asks to cancel the job itself;
+    stopping a polling loop is not a cancellation. Call hydracept_download_artifact
+    and hydracept_get_receipt when the job produced them. Specialists stay listed on
+    full surfaces: hydracept_submit_job returns immediately; hydracept_invoke is for
     synchronous read-only calls; pinned tools are exact model pins; provenance
-    tools run after a receipt. hydracept_ui_* tools are the panel, not the
+    tools run after a receipt. Compact hosted MCP lists eleven tools — use POST /mcp/full
+    for the full specialist tools/list. hydracept_ui_* tools are the panel, not the
     agent. In a git checkout, use stdio MCP after `python -m hydracept init`.
     Hosted MCP with an API key is for clients with no checkout. One capability
     call is enough — do not assume repeated usage is required. Credentials
     never enter model context.
+# `name` is the canonical registry key. `listedAs` is the tools/list name on each profile.
+# Full hosted/stdio list resolve_capability, request_capability_quote,
+# get_capability_request_quote, and hydracept_status; compact lists the hydracept_*
+# names for the eleven-tool set only.
 tools:
-  - name: hydracept_status
-    summary: Local workspace readiness (stdio) or session diagnostics (hosted).
+  - name: hydracept_workspace_status
+    listedAs:
+      full: hydracept_status
+      compact: hydracept_workspace_status
+    summary: Workspace authentication and readiness (stdio) or session diagnostics (hosted). Full surfaces keep the legacy hydracept_status list name; the new name works on tools/call.
     readOnlyHint: true
     destructiveHint: false
   - name: hydracept_capabilities
     summary: List, find (query), or describe a capability, including one-shot readiness facts. Look for features.deferredProcessing on text job_async capabilities.
     readOnlyHint: true
     destructiveHint: false
-  - name: resolve_capability
+  - name: hydracept_resolve_capability
+    listedAs:
+      full: resolve_capability
+      compact: hydracept_resolve_capability
     summary: Semantic router. Pass the user's words as intent. Does not spend money. Do not ask for a capability key.
     readOnlyHint: true
     destructiveHint: false
@@ -31,12 +45,18 @@ tools:
     summary: Firm retail quote in account currency. Does not reserve or charge funds.
     readOnlyHint: true
     destructiveHint: false
-  - name: request_capability_quote
-    summary: Create a non-binding capability REQUEST. Humans pay commission quotes; never use as execution.quoteId.
+  - name: hydracept_request_capability_quote
+    listedAs:
+      full: request_capability_quote
+      compact: null
+    summary: Create a non-binding capability REQUEST. Humans pay commission quotes; never use as execution.quoteId. Full surfaces only; not on /mcp/compact.
     readOnlyHint: false
     destructiveHint: false
-  - name: get_capability_request_quote
-    summary: Read the human-paid commission quote for a capability request. Read-only; never use as execution.quoteId.
+  - name: hydracept_get_capability_request_quote
+    listedAs:
+      full: get_capability_request_quote
+      compact: null
+    summary: Read the human-paid commission quote for a capability request. Read-only; never use as execution.quoteId. Full surfaces only; not on /mcp/compact.
     readOnlyHint: true
     destructiveHint: false
   - name: hydracept_invoke
@@ -62,6 +82,10 @@ tools:
   - name: hydracept_job_inspect
     summary: Inspect one job's error, diagnostics, receipt summary, request snapshot, and reuse candidate.
     readOnlyHint: true
+    destructiveHint: false
+  - name: hydracept_cancel_job
+    summary: Request cancellation of one job; reports accepted/terminal state and never promises upstream work stopped or a refund. Explicit cancellation only.
+    readOnlyHint: false
     destructiveHint: false
   - name: hydracept_get_receipt
     summary: Fetch sealed receipt summary for a job.

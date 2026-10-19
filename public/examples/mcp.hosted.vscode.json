@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "hydracept": {
+      "type": "http",
+      "url": "https://api.hydracept.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:HYDRACEPT_API_KEY}"
+      }
+    }
+  }
+}

@@ -36,7 +36,7 @@ def test_mcp_stdio_exposes_quote_read_tool() -> None:
     pytest.importorskip("mcp")
     from hydracept.mcp import server as mcp_server
 
-    assert callable(getattr(mcp_server, "get_capability_request_quote", None))
+    assert callable(getattr(mcp_server, "hydracept_get_capability_request_quote", None))
 
 
 def test_public_mcp_tool_catalog_lists_quote_read() -> None:
@@ -49,4 +49,4 @@ def test_public_mcp_tool_catalog_lists_quote_read() -> None:
         / "tools.yaml"
     )
     text = catalog.read_text(encoding="utf-8")
-    assert "name: get_capability_request_quote" in text
+    assert "name: hydracept_get_capability_request_quote" in text

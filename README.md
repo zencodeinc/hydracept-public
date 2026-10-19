@@ -2,7 +2,7 @@
 
 Hydracept is an execution control plane for software and AI agents that need external capabilities—text, reasoning, image, audio, video, 3D, domains, and compute—through one API with discovery, quotes, durable jobs, artifacts, receipts, budgets, and BYOK. Games and media are common examples; a headline workflow is AI game assets from Cursor or Claude Code into Unity ([workflow overview](https://hydracept.com/agent-game-assets)).
 
-**Pricing (summary):** Free for individual developers; BYOK at 0% Hydracept fee; managed inference is provider price + 6% service fee where enabled; eligible durable text jobs can use deferred processing at 50% of standard token rates. Details: [hydracept.com/pricing](https://hydracept.com/pricing) and [Billing docs](https://docs.hydracept.com/billing/).
+**Pricing (summary):** Free plan ($0/mo) for individuals; paid plans add capacity. BYOK at 0% Hydracept fee; managed inference is provider cost + 6% service fee (actual usage, no per-call minimum). Eligible durable text jobs can use deferred processing at 50% of standard token rates. Details: [hydracept.com/pricing](https://hydracept.com/pricing) and [Billing docs](https://docs.hydracept.com/billing/).
 
 ## Install
 
@@ -11,7 +11,7 @@ Hydracept is an execution control plane for software and AI agents that need ext
 | Python CLI & SDK | `pip install -U hydracept` |
 | TypeScript | `npm install @hydracept/sdk` |
 | .NET | `dotnet add package Hydracept.Client` |
-| Unity (UPM) | `com.hydracept.unity` — see [Unity integration](https://docs.hydracept.com/unity-integration/) |
+| Unity (UPM git) | `com.hydracept.unity` via Git URL — see [Unity integration](https://docs.hydracept.com/unity-integration/) (OpenUPM listing pending owner submit) |
 
 Public HTTP API: `https://api.hydracept.com` · OpenAPI: [hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json) · Agent context: `GET https://api.hydracept.com/v1/agent-context`
 

@@ -1,0 +1,54 @@
+# Creates the GitHub Release for each v* tag pushed by the private
+# hydracept-release sync (write deploy key). Uses this repository's own
+# GITHUB_TOKEN, so no personal access token or cross-repo credential exists.
+# Generated from zencodeinc/hydracept public/release/.github/workflows/release.yml;
+# edits made directly in this repository are overwritten by the next sync.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing v* tag to create a Release for (backfill)"
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub Release (idempotent)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          case "$TAG" in
+            v[0-9]*) ;;
+            *) echo "::error::refusing non-release tag '$TAG'"; exit 1 ;;
+          esac
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; nothing to do."
+            exit 0
+          fi
+          if ! gh release create "$TAG" --verify-tag --generate-notes --title "$TAG"; then
+            # A concurrent run may have created it between view and create.
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              echo "Release $TAG was created concurrently; nothing to do."
+              exit 0
+            fi
+            exit 1
+          fi
+          echo "Created Release $TAG."

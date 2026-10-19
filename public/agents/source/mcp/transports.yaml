@@ -7,11 +7,23 @@ transports:
       - hydracept
       - mcp
       - serve
-    description: Local coding-agent MCP via Hydracept CLI workspace credentials.
+    description: Local coding-agent MCP via Hydracept CLI workspace credentials (defaults to full tools/list).
     primary: true
   hosted:
     type: streamable-http
     url: https://api.hydracept.com/mcp
-    description: Production Streamable HTTP MCP. Authenticate with Hydracept API key bearer token.
+    description: Full hosted MCP (specialist tools/list). Default plugin and registry remote; stdio remains primary in checkout workflows.
+    auth: bearer
+    primary: false
+  hostedCompact:
+    type: streamable-http
+    url: https://api.hydracept.com/mcp/compact
+    description: Compact hosted MCP (nine first-time-agent tools). Opt-in for Glama/registry scoring.
+    auth: bearer
+    primary: false
+  hostedFull:
+    type: streamable-http
+    url: https://api.hydracept.com/mcp/full
+    description: Explicit alias of the full hosted MCP surface (same tools/list as POST /mcp).
     auth: bearer
     primary: false

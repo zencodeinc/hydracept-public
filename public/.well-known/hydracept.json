@@ -1,0 +1,156 @@
+{
+  "agentContext": "https://api.hydracept.com/v1/agent-context",
+  "agentPlugin": {
+    "id": "hydracept-agent-plugin",
+    "version": "0.1.10"
+  },
+  "api": "https://api.hydracept.com",
+  "authorityPage": "https://hydracept.com/agent-execution-infrastructure",
+  "byok": true,
+  "capabilities": [
+    "text.general.fast.v1",
+    "text.reasoning.high.v1",
+    "text.reasoning.maximum.v1",
+    "text.structured.extraction.v1",
+    "text.structured.generation.v1",
+    "text.structured.ranking.v1",
+    "text.structured.adjudication.v1",
+    "text.vision.structured.v1",
+    "text.translate.v1",
+    "text.creative.longform.v1",
+    "text.editorial.v1",
+    "text.editorial.deep.v1",
+    "text.editorial.multimodal.v1",
+    "image.generate.v1",
+    "image.edit.v1",
+    "video.generate.v1",
+    "audio.sfx.generate.v1",
+    "audio.voice.generate.v1",
+    "audio.music.generate.v1",
+    "model.generate.3d.v1",
+    "model.generate.3d.from-image.v1",
+    "3d.render_reference.v1",
+    "compute.evaluate.v1",
+    "decision.evaluate.v1",
+    "moderation.content.v1",
+    "domain.search.v1",
+    "domain.pricing.v1"
+  ],
+  "capabilityDiscovery": {
+    "authority": "https://api.hydracept.com/v1/capabilities",
+    "semantics": {
+      "capabilities": "complete live list from GET /v1/capabilities",
+      "featuredCapabilities": "curated subset for launch marketing and well-known snapshots"
+    }
+  },
+  "deferredProcessing": {
+    "appliesTo": [
+      "job_async",
+      "pinned"
+    ],
+    "available": true,
+    "defaultFor": [
+      "job_async"
+    ],
+    "discountBps": 5000,
+    "docs": "https://docs.hydracept.com/deferred-processing/",
+    "optInFor": [
+      "pinned"
+    ]
+  },
+  "description": "Hydracept is a public API for software teams and coding agents to discover, quote, and run external AI capabilities (text, image, audio, and more) with durable jobs, artifacts, receipts, budgets, and BYOK or managed billing.",
+  "featuredCapabilities": [
+    "text.general.fast.v1",
+    "text.reasoning.high.v1",
+    "text.reasoning.maximum.v1",
+    "text.structured.extraction.v1",
+    "text.structured.generation.v1",
+    "text.structured.ranking.v1",
+    "text.structured.adjudication.v1",
+    "text.vision.structured.v1",
+    "text.translate.v1",
+    "text.creative.longform.v1",
+    "text.editorial.v1",
+    "text.editorial.deep.v1",
+    "text.editorial.multimodal.v1",
+    "image.generate.v1",
+    "image.edit.v1",
+    "video.generate.v1",
+    "audio.sfx.generate.v1",
+    "audio.voice.generate.v1",
+    "audio.music.generate.v1",
+    "model.generate.3d.v1",
+    "model.generate.3d.from-image.v1",
+    "3d.render_reference.v1",
+    "compute.evaluate.v1",
+    "decision.evaluate.v1",
+    "moderation.content.v1",
+    "domain.search.v1",
+    "domain.pricing.v1"
+  ],
+  "hydraceptServiceFeePercent": 6,
+  "inferenceMarkupPercent": 0,
+  "keywords": [
+    "hydracept",
+    "ai-agent-infrastructure",
+    "agent-execution",
+    "ai-execution",
+    "mcp",
+    "agent-tools",
+    "ai-capabilities",
+    "multi-provider",
+    "durable-jobs",
+    "byok",
+    "receipts",
+    "image-generation",
+    "video-generation",
+    "audio-generation",
+    "3d-generation",
+    "game-assets",
+    "unity",
+    "sprite-sheet",
+    "transparent-png",
+    "reference-image",
+    "gamedev",
+    "game-ai"
+  ],
+  "managedInference": {
+    "available": true,
+    "billingAdmissionEnforced": true,
+    "continuationOptions": [
+      "wallet",
+      "byok"
+    ],
+    "copy": "Managed inference can be funded from the Hydracept wallet.",
+    "fundingMode": "wallet",
+    "paygWallet": true,
+    "replenishmentAvailable": true,
+    "serviceFeeBps": 600,
+    "walletTopUpLive": true
+  },
+  "mcp": {
+    "hosted": "https://api.hydracept.com/mcp",
+    "hostedWhen": "no project checkout",
+    "inRepo": "python -m hydracept init --apply --yes --json",
+    "stdio": "python -m hydracept mcp serve"
+  },
+  "name": "Hydracept",
+  "pluginHomepage": "https://hydracept.com/plugin",
+  "pricing": {
+    "builder_usd_monthly": 19,
+    "enterprise": "custom",
+    "free_usd_monthly": 0,
+    "hydracept_service_fee_percent": 6,
+    "team_usd_monthly": 149
+  },
+  "sameAs": [
+    "https://www.npmjs.com/package/@hydracept/sdk",
+    "https://pypi.org/project/hydracept/",
+    "https://www.nuget.org/packages/Hydracept.Client",
+    "https://github.com/zencodeinc/hydracept-public",
+    "https://docs.hydracept.com"
+  ],
+  "selfServeBootstrapLive": true,
+  "url": "https://hydracept.com",
+  "workflow": "An agent describes the work in plain language. Hydracept resolves a capability, quotes the spend, executes it synchronously or as a durable job, and returns artifacts with a receipt."
+}

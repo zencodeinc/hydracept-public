@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.3 (unreleased)
+
+- Version aligned with the Python client 0.5.3. No TypeScript SDK API changes in this release.
+
 ## 0.5.2 (unreleased)
 
 - README samples type-check under `tsc --strict` without extra generics; runtime helpers default to public job/pinned response shapes.

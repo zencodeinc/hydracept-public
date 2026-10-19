@@ -3,19 +3,30 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from unittest.mock import patch
 
 from mcp_types import CallToolResult
 
 from hydracept.errors import RunAdmissionError
-from hydracept.mcp.server import McpToolError, _as_error_result, _tool_call, server
+from hydracept.mcp.tool_profiles import MCP_TOOL_PROFILE_ENV, MCP_TOOL_PROFILE_FULL
+
+os.environ[MCP_TOOL_PROFILE_ENV] = MCP_TOOL_PROFILE_FULL
+
+
+def _server():
+    import hydracept.mcp.server as server_mod
+
+    return server_mod
 
 
 def test_tool_call_returns_structured_is_error() -> None:
-    def _boom() -> dict:
-        raise McpToolError({"code": "FundingRequired", "message": "Connect a provider"})
+    server_mod = _server()
 
-    result = _tool_call(_boom)
+    def _boom() -> dict:
+        raise server_mod.McpToolError({"code": "FundingRequired", "message": "Connect a provider"})
+
+    result = server_mod._tool_call(_boom)
     assert isinstance(result, CallToolResult)
     assert result.is_error is True
     assert result.structured_content["code"] == "FundingRequired"
@@ -26,13 +37,16 @@ def test_tool_call_returns_structured_is_error() -> None:
 
 
 def test_as_error_result_json_is_parseable() -> None:
-    result = _as_error_result({"code": "EstimateExceedsMaxCost", "message": "too expensive"})
+    server_mod = _server()
+    result = server_mod._as_error_result({"code": "EstimateExceedsMaxCost", "message": "too expensive"})
     assert result.is_error is True
     assert result.structured_content["error"] is True
     assert result.structured_content["code"] == "EstimateExceedsMaxCost"
 
 
 def test_stdio_quote_preserves_admission_structured_content() -> None:
+    server_mod = _server()
+
     async def _call() -> CallToolResult:
         with patch(
             "hydracept.mcp.server._execution_workspace",
@@ -44,7 +58,7 @@ def test_stdio_quote_preserves_admission_structured_content() -> None:
                 }
             ),
         ):
-            return await server.call_tool(
+            return await server_mod.server.call_tool(
                 "hydracept_quote_capability",
                 {"capability_key": "image.generate.v1"},
             )
@@ -59,6 +73,7 @@ def test_stdio_quote_preserves_admission_structured_content() -> None:
 def test_smoke_download_failure_is_structured_error() -> None:
     from hydracept.cli.smoke_runner import SmokeResult
 
+    server_mod = _server()
     smoke = SmokeResult(
         job_id="wfr_1",
         status="succeeded",
@@ -74,7 +89,7 @@ def test_smoke_download_failure_is_structured_error() -> None:
             "hydracept.mcp.server._download_artifact",
             side_effect=ValueError("artifact_id is required"),
         ):
-            return await server.call_tool("hydracept_smoke", {})
+            return await server_mod.server.call_tool("hydracept_smoke", {})
 
     result = asyncio.run(_call())
     assert result.is_error is True

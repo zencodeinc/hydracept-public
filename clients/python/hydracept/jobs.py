@@ -26,6 +26,23 @@ _MEDIA_EXTENSIONS = {
 }
 
 
+def expected_artifact_download_sha256(
+    item: dict[str, Any],
+    *,
+    export_header: str | None = None,
+) -> str:
+    """Digest clients should verify against downloaded bytes (export transform aware)."""
+    if export_header:
+        return normalize_sha256_digest(export_header)
+    export_field = item.get("exportSha256")
+    if export_field:
+        return normalize_sha256_digest(str(export_field))
+    nested = item.get("digest") if isinstance(item.get("digest"), dict) else {}
+    return normalize_sha256_digest(
+        str(item.get("sha256") or (nested.get("sha256") if isinstance(nested, dict) else "") or "")
+    )
+
+
 def normalize_sha256_digest(value: str | None) -> str:
     """Return lowercase hex, stripping a ``sha256:`` prefix when present."""
     raw = str(value or "").strip().lower()
@@ -150,16 +167,21 @@ class JobRunner:
             if isinstance(item, dict):
                 artifact_id = str(item.get("artifactId") or item.get("id") or "")
                 filename = filename_for_download(item, artifact_id)
-                nested = item.get("digest") if isinstance(item.get("digest"), dict) else {}
-                expected_sha = normalize_sha256_digest(
-                    str(item.get("sha256") or nested.get("sha256") or "")
-                )
             elif item:
                 artifact_id = str(item)
                 filename = artifact_id
             if not artifact_id:
                 continue
-            data = self._client.download_job_artifact(job_id, artifact_id)
+            data, header_map = self._client.download_job_artifact_with_headers(job_id, artifact_id)
+            export_header = None
+            if isinstance(header_map, dict):
+                export_header = header_map.get("X-Hydracept-Export-Sha256")
+            expected_sha = ""
+            if isinstance(item, dict):
+                expected_sha = expected_artifact_download_sha256(
+                    item,
+                    export_header=export_header,
+                )
             actual_sha = hashlib.sha256(data).hexdigest()
             if expected_sha and expected_sha != actual_sha:
                 raise RuntimeError(

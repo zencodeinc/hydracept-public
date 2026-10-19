@@ -382,9 +382,22 @@ class HydraceptClient:
         return self._get(path)
 
     def download_job_artifact(self, job_id: str, artifact_id: str) -> bytes:
-        response = self._http.get(f"/v1/jobs/{job_id}/artifacts/{artifact_id}")
+        data, _headers = self.download_job_artifact_with_headers(job_id, artifact_id)
+        return data
+
+    def download_job_artifact_with_headers(
+        self,
+        job_id: str,
+        artifact_id: str,
+    ) -> tuple[bytes, dict[str, str]]:
+        response = self._http.get(
+            f"/v1/jobs/{job_id}/artifacts/{artifact_id}",
+            headers={"X-Hydracept-Export-Metadata": "1"},
+        )
         raise_api_status(response)
-        return response.content
+        export_sha = response.headers.get("X-Hydracept-Export-Sha256")
+        headers = {"X-Hydracept-Export-Sha256": export_sha} if export_sha else {}
+        return response.content, headers
 
     def create_capability_request(self, body: dict[str, Any]) -> dict[str, Any]:
         return self._post("/v1/capability-requests", body)

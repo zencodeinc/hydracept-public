@@ -30,7 +30,7 @@ If the CLI is missing, say so and offer `pip install -U hydracept` after approva
 
 ## MCP tools
 
-If `hydracept_*` tools are in **this** session, call `hydracept_status` / `hydracept_capabilities`. If they are missing, do not retry hosted discovery — use the CLI.
+If `hydracept_*` tools are in **this** session, call `hydracept_workspace_status` / `hydracept_capabilities`. If they are missing, do not retry hosted discovery — use the CLI.
 
 ## Safety
 

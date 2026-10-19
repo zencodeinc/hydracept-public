@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 import httpx
 import pytest
+
+from hydracept.mcp.tool_profiles import MCP_TOOL_PROFILE_ENV, MCP_TOOL_PROFILE_FULL
+
+os.environ[MCP_TOOL_PROFILE_ENV] = MCP_TOOL_PROFILE_FULL
 
 from hydracept.cli.project_service import ProjectUpServiceStatus
 from hydracept.cli.session_client import SessionClientError
@@ -97,7 +102,12 @@ def _response(method: str, url: str, status: int, payload: dict[str, Any]) -> ht
 
 
 def test_stdio_server_registers_project_tools() -> None:
-    names = [tool.name for tool in server._tool_manager.list_tools()]
+    import importlib
+
+    import hydracept.mcp.server as server_mod
+
+    importlib.reload(server_mod)
+    names = [tool.name for tool in server_mod.server._tool_manager.list_tools()]
     for expected in STDIO_PROJECT_TOOL_NAMES:
         assert expected in names
     assert "hydracept_submit_job" in names

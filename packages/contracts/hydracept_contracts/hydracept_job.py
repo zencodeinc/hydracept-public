@@ -87,6 +87,11 @@ class HydraceptJobArtifactRef(BaseModel):
     kind: str
     download_path: str | None = Field(default=None, alias="downloadPath")
     sha256: str | None = None
+    export_sha256: str | None = Field(
+        default=None,
+        alias="exportSha256",
+        description="SHA-256 of default export bytes (neutral generator metadata) when they differ from sha256.",
+    )
     byte_length: int | None = Field(default=None, alias="byteLength")
     variant_index: int | None = Field(default=None, alias="variantIndex")
     slot_status: str | None = Field(default=None, alias="slotStatus")
@@ -97,7 +102,7 @@ class HydraceptJobArtifactRef(BaseModel):
 
     model_config = {"populate_by_name": True}
 
-    @field_validator("sha256", mode="before")
+    @field_validator("sha256", "export_sha256", mode="before")
     @classmethod
     def _public_sha256(cls, value: object) -> str | None:
         """Emit hex only; artifact store keys may be advertised as sha256:<hex>."""
@@ -543,6 +548,14 @@ class HydraceptReceiptProvenance(BaseModel):
     bundle_hash: str | None = Field(default=None, alias="bundleHash")
     policy_hash: str | None = Field(default=None, alias="policyHash")
     receipt_hash: str | None = Field(default=None, alias="receiptHash")
+    generator: str | None = Field(
+        default=None,
+        description="Passive first-party generator label when org/project allows attribution.",
+    )
+    url: str | None = Field(
+        default=None,
+        description="Public receipt URL (https://hydracept.com/r/{receiptId}) when attribution is enabled.",
+    )
     # Execution-backend provenance. Present for provider-free local execution so
     # a receipt can state, without inferring from the route, that nothing was
     # model-backed or provider-backed and that the result is deterministic.

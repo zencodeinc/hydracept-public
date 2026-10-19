@@ -36,10 +36,14 @@ def test_stdio_args_include_absolute_workspace(tmp_path: Path) -> None:
 
 
 def test_stdio_server_entry_sets_workspace_env(tmp_path: Path) -> None:
+    from hydracept.mcp.tool_profiles import MCP_TOOL_PROFILE_ENV, MCP_TOOL_PROFILE_FULL
+
     cursor = stdio_server_entry(cursor_placeholder=True)
     assert cursor["env"]["HYDRACEPT_WORKSPACE"] == "${workspaceFolder}"
+    assert cursor["env"][MCP_TOOL_PROFILE_ENV] == MCP_TOOL_PROFILE_FULL
     absolute = stdio_server_entry(project_root=tmp_path)
     assert absolute["env"]["HYDRACEPT_WORKSPACE"] == str(tmp_path.resolve())
+    assert absolute["env"][MCP_TOOL_PROFILE_ENV] == MCP_TOOL_PROFILE_FULL
 
 
 def test_bind_writes_cursor_and_claude_stdio(tmp_path: Path) -> None:

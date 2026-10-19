@@ -3,7 +3,7 @@ id: hydracept-agent-plugin
 legacyPackId: hydracept-agent-pack
 version: 0.1.0
 distributionVersion: 0.1.10
-registryName: com.hydracept/mcp
+registryName: com.hydracept/hydracept
 minimumHydraceptVersion: 0.5.1
 name: Hydracept
 displayName: Hydracept
@@ -11,11 +11,10 @@ author:
   name: Zencode Consulting Inc.
   email: support@hydracept.com
 canonicalDescription: >-
-  Hydracept is an execution control plane for software and agents that need
-  external capabilities, providing discovery, quoting, execution, durable jobs,
-  artifacts, receipts, provenance, budgets, and provider abstraction.
+  Hydracept is a public API to discover, quote, and run external AI capabilities
+  with durable jobs, artifacts, receipts, budgets, and BYOK or managed billing.
 tagline: Discovery, quoting, durable jobs, artifacts, and receipts.
-category: Execution control plane
+category: Public API for AI capabilities
 positioning: Native integrations for Cursor, Claude Code, OpenAI Codex, and OpenClaw.
 operator: Zencode Consulting Inc.
 logo: assets/trademark.png

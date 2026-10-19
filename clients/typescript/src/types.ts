@@ -22,6 +22,7 @@ export type HydraceptClientOptions = {
 export type HydraceptHttpError = Error & {
   status?: number;
   body?: string;
+  code?: string;
 };
 
 export type HydraceptAssetOut = {

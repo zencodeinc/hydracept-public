@@ -61,9 +61,21 @@ export function createHydraceptHttp(options: HydraceptClientOptions) {
     });
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      const error = new Error(`Hydracept ${path} failed (${res.status}): ${text}`) as HydraceptHttpError;
+      const v1Path = toV1Path(path, options.pathsAreV1Relative);
+      let code: string | undefined;
+      try {
+        const parsed = JSON.parse(text) as { code?: string; detail?: { code?: string } };
+        code = parsed.code ?? parsed.detail?.code;
+      } catch {
+        code = undefined;
+      }
+      const codeSuffix = code ? ` ${code}` : '';
+      const error = new Error(
+        `Hydracept ${v1Path} failed (${res.status})${codeSuffix}: ${text}`,
+      ) as HydraceptHttpError;
       error.status = res.status;
       error.body = text;
+      error.code = code;
       throw error;
     }
     return res;

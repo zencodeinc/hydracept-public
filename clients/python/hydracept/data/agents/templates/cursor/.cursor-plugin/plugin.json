@@ -1,0 +1,8 @@
+{
+  "name": "hydracept",
+  "displayName": "Hydracept",
+  "version": "0.1.10",
+  "description": "Execution infrastructure for AI agents. Run text, reasoning, image, audio, video, 3D, domains, DNS, and more through one capability API—with durable jobs, transparent pricing, receipts, budgets, and BYOK.",
+  "logo": "assets/trademark.png",
+  "minimumHydraceptVersion": "0.3.9"
+}

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.3 (unreleased)
+
+- Version aligned with the Python client 0.5.3. No .NET SDK API changes in this release.
+
 ## 0.5.2 (unreleased)
 
 - NuGet README sample compiles (`using Hydracept.Client` and `HydraceptClient(HttpClient, options)`).

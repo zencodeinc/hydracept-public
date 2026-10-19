@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.hydracept/hydracept",
   "title": "Hydracept",
-  "description": "Execution control plane for agents: capabilities, durable jobs, budgets, receipts, and BYOK.",
-  "version": "0.5.1",
+  "description": "Hosted MCP for Hydracept: discover capabilities, run jobs, receipts, BYOK or managed billing.",
+  "version": "0.5.2",
   "websiteUrl": "https://hydracept.com/plugin",
   "repository": {
     "url": "https://github.com/zencodeinc/hydracept-public",
@@ -20,7 +20,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "hydracept",
-      "version": "0.5.1",
+      "version": "0.5.2",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
@@ -41,6 +41,12 @@
           "description": "Hydracept API key from https://hydracept.com/start (or use project secrets after init)",
           "isRequired": true,
           "isSecret": true
+        },
+        {
+          "name": "HYDRACEPT_MCP_TOOL_PROFILE",
+          "description": "Stdio MCP tools/list for the process lifetime: full (default when unset) or compact (nine first-time-agent tools). Hosted POST /mcp defaults to compact for new API keys; POST /mcp/full always lists all specialists.",
+          "isRequired": false,
+          "isSecret": false
         }
       ]
     }

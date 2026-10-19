@@ -46,5 +46,5 @@ List items may include `errorCode`, `selectedArtifactId`, and `receiptId`, but n
 - Do not use Studio Prompt Memory, reviews, or `JobSurfaceMetadata.favorite` as history authority.
 - Do not infer PNG alpha correctness from vision; use `transparencyReport` or `python -m hydracept verify <path.png> --json`.
 - Pinned research execution remains separate: use `hydracept_pinned_get` by id. Do not pretend project job history is a pinned-run history API.
-- If no project is bound, use `hydracept_status` / `python -m hydracept init`; never invent a project id.
+- If no project is bound, use `hydracept_workspace_status` / `python -m hydracept init`; never invent a project id.
 - Inspection is read-only. Re-running always creates a new attempt with a new idempotency key.

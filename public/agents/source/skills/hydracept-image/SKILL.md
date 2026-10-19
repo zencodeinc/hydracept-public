@@ -11,7 +11,7 @@ Production image generation judgment for game assets.
 
 ## Capability
 
-Use `image.generate.v1` through `python -m hydracept run image.generate.v1 --prompt "..."` or MCP `hydracept_run` / `hydracept_submit_job`. `run` composes workspace bootstrap when needed. If `execution.managedAvailable` is true, do not ask for a provider API key.
+Use `image.generate.v1` through `python -m hydracept run image.generate.v1 --prompt "..."` or MCP `hydracept_run` / `hydracept_submit_job`. `run` composes workspace bootstrap when needed. If `execution.managedInferenceAvailable` is true, do not ask for a provider API key.
 
 Use `image.generate.v1` for new images. Use `image.edit.v1` to edit an existing PNG in place:
 
@@ -22,8 +22,8 @@ Use `image.generate.v1` for new images. Use `image.edit.v1` to edit an existing 
 
 ## Generate-only options (`image.generate.v1`)
 
-- Transparent PNG sprites/icons: `requestTransparentOutput: true`. Default is native alpha when the catalog model supports it (gpt-image-2).
-- Advanced chroma-key matte: `transparencyMethod: "matte-v9"` with optional `keyColor` and `transparentRegions`. Required for models that have no native transparent background.
+- Transparent PNG sprites/icons: `requestTransparentOutput: true`. Do not set `transparencyMethod`. gpt-image models always use native alpha. Do not ask for a chroma-key plate, magenta field, or other keyed background.
+- `transparencyMethod: "matte-v9"` applies only to models with no native transparent background. It is ignored on gpt-image models.
 - Multiple takes: `variantCount` between 2 and 4
 - Width/height snap up to multiples of 16. Open Graph: **1200×640** (not 1200×630)
 - Sheet workflows: prefer the `hydracept-sheet` skill for cohesive families

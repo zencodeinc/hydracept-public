@@ -21,11 +21,11 @@ Inference capability descriptors include **`billingModes`**, **`pricing`**, and 
 ```json
 {
   "key": "image.generate.v1",
-  "readySummary": "Ready now · managed execution · quote available",
+  "readySummary": "Managed inference available · quote available",
   "execution": {
     "oneShot": true,
-    "managedAvailable": true,
-    "providerSetupRequired": false,
+    "managedInferenceAvailable": true,
+    "inferenceProviderSetupRequired": false,
     "projectLocalRequired": false,
     "estimateAvailable": true,
     "trialEligible": true
@@ -33,7 +33,7 @@ Inference capability descriptors include **`billingModes`**, **`pricing`**, and 
   "funding": {
     "mode": "managed_trial",
     "eligible": true,
-    "status": "ready"
+    "status": "catalog_available"
   },
   "output": { "kind": "artifact", "mediaType": "image/png" },
   "interaction": { "typicallyRequired": false },
@@ -47,9 +47,11 @@ Inference capability descriptors include **`billingModes`**, **`pricing`**, and 
 Find by task: `GET /v1/capabilities?q=generate+an+image` or `python -m hydracept capabilities find "generate an image"`.
 
 - **oneShot** — this capability can be invoked without a product integration commitment
-- **managedAvailable** — no provider account is required for this call when true
+- **managedInferenceAvailable** — catalog-level hint: no provider account is required for this inference call when true and the workspace is runnable
+- **inferenceProviderSetupRequired** — a provider connection is required when true; never ask for a provider key when managed inference is available
 - **trialEligible** — managed first-use policy may cover this capability (server-authoritative remaining balance is on authenticated `funding`)
-- **funding.status** — `ready` or `funding_required` (with `fundingOptions`: managed, BYOK). Do not treat an unbound provider as "cannot execute" when managed first-use remains.
+- **workspaceRunnable** — authenticated caller-relative readiness. Check `workspaceRunnable.runnable` before invoking; when false, use `status` / `requiredAction` instead of treating catalog `execution` as a promise for this workspace.
+- **funding.status** — catalog-level availability: `catalog_available` or `provider_required`. Caller-relative readiness (`ready`, `funding_required`, `missing_provider`) is reported by authenticated `workspaceRunnable`. Do not treat an unbound provider as "cannot execute" when managed first-use remains.
 - **readySummary** — agent-readable readiness (not a usefulness score)
 - **BYOK** — use your provider credentials (0% Hydracept inference fee). See [Connections](../connections/).
 - **Managed** — PAYG wallet + Hydracept service fee (`serviceFeeBps` / 100 = percent). See [Billing](../billing/).
@@ -66,8 +68,16 @@ Content-Type: application/json
 
 ```json
 {
-  "input": { "prompt": "cute slime icon", "model": "auto" },
-  "billingMode": "managed"
+  "context": {
+    "productId": "my-product",
+    "projectId": "cpr_...",
+    "environment": "development"
+  },
+  "input": { "prompt": "cute slime icon", "model": "gpt-image-2.5-flare" },
+  "execution": {
+    "executionPreference": "automatic",
+    "billingMode": "managed"
+  }
 }
 ```
 
