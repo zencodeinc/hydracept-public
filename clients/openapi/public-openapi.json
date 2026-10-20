@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Hydracept Public API",
-    "version": "0.5.2",
+    "version": "0.5.3",
     "x-hydracept-caller-context-limits": {
       "metadataMaxBytes": {
         "value": 16384,

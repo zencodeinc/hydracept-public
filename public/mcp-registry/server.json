@@ -3,7 +3,7 @@
   "name": "com.hydracept/hydracept",
   "title": "Hydracept",
   "description": "Hosted MCP for Hydracept: discover capabilities, run jobs, receipts, BYOK or managed billing.",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "websiteUrl": "https://hydracept.com/plugin",
   "repository": {
     "url": "https://github.com/zencodeinc/hydracept-public",
@@ -20,7 +20,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "hydracept",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
@@ -44,7 +44,7 @@
         },
         {
           "name": "HYDRACEPT_MCP_TOOL_PROFILE",
-          "description": "Stdio MCP tools/list for the process lifetime: full (default when unset) or compact (nine first-time-agent tools). Hosted POST /mcp defaults to compact for new API keys; POST /mcp/full always lists all specialists.",
+          "description": "Stdio MCP tools/list for the process lifetime: full (default when unset) or compact (eleven lifecycle tools). Hosted POST /mcp defaults to compact for new API keys; POST /mcp/full always lists all specialists.",
           "isRequired": false,
           "isSecret": false
         }

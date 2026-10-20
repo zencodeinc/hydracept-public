@@ -2,7 +2,7 @@
   "serverInfo": {
     "name": "com.hydracept/hydracept",
     "title": "Hydracept",
-    "version": "0.5.2"
+    "version": "0.5.3"
   },
   "authentication": {
     "required": true,
