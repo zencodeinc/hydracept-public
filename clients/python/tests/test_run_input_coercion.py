@@ -240,3 +240,29 @@ def test_run_accepts_generic_set_values(monkeypatch) -> None:
     assert captured["body"]["prompt"] == "icon"
     assert captured["body"]["width"] == 816
     assert captured["body"]["height"] == 816
+
+
+def test_voice_generate_applies_managed_default_without_provider_sdk() -> None:
+    payload = coerce_capability_input("audio.voice.generate.v1", {"text": "Hello"})
+    assert payload["text"] == "Hello"
+    assert len(payload["voiceId"]) >= 10
+    assert payload["voiceId"].isalnum()
+
+
+def test_voice_generate_rejects_invalid_voice_id() -> None:
+    with pytest.raises(InputValidationError) as caught:
+        coerce_capability_input(
+            "audio.voice.generate.v1",
+            {"text": "Hello", "voiceId": "voice_1"},
+        )
+    assert caught.value.code == "InvalidVoiceId"
+    assert caught.value.field == "voiceId"
+
+
+def test_voice_generate_strips_server_only_voice_id_source() -> None:
+    payload = coerce_capability_input(
+        "audio.voice.generate.v1",
+        {"text": "Hello", "voiceId": "pNInz6obpgDQGcFmaJgB", "voiceIdSource": "managed_default"},
+    )
+    assert "voiceIdSource" not in payload
+    assert payload["voiceId"] == "pNInz6obpgDQGcFmaJgB"

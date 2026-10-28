@@ -1,6 +1,6 @@
 {
   "name": "@hydracept/sdk",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "TypeScript SDK for Hydracept — durable AI capability execution for software and agents, with multi-provider routing, budgets, artifacts, and receipts.",
   "type": "module",
   "main": "./dist/index.js",

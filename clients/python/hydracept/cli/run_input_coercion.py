@@ -90,6 +90,10 @@ def coerce_capability_input(capability: str, payload: dict[str, Any]) -> dict[st
         coerced = _coerce_translate_input(dict(body))
     elif key == "domain.search.v1":
         coerced = _coerce_domain_search_input(dict(body))
+    elif key == "audio.voice.generate.v1":
+        from hydracept.cli.voice_input_coercion import coerce_voice_generate_input
+
+        coerced = coerce_voice_generate_input(dict(body))
     else:
         coerced = dict(body)
     return _validate_required_inputs(key, coerced)

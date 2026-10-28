@@ -213,7 +213,7 @@ GET /v1/jobs/{jobId}/artifacts/{artifactId}
 Authorization: Bearer <HYDRACEPT_API_KEY>
 ```
 
-Public receipts emit SHA-256 as hex. Older jobs may still advertise `sha256:<hex>` — compare the hex digest only. `HydraceptWorkspace.jobs.run(..., download_dir=...)` (CLI 0.3.1+) strips the prefix. Audio SFX artifacts are Ogg files (`filename` ends in `.ogg`), not WAV.
+Public receipts emit SHA-256 as hex. Older jobs may still advertise `sha256:<hex>` — compare the hex digest only. `HydraceptWorkspace.jobs.run(..., download_dir=...)` (CLI 0.3.1+) strips the prefix. Audio artifacts default to Ogg (`filename` ends in `.ogg`); set `outputFormatPreference` (for example `mp3_44100_128`) to receive MP3 (`audio/mpeg`, `.mp3`). The artifact `mediaType` and filename match the returned format.
 
 ## Receipt
 
@@ -223,6 +223,21 @@ Authorization: Bearer <HYDRACEPT_API_KEY>
 ```
 
 Receipts include the request, provider, model, cost, retries, and resulting artifacts. Funding and billing mode on the receipt come from admission evidence. Missing evidence stays `unknown` — do not display that as BYOK or managed trial. Use receipts to review a result, debug a failed run, or keep a record for your team. Related receipts can be grouped into a [run manifest](../provenance/); a stable pin can be emitted as an [AI lockfile](../provenance/).
+
+Every receipt carries a `seal`:
+
+```json
+"seal": {
+  "algorithm": "Ed25519",
+  "keyId": "ed25519-<public-key-fingerprint>",
+  "publicKey": "<base64url Ed25519 public key>",
+  "receiptHash": "<sha256 of the canonical receipt without seal>",
+  "signature": "<base64url Ed25519 signature>",
+  "signedAt": "2026-10-24T12:00:05Z"
+}
+```
+
+`receiptHash` is SHA-256 over canonical JSON with sorted keys and no `seal` member. `signature` signs the same bytes. Fetch `GET /v1/public/receipts/verification-key` and confirm `seal.keyId` and `seal.publicKey` match before verifying, so a receipt from an untrusted channel cannot substitute its own key. `pricing.providerCost.status` distinguishes `measured` provider usage from `estimated` usage priced on a pinned schedule when the provider omits per-request usage.
 
 ## Sheet & Slice (image.generate.v1)
 

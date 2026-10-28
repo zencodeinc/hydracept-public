@@ -168,6 +168,10 @@ class HydraceptClient:
         """POST /v1/capabilities/{key}/jobs. Returns immediately with a job id."""
         return self._post(f"/v1/capabilities/{key}/jobs", self._merge_body(body))
 
+    def get_session_diagnostics(self) -> dict[str, Any]:
+        """Return the effective credential context without executing a capability."""
+        return self._get("/v1/diagnostics/session")
+
     def get_job(self, job_id: str) -> dict[str, Any]:
         return self._get(f"/v1/jobs/{job_id}")
 

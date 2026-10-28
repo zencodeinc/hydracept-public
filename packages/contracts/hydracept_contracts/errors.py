@@ -13,11 +13,19 @@ class HydraceptErrorCode(StrEnum):
     AUTHORIZATION_FAILED = "AuthorizationFailed"
     CAPABILITY_NOT_ALLOWED = "CapabilityNotAllowed"
     POLICY_REJECTED = "PolicyRejected"
+    # The requested model cannot satisfy the request contract. Distinct from a
+    # transient provider failure: another model may be eligible, but retrying
+    # the same model will not fix a rating, trait, context, or pricing mismatch.
+    MODEL_INCOMPATIBLE = "ModelIncompatible"
     BUDGET_EXCEEDED = "BudgetExceeded"
     PAUSED = "Paused"
     RATE_LIMITED = "RateLimited"
     PROVIDER_UNAVAILABLE = "ProviderUnavailable"
     PROVIDER_REJECTED = "ProviderRejected"
+    # The provider returned a recognizable content-policy restriction. This is
+    # model-scoped, not a malformed request, and may authorize an explicitly
+    # permitted fallback; it is never a blind retry of the same model.
+    PROVIDER_CONTENT_RESTRICTED = "ProviderContentRestricted"
     PROVIDER_TIMEOUT = "ProviderTimeout"
     # A paid provider request may have been issued but its outcome could not be
     # established (crash between request and response). Terminal for the attempt: the
@@ -47,6 +55,9 @@ class HydraceptErrorCode(StrEnum):
     ESTIMATE_EXCEEDS_MAX_COST = "EstimateExceedsMaxCost"
     FUNDING_REQUIRED = "FundingRequired"
     PROJECT_CREDENTIAL_MISMATCH = "ProjectCredentialMismatch"
+    ENVIRONMENT_MISMATCH = "EnvironmentMismatch"
+    PROJECT_BINDING_MISMATCH = "ProjectBindingMismatch"
+    SERVICE_PRINCIPAL_UNRESOLVED = "ServicePrincipalUnresolved"
     PROVIDER_CREDENTIAL_UNAVAILABLE = "ProviderCredentialUnavailable"
     QUOTE_MISMATCH = "QUOTE_MISMATCH"
     ESTIMATE_MISMATCH = "ESTIMATE_MISMATCH"

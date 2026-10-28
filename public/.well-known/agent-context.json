@@ -54,6 +54,53 @@
       }
     ],
     "download": "GET /v1/jobs/{jobId}/artifacts/{artifactId}",
+    "finishedJobWebhooks": {
+      "artifacts": "Download through GET /v1/jobs/{jobId}/artifacts/{artifactId} when the terminal event arrives.",
+      "create": "POST /v1/delivery-endpoints",
+      "createBody": {
+        "enabled": true,
+        "eventTypes": [
+          "job.status_changed"
+        ],
+        "secret": "write-only HMAC secret, at least 16 characters",
+        "url": "https://receiver.example/hooks/hydracept"
+      },
+      "deliveryLog": "GET /v1/deliveries",
+      "deliverySemantics": "Signed attempts retry with exponential backoff and become dead letters after the configured attempt limit; replay re-sends the same eventId.",
+      "emptyEventTypesMeansAll": true,
+      "eventTypes": [
+        "job.accepted",
+        "job.status_changed",
+        "job.progress",
+        "job.reader_text"
+      ],
+      "finishedFilter": [
+        "job.status_changed"
+      ],
+      "finishedStatuses": [
+        "completed",
+        "failed_terminal",
+        "cancelled"
+      ],
+      "manage": {
+        "disable": "POST /v1/delivery-endpoints/{endpointId}/disable",
+        "list": "GET /v1/delivery-endpoints",
+        "update": "PATCH /v1/delivery-endpoints/{endpointId}"
+      },
+      "projectScoped": true,
+      "replay": "POST /v1/deliveries/{deliveryId}/replay",
+      "signature": {
+        "algorithm": "HMAC-SHA256",
+        "eventIdIsIdempotencyKey": true,
+        "replayWindowSeconds": 300,
+        "signatureHeader": "X-Hydracept-Signature",
+        "signedInput": "{timestamp}.{rawBody}",
+        "timestampHeader": "X-Hydracept-Timestamp",
+        "version": "v1"
+      },
+      "statusMappingNote": "`current` is the workflow business state in the webhook body; read GET /v1/jobs/{jobId} for the public job status.",
+      "summary": "Subscribe a project endpoint to signed job events instead of polling. A finished job is the terminal `current` value on `job.status_changed`."
+    },
     "idempotencyKeyRequired": true,
     "jobIdIsNavigationKey": true,
     "jobProgressAndError": {
@@ -166,7 +213,9 @@
       "Omit execution.quoteId and execution.estimateId on submit; the API seals pricing at admission. On 409 QUOTE_MISMATCH, omit them and submit with a new idempotencyKey. A client poll timeout is not a Hydracept failure: keep GET /v1/jobs/{jobId} or POST the same idempotencyKey. Same key plus the same payload returns the existing job, including after failed. 409 IdempotencyConflict is payload mismatch only and includes jobId. Follow nextAction / retry.newKeySafe; do not mint a new key on TRANSPORT_AMBIGUOUS.",
       "Receipt sha256 is hex; older values may be sha256:<hex> \u2014 compare the hex digest only.",
       "image.generate.v1 width and height snap up to multiples of 16 (Open Graph 1200\u00d7630 becomes 1200\u00d7640).",
-      "audio.sfx.generate.v1 artifacts are Ogg (audio/ogg), not WAV; filenames end in .ogg.",
+      "audio.sfx.generate.v1 defaults to Ogg (audio/ogg, .ogg); set outputFormatPreference (for example mp3_44100_128) for MP3, and the artifact mediaType and filename match the returned format.",
+      "audio.voice.generate.v1 accepts text-only input: omit voiceId to use the managed default voice. GET /v1/capabilities/audio.voice.generate.v1/voices lists other selectable voiceId values using the project bound credential or the managed platform key.",
+      "Audio modelId values are enumerable from GET /v1/capabilities/{capabilityKey} (inputSchema.properties.modelId.enum). Use one of them; do not guess provider model names such as music_v2_5 or eleven_v3.",
       "dns.record.create.v1 upserts when Porkbun reports an ALIAS/conflict; otherwise list records and dns.record.update.v1 with recordId.",
       "domain.list.v1 is invoke (not jobs). Filter with domain or nameContains and read typedOutput; the first page can omit domains \u2014 paginate or filter.",
       "Hosted MCP can list tools with no workspace key. Use stdio MCP after python -m hydracept init. Do not put the workspace key in Plugins \u2192 Configure.",
@@ -218,7 +267,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -254,7 +303,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/text.general.fast.v1/quote"
           },
           "providerChargesExternal": false,
@@ -314,8 +363,8 @@
         "minimalInput": {
           "messages": [
             {
-              "content": "Example document text with a name Alice and value 42.",
-              "role": "system"
+              "content": "Write a short haiku about a sleepy robot.",
+              "role": "user"
             }
           ]
         },
@@ -324,6 +373,7 @@
           "discover": "execution-targets",
           "doesNotChangeRoute": true,
           "processingTier": "standard",
+          "selectionConstraint": "required_eligibility",
           "supportedProviders": [
             "openai-text",
             "zai-text"
@@ -448,24 +498,40 @@
         "mediaType": "text/plain"
       },
       "outputSchema": {
-        "properties": {
-          "assistantMessage": {
-            "type": "object"
-          },
-          "content": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string"
-          },
-          "toolCalls": {
-            "items": {
+        "type": "string"
+      },
+      "outputSchemas": {
+        "assistant_message": {
+          "properties": {
+            "assistantMessage": {
               "type": "object"
             },
-            "type": "array"
-          }
+            "content": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string"
+            },
+            "toolCalls": {
+              "items": {
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "role",
+            "content",
+            "toolCalls"
+          ],
+          "type": "object"
         },
-        "type": "object"
+        "json_object": {
+          "type": "object"
+        },
+        "text": {
+          "type": "string"
+        }
       },
       "pricing": {
         "authoritativeForExecution": false,
@@ -497,7 +563,7 @@
             "requiredForEstimate": true
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [
             "/input/maxOutputTokens",
@@ -508,6 +574,41 @@
         "quoteEndpoint": "/v1/capabilities/text.general.fast.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "messages": [
+              {
+                "content": "Write a short haiku about a sleepy robot.",
+                "role": "user"
+              }
+            ]
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/text.general.fast.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/text.general.fast.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "General fast text"
     },
@@ -543,7 +644,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -579,7 +680,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/text.reasoning.high.v1/quote"
           },
           "providerChargesExternal": false,
@@ -636,6 +737,7 @@
           "discover": "execution-targets",
           "doesNotChangeRoute": true,
           "processingTier": "standard",
+          "selectionConstraint": "required_eligibility",
           "supportedProviders": [
             "openai-text",
             "zai-text"
@@ -751,24 +853,40 @@
         "mediaType": "text/plain"
       },
       "outputSchema": {
-        "properties": {
-          "assistantMessage": {
-            "type": "object"
-          },
-          "content": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string"
-          },
-          "toolCalls": {
-            "items": {
+        "type": "string"
+      },
+      "outputSchemas": {
+        "assistant_message": {
+          "properties": {
+            "assistantMessage": {
               "type": "object"
             },
-            "type": "array"
-          }
+            "content": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string"
+            },
+            "toolCalls": {
+              "items": {
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "role",
+            "content",
+            "toolCalls"
+          ],
+          "type": "object"
         },
-        "type": "object"
+        "json_object": {
+          "type": "object"
+        },
+        "text": {
+          "type": "string"
+        }
       },
       "pricing": {
         "authoritativeForExecution": false,
@@ -800,7 +918,7 @@
             "requiredForEstimate": true
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [
             "/input/maxOutputTokens",
@@ -811,6 +929,41 @@
         "quoteEndpoint": "/v1/capabilities/text.reasoning.high.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "messages": [
+              {
+                "content": "Example document text with a name Alice and value 42.",
+                "role": "system"
+              }
+            ]
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/text.reasoning.high.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/text.reasoning.high.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "High reasoning text"
     },
@@ -846,7 +999,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -882,7 +1035,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/text.reasoning.maximum.v1/quote"
           },
           "providerChargesExternal": false,
@@ -943,6 +1096,7 @@
           "discover": "execution-targets",
           "doesNotChangeRoute": true,
           "processingTier": "standard",
+          "selectionConstraint": "required_eligibility",
           "supportedProviders": [
             "openai-text",
             "zai-text"
@@ -1059,24 +1213,40 @@
         "mediaType": "text/plain"
       },
       "outputSchema": {
-        "properties": {
-          "assistantMessage": {
-            "type": "object"
-          },
-          "content": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string"
-          },
-          "toolCalls": {
-            "items": {
+        "type": "string"
+      },
+      "outputSchemas": {
+        "assistant_message": {
+          "properties": {
+            "assistantMessage": {
               "type": "object"
             },
-            "type": "array"
-          }
+            "content": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string"
+            },
+            "toolCalls": {
+              "items": {
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "role",
+            "content",
+            "toolCalls"
+          ],
+          "type": "object"
         },
-        "type": "object"
+        "json_object": {
+          "type": "object"
+        },
+        "text": {
+          "type": "string"
+        }
       },
       "pricing": {
         "authoritativeForExecution": false,
@@ -1108,7 +1278,7 @@
             "requiredForEstimate": true
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [
             "/input/maxOutputTokens",
@@ -1119,6 +1289,41 @@
         "quoteEndpoint": "/v1/capabilities/text.reasoning.maximum.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "messages": [
+              {
+                "content": "Example document text with a name Alice and value 42.",
+                "role": "system"
+              }
+            ]
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/text.reasoning.maximum.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/text.reasoning.maximum.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "Maximum reasoning text"
     },
@@ -1148,7 +1353,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -1178,7 +1383,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/text.structured.extraction.v1/quote"
           },
           "providerChargesExternal": false,
@@ -1241,6 +1446,7 @@
           "discover": "execution-targets",
           "doesNotChangeRoute": true,
           "processingTier": "standard",
+          "selectionConstraint": "required_eligibility",
           "supportedProviders": [
             "openai-text",
             "zai-text"
@@ -1301,6 +1507,14 @@
       "outputSchema": {
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "type": "object"
+        },
+        "structured": {
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -1325,7 +1539,7 @@
             "requiredForEstimate": true
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [
             "/input/maxOutputTokens",
@@ -1336,6 +1550,48 @@
         "quoteEndpoint": "/v1/capabilities/text.structured.extraction.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "document": "Example document text with a name Alice and value 42.",
+            "schema": {
+              "additionalProperties": false,
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/text.structured.extraction.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/text.structured.extraction.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "Structured extraction"
     },
@@ -1365,7 +1621,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -1395,7 +1651,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/text.structured.generation.v1/quote"
           },
           "providerChargesExternal": false,
@@ -1451,6 +1707,7 @@
           "discover": "execution-targets",
           "doesNotChangeRoute": true,
           "processingTier": "standard",
+          "selectionConstraint": "required_eligibility",
           "supportedProviders": [
             "openai-text",
             "zai-text"
@@ -1568,6 +1825,14 @@
       "outputSchema": {
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "type": "object"
+        },
+        "structured": {
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -1592,7 +1857,7 @@
             "requiredForEstimate": true
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [
             "/input/maxOutputTokens",
@@ -1603,6 +1868,41 @@
         "quoteEndpoint": "/v1/capabilities/text.structured.generation.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "messages": [
+              {
+                "content": "Example document text with a name Alice and value 42.",
+                "role": "system"
+              }
+            ]
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/text.structured.generation.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/text.structured.generation.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "Structured generation"
     },
@@ -1632,7 +1932,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -1662,7 +1962,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/text.structured.ranking.v1/quote"
           },
           "providerChargesExternal": false,
@@ -1718,6 +2018,7 @@
           "discover": "execution-targets",
           "doesNotChangeRoute": true,
           "processingTier": "standard",
+          "selectionConstraint": "required_eligibility",
           "supportedProviders": [
             "openai-text",
             "zai-text"
@@ -1835,6 +2136,14 @@
       "outputSchema": {
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "type": "object"
+        },
+        "structured": {
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -1859,7 +2168,7 @@
             "requiredForEstimate": true
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [
             "/input/maxOutputTokens",
@@ -1870,6 +2179,41 @@
         "quoteEndpoint": "/v1/capabilities/text.structured.ranking.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "messages": [
+              {
+                "content": "Example document text with a name Alice and value 42.",
+                "role": "system"
+              }
+            ]
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/text.structured.ranking.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/text.structured.ranking.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "Structured ranking"
     },
@@ -1899,7 +2243,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -1929,7 +2273,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/text.structured.adjudication.v1/quote"
           },
           "providerChargesExternal": false,
@@ -1985,6 +2329,7 @@
           "discover": "execution-targets",
           "doesNotChangeRoute": true,
           "processingTier": "standard",
+          "selectionConstraint": "required_eligibility",
           "supportedProviders": [
             "openai-text",
             "zai-text"
@@ -2102,6 +2447,14 @@
       "outputSchema": {
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "type": "object"
+        },
+        "structured": {
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -2126,7 +2479,7 @@
             "requiredForEstimate": true
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [
             "/input/maxOutputTokens",
@@ -2137,6 +2490,41 @@
         "quoteEndpoint": "/v1/capabilities/text.structured.adjudication.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "messages": [
+              {
+                "content": "Example document text with a name Alice and value 42.",
+                "role": "system"
+              }
+            ]
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/text.structured.adjudication.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/text.structured.adjudication.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "Structured adjudication"
     },
@@ -2160,7 +2548,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -2184,7 +2572,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/decision.evaluate.v1/quote"
           },
           "providerChargesExternal": false,
@@ -2369,6 +2757,62 @@
         ],
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "properties": {
+            "answers": {
+              "type": "object"
+            },
+            "model": {
+              "type": "string"
+            },
+            "usage": {
+              "properties": {
+                "inputTokens": {
+                  "type": "integer"
+                },
+                "outputTokens": {
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "required": [
+            "model",
+            "answers",
+            "usage"
+          ],
+          "type": "object"
+        },
+        "structured": {
+          "properties": {
+            "answers": {
+              "type": "object"
+            },
+            "model": {
+              "type": "string"
+            },
+            "usage": {
+              "properties": {
+                "inputTokens": {
+                  "type": "integer"
+                },
+                "outputTokens": {
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "required": [
+            "model",
+            "answers",
+            "usage"
+          ],
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -2387,7 +2831,7 @@
             "requiredForEstimate": true
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [
             "/input/inputTokens"
@@ -2397,6 +2841,42 @@
         "quoteEndpoint": "/v1/capabilities/decision.evaluate.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "questions": {
+              "ready": {
+                "instructions": "Is this ready?",
+                "type": "boolean"
+              }
+            },
+            "state": "x"
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/decision.evaluate.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/decision.evaluate.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "Decision evaluation"
     },
@@ -2432,7 +2912,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -2468,7 +2948,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/text.creative.longform.v1/quote"
           },
           "providerChargesExternal": false,
@@ -2523,6 +3003,7 @@
           "discover": "execution-targets",
           "doesNotChangeRoute": true,
           "processingTier": "standard",
+          "selectionConstraint": "required_eligibility",
           "supportedProviders": [
             "openai-text",
             "zai-text"
@@ -2638,24 +3119,40 @@
         "mediaType": "text/plain"
       },
       "outputSchema": {
-        "properties": {
-          "assistantMessage": {
-            "type": "object"
-          },
-          "content": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string"
-          },
-          "toolCalls": {
-            "items": {
+        "type": "string"
+      },
+      "outputSchemas": {
+        "assistant_message": {
+          "properties": {
+            "assistantMessage": {
               "type": "object"
             },
-            "type": "array"
-          }
+            "content": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string"
+            },
+            "toolCalls": {
+              "items": {
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "role",
+            "content",
+            "toolCalls"
+          ],
+          "type": "object"
         },
-        "type": "object"
+        "json_object": {
+          "type": "object"
+        },
+        "text": {
+          "type": "string"
+        }
       },
       "pricing": {
         "authoritativeForExecution": false,
@@ -2687,7 +3184,7 @@
             "requiredForEstimate": true
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [
             "/input/maxOutputTokens",
@@ -2698,6 +3195,41 @@
         "quoteEndpoint": "/v1/capabilities/text.creative.longform.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "messages": [
+              {
+                "content": "Example document text with a name Alice and value 42.",
+                "role": "system"
+              }
+            ]
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/text.creative.longform.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/text.creative.longform.v1/jobs"
+      },
       "routingProfiles": [],
       "title": "Creative longform text"
     },
@@ -2733,7 +3265,7 @@
                 "requiredForEstimate": false
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -2769,7 +3301,7 @@
                 "requiredForEstimate": false
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/image.generate.v1/quote"
           },
           "providerChargesExternal": false,
@@ -2871,10 +3403,13 @@
       "inputConstraints": {
         "prompt": {
           "byModel": {
-            "gpt-image-1": {
+            "gpt-image-2": {
               "max": 32000
             },
-            "gpt-image-2": {
+            "gpt-image-2.5-flare": {
+              "max": 32000
+            },
+            "gpt-image-2.5-sunburst": {
               "max": 32000
             }
           },
@@ -2920,7 +3455,7 @@
           },
           "height": {
             "default": 1024,
-            "description": "Requested catalogue height. Rounded up to a multiple of 16. gpt-image-2 allows each edge up to 3840 (max 8.29MP). Open Graph 1200\u00d7630 becomes 1200\u00d7640. Provider execution may normalize; sheet cell geometry is a separate constraint.",
+            "description": "Requested catalogue height. Rounded up to a multiple of 16. provider image models allow each edge up to 3840 (max 8.29MP). Open Graph 1200\u00d7630 becomes 1200\u00d7640. Provider execution may normalize; sheet cell geometry is a separate constraint.",
             "maximum": 3840,
             "minimum": 256,
             "multipleOf": 16,
@@ -2937,10 +3472,11 @@
           },
           "model": {
             "default": "gpt-image-2.5-flare",
-            "description": "OpenAI image model. Flare is the default for everyday generation; select Sunburst explicitly when maximum image precision is preferred.",
+            "description": "Image model. Flare is the default for everyday provider generation; select Sunburst for maximum provider precision, or Nano Banana for the fal-hosted Gemini image model.",
             "enum": [
               "gpt-image-2.5-flare",
-              "gpt-image-2.5-sunburst"
+              "gpt-image-2.5-sunburst",
+              "fal-ai/nano-banana"
             ],
             "type": "string"
           },
@@ -3076,7 +3612,7 @@
           },
           "width": {
             "default": 1024,
-            "description": "Requested catalogue width. Rounded up to a multiple of 16. gpt-image-2 allows each edge up to 3840 (max 8.29MP). Open Graph 1200\u00d7630 becomes 1200\u00d7640. Provider execution may normalize; sheet cell geometry is a separate constraint.",
+            "description": "Requested catalogue width. Rounded up to a multiple of 16. provider image models allow each edge up to 3840 (max 8.29MP). Open Graph 1200\u00d7630 becomes 1200\u00d7640. Provider execution may normalize; sheet cell geometry is a separate constraint.",
             "maximum": 3840,
             "minimum": 256,
             "multipleOf": 16,
@@ -3119,6 +3655,52 @@
         },
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "downloadPath": {
+                    "type": "string"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "structured": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "downloadPath": {
+                    "type": "string"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -3149,7 +3731,7 @@
             "requiredForEstimate": false
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [],
           "supported": true
@@ -3157,6 +3739,36 @@
         "quoteEndpoint": "/v1/capabilities/image.generate.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "prompt": "Create a concise useful result."
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/image.generate.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/image.generate.v1/jobs"
+      },
       "routingProfiles": [],
       "title": "Image generation"
     },
@@ -3192,7 +3804,7 @@
                 "requiredForEstimate": false
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -3228,7 +3840,7 @@
                 "requiredForEstimate": false
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/image.edit.v1/quote"
           },
           "providerChargesExternal": false,
@@ -3294,10 +3906,13 @@
       "inputConstraints": {
         "prompt": {
           "byModel": {
-            "gpt-image-1": {
+            "gpt-image-2": {
               "max": 32000
             },
-            "gpt-image-2": {
+            "gpt-image-2.5-flare": {
+              "max": 32000
+            },
+            "gpt-image-2.5-sunburst": {
               "max": 32000
             }
           },
@@ -3317,7 +3932,7 @@
             "type": "integer"
           },
           "mask": {
-            "description": "Optional PNG, same size as sourceImage. Alpha 0 = editable (OpenAI images.edit mask). Hydracept converts a white-on-black placement map into that provider mask convention on the platform.",
+            "description": "Optional PNG, same size as sourceImage. Alpha 0 = editable (provider images.edit mask). Hydracept converts a white-on-black placement map into that provider mask convention on the platform.",
             "properties": {
               "dataBase64": {
                 "type": "string"
@@ -3451,6 +4066,52 @@
         },
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "downloadPath": {
+                    "type": "string"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "structured": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "downloadPath": {
+                    "type": "string"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -3481,7 +4142,7 @@
             "requiredForEstimate": false
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [],
           "supported": true
@@ -3489,6 +4150,37 @@
         "quoteEndpoint": "/v1/capabilities/image.edit.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "prompt": "Create a concise useful result.",
+            "sourceImage": {}
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/image.edit.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/image.edit.v1/jobs"
+      },
       "routingProfiles": [],
       "title": "Image editing"
     },
@@ -3518,7 +4210,7 @@
                 "requiredForEstimate": false
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -3548,7 +4240,7 @@
                 "requiredForEstimate": false
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/video.generate.v1/quote"
           },
           "providerChargesExternal": false,
@@ -3557,7 +4249,7 @@
         }
       },
       "category": "generation",
-      "description": "Generate short videos from text and optional reference images.",
+      "description": "Generate a short video from text, or animate one still image as the opening frame. Supply that one still as `sourceImage` (inline), one `referenceImages` entry, one `referenceArtifactIds` entry, or `startFrameArtifactId`; the alternatives are aliases for the same single opening frame.",
       "estimateAvailable": true,
       "execution": {
         "benchmarksHref": "/v1/capabilities/video.generate.v1/benchmarks",
@@ -3580,7 +4272,7 @@
           "16:9",
           "9:16"
         ],
-        "imageConditioning": false,
+        "imageConditioning": true,
         "maxDurationSeconds": 8,
         "minimalInput": {
           "prompt": "Create a concise useful result."
@@ -3634,10 +4326,21 @@
             "minLength": 1,
             "type": "string"
           },
+          "referenceArtifactIds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 1,
+            "type": "array"
+          },
           "referenceImages": {
+            "description": "One inline still, the same opening frame as sourceImage; at most one source in total may be supplied.",
             "items": {
               "properties": {
                 "dataBase64": {
+                  "type": "string"
+                },
+                "dataUrl": {
                   "type": "string"
                 },
                 "filename": {
@@ -3649,8 +4352,29 @@
               },
               "type": "object"
             },
-            "maxItems": 4,
+            "maxItems": 1,
             "type": "array"
+          },
+          "sourceImage": {
+            "description": "Still image to animate as the opening frame.",
+            "properties": {
+              "dataBase64": {
+                "type": "string"
+              },
+              "dataUrl": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              },
+              "mimeType": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "startFrameArtifactId": {
+            "type": "string"
           }
         },
         "required": [
@@ -3683,6 +4407,40 @@
         },
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "structured": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -3707,7 +4465,7 @@
             "requiredForEstimate": false
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [],
           "supported": true
@@ -3715,6 +4473,36 @@
         "quoteEndpoint": "/v1/capabilities/video.generate.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "prompt": "Create a concise useful result."
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/video.generate.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/video.generate.v1/jobs"
+      },
       "routingProfiles": [],
       "title": "Video generation"
     },
@@ -3744,7 +4532,7 @@
                 "requiredForEstimate": false
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -3774,7 +4562,7 @@
                 "requiredForEstimate": false
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/audio.sfx.generate.v1/quote"
           },
           "providerChargesExternal": false,
@@ -3783,7 +4571,7 @@
         }
       },
       "category": "generation",
-      "description": "Generate sound effects. Output is Ogg (`audio/ogg`) with a `.ogg` filename, not WAV.",
+      "description": "Generate sound effects. Ogg (`audio/ogg`) by default; set `outputFormatPreference` (for example `mp3_44100_128`) to receive another supported format. The artifact media type and filename match the returned format.",
       "estimateAvailable": true,
       "execution": {
         "benchmarksHref": "/v1/capabilities/audio.sfx.generate.v1/benchmarks",
@@ -3838,6 +4626,30 @@
             "type": "integer"
           },
           "modelId": {
+            "default": "eleven_text_to_sound_v2",
+            "description": "Hydracept SFX model id. This enum is the live set of executable audio.sfx.generate.v1 targets.",
+            "enum": [
+              "eleven_text_to_sound_v2"
+            ],
+            "type": "string"
+          },
+          "outputFormatPreference": {
+            "default": "opus_48000_128",
+            "description": "Requested audio format. `mp3_44100_128` returns `audio/mpeg` with a `.mp3` filename; `opus_48000_128` (default) returns `audio/ogg` with `.ogg`. The artifact `mediaType` and filename match the format returned.",
+            "enum": [
+              "mp3_22050_32",
+              "mp3_24000_48",
+              "mp3_44100_32",
+              "mp3_44100_64",
+              "mp3_44100_96",
+              "mp3_44100_128",
+              "mp3_44100_192",
+              "opus_48000_32",
+              "opus_48000_64",
+              "opus_48000_96",
+              "opus_48000_128",
+              "opus_48000_192"
+            ],
             "type": "string"
           },
           "prompt": {
@@ -3901,6 +4713,58 @@
         },
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "durationMs": {
+                    "type": "integer"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  },
+                  "variantIndex": {
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "structured": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "durationMs": {
+                    "type": "integer"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  },
+                  "variantIndex": {
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -3925,7 +4789,7 @@
             "requiredForEstimate": false
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [],
           "supported": true
@@ -3933,6 +4797,36 @@
         "quoteEndpoint": "/v1/capabilities/audio.sfx.generate.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "prompt": "Create a concise useful result."
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/audio.sfx.generate.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/audio.sfx.generate.v1/jobs"
+      },
       "routingProfiles": [],
       "title": "Sound effect generation"
     },
@@ -3962,7 +4856,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -3992,7 +4886,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/audio.voice.generate.v1/quote"
           },
           "providerChargesExternal": false,
@@ -4001,7 +4895,7 @@
         }
       },
       "category": "generation",
-      "description": "Text-to-speech.",
+      "description": "Text-to-speech. Omit `voiceId` to use the managed default voice. List selectable voices at `GET /v1/capabilities/audio.voice.generate.v1/voices`. Ogg (`audio/ogg`) by default; set `outputFormatPreference` (for example `mp3_44100_128`) to receive another supported format. The artifact media type and filename match the returned format.",
       "estimateAvailable": true,
       "execution": {
         "benchmarksHref": "/v1/capabilities/audio.voice.generate.v1/benchmarks",
@@ -4021,9 +4915,9 @@
       "family": "audio",
       "features": {
         "minimalInput": {
-          "text": "Example document text with a name Alice and value 42.",
-          "voiceId": "voice-id"
-        }
+          "text": "Example document text with a name Alice and value 42."
+        },
+        "voicesEndpoint": "/v1/capabilities/audio.voice.generate.v1/voices"
       },
       "funding": {
         "eligible": false,
@@ -4063,9 +4957,32 @@
           },
           "modelId": {
             "default": "eleven_v4",
+            "description": "Hydracept voice model id. This enum is the live set of executable audio.voice.generate.v1 targets.",
+            "enum": [
+              "eleven_v4",
+              "eleven_multilingual_v2",
+              "eleven_turbo_v2_5",
+              "eleven_flash_v2_5"
+            ],
             "type": "string"
           },
           "outputFormatPreference": {
+            "default": "opus_48000_128",
+            "description": "Requested audio format. `mp3_44100_128` returns `audio/mpeg` with a `.mp3` filename; `opus_48000_128` (default) returns `audio/ogg` with `.ogg`. The artifact `mediaType` and filename match the format returned.",
+            "enum": [
+              "mp3_22050_32",
+              "mp3_24000_48",
+              "mp3_44100_32",
+              "mp3_44100_64",
+              "mp3_44100_96",
+              "mp3_44100_128",
+              "mp3_44100_192",
+              "opus_48000_32",
+              "opus_48000_64",
+              "opus_48000_96",
+              "opus_48000_128",
+              "opus_48000_192"
+            ],
             "type": "string"
           },
           "providerExtensions": {
@@ -4090,6 +5007,7 @@
             "type": "integer"
           },
           "voiceId": {
+            "description": "Optional voice identifier. When omitted, the managed default voice is applied.",
             "minLength": 1,
             "type": "string"
           },
@@ -4124,8 +5042,7 @@
           }
         },
         "required": [
-          "text",
-          "voiceId"
+          "text"
         ],
         "type": "object"
       },
@@ -4163,6 +5080,58 @@
         },
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "durationMs": {
+                    "type": "integer"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  },
+                  "variantIndex": {
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "structured": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "durationMs": {
+                    "type": "integer"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  },
+                  "variantIndex": {
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -4187,7 +5156,7 @@
             "requiredForEstimate": true
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [
             "/input/text"
@@ -4197,6 +5166,36 @@
         "quoteEndpoint": "/v1/capabilities/audio.voice.generate.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "text": "Example document text with a name Alice and value 42."
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/audio.voice.generate.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/audio.voice.generate.v1/jobs"
+      },
       "routingProfiles": [],
       "title": "Voice / TTS generation"
     },
@@ -4226,7 +5225,7 @@
                 "requiredForEstimate": false
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -4256,7 +5255,7 @@
                 "requiredForEstimate": false
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/audio.music.generate.v1/quote"
           },
           "providerChargesExternal": false,
@@ -4265,7 +5264,7 @@
         }
       },
       "category": "generation",
-      "description": "Generate music.",
+      "description": "Generate music. Ogg (`audio/ogg`) by default; set `outputFormatPreference` (for example `mp3_44100_128`) to receive another supported format. The artifact media type and filename match the returned format.",
       "estimateAvailable": true,
       "execution": {
         "benchmarksHref": "/v1/capabilities/audio.music.generate.v1/benchmarks",
@@ -4322,6 +5321,31 @@
             "type": "boolean"
           },
           "modelId": {
+            "default": "music_v2",
+            "description": "Hydracept music model id. This enum is the live set of executable audio.music.generate.v1 targets.",
+            "enum": [
+              "music_v2",
+              "music_v1"
+            ],
+            "type": "string"
+          },
+          "outputFormatPreference": {
+            "default": "opus_48000_128",
+            "description": "Requested audio format. `mp3_44100_128` returns `audio/mpeg` with a `.mp3` filename; `opus_48000_128` (default) returns `audio/ogg` with `.ogg`. The artifact `mediaType` and filename match the format returned.",
+            "enum": [
+              "mp3_22050_32",
+              "mp3_24000_48",
+              "mp3_44100_32",
+              "mp3_44100_64",
+              "mp3_44100_96",
+              "mp3_44100_128",
+              "mp3_44100_192",
+              "opus_48000_32",
+              "opus_48000_64",
+              "opus_48000_96",
+              "opus_48000_128",
+              "opus_48000_192"
+            ],
             "type": "string"
           },
           "prompt": {
@@ -4353,7 +5377,7 @@
       "modality": "audio",
       "output": {
         "kind": "artifact",
-        "mediaType": "audio/mpeg"
+        "mediaType": "audio/ogg"
       },
       "outputSchema": {
         "properties": {
@@ -4380,6 +5404,58 @@
         },
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "durationMs": {
+                    "type": "integer"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  },
+                  "variantIndex": {
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "structured": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "durationMs": {
+                    "type": "integer"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  },
+                  "variantIndex": {
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -4404,7 +5480,7 @@
             "requiredForEstimate": false
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [],
           "supported": true
@@ -4412,6 +5488,36 @@
         "quoteEndpoint": "/v1/capabilities/audio.music.generate.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "prompt": "Create a concise useful result."
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/audio.music.generate.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/audio.music.generate.v1/jobs"
+      },
       "routingProfiles": [],
       "title": "Music generation"
     },
@@ -4441,7 +5547,7 @@
                 "requiredForEstimate": false
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -4471,7 +5577,7 @@
                 "requiredForEstimate": false
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/model.generate.3d.v1/quote"
           },
           "providerChargesExternal": false,
@@ -4646,6 +5752,58 @@
         },
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "downloadPath": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "structured": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "downloadPath": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -4670,7 +5828,7 @@
             "requiredForEstimate": false
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [],
           "supported": true
@@ -4678,6 +5836,38 @@
         "quoteEndpoint": "/v1/capabilities/model.generate.3d.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "inputArtifactIds": [
+              "x"
+            ]
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/model.generate.3d.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/model.generate.3d.v1/jobs"
+      },
       "routingProfiles": [],
       "title": "3D mesh generation"
     },
@@ -4707,7 +5897,7 @@
                 "requiredForEstimate": false
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -4737,7 +5927,7 @@
                 "requiredForEstimate": false
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/model.generate.3d.from-image.v1/quote"
           },
           "providerChargesExternal": false,
@@ -4790,10 +5980,13 @@
         },
         "resolvedPrompt": {
           "byModel": {
-            "gpt-image-1": {
+            "gpt-image-2": {
               "max": 32000
             },
-            "gpt-image-2": {
+            "gpt-image-2.5-flare": {
+              "max": 32000
+            },
+            "gpt-image-2.5-sunburst": {
               "max": 32000
             }
           },
@@ -4864,7 +6057,7 @@
           },
           "requireTurnaroundApproval": {
             "default": false,
-            "description": "When true, pause for turnaround review before Meshy (Studio/panels).",
+            "description": "When true, pause for turnaround review before provider (Studio/panels).",
             "type": "boolean"
           },
           "resolvedPrompt": {
@@ -4921,6 +6114,58 @@
         },
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "downloadPath": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "structured": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "downloadPath": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -4945,7 +6190,7 @@
             "requiredForEstimate": false
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [],
           "supported": true
@@ -4953,6 +6198,36 @@
         "quoteEndpoint": "/v1/capabilities/model.generate.3d.from-image.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "baseArtifactId": "x"
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/model.generate.3d.from-image.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/model.generate.3d.from-image.v1/jobs"
+      },
       "routingProfiles": [],
       "title": "3D mesh from single image"
     },
@@ -5049,6 +6324,72 @@
         },
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "properties": {
+            "agreementUrl": {
+              "type": "string"
+            },
+            "agreementVersion": {
+              "type": "string"
+            },
+            "available": {
+              "type": "boolean"
+            },
+            "credentialSource": {
+              "type": "string"
+            },
+            "domain": {
+              "type": "string"
+            },
+            "firstYearPriceUsd": {
+              "type": "number"
+            },
+            "priceUsd": {
+              "type": "number"
+            },
+            "renewalPriceUsd": {
+              "type": "number"
+            },
+            "transferPriceUsd": {
+              "type": "number"
+            }
+          },
+          "type": "object"
+        },
+        "structured": {
+          "properties": {
+            "agreementUrl": {
+              "type": "string"
+            },
+            "agreementVersion": {
+              "type": "string"
+            },
+            "available": {
+              "type": "boolean"
+            },
+            "credentialSource": {
+              "type": "string"
+            },
+            "domain": {
+              "type": "string"
+            },
+            "firstYearPriceUsd": {
+              "type": "number"
+            },
+            "priceUsd": {
+              "type": "number"
+            },
+            "renewalPriceUsd": {
+              "type": "number"
+            },
+            "transferPriceUsd": {
+              "type": "number"
+            }
+          },
+          "type": "object"
+        }
+      },
       "pricing": {
         "billable": true,
         "quote": {
@@ -5057,6 +6398,35 @@
         }
       },
       "readySummary": "Execution available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "domain": "example.com"
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/domain.search.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "Domain search"
     },
@@ -5120,6 +6490,14 @@
       "outputSchema": {
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "type": "object"
+        },
+        "structured": {
+          "type": "object"
+        }
+      },
       "pricing": {
         "billable": true,
         "quote": {
@@ -5128,6 +6506,32 @@
         }
       },
       "readySummary": "Execution available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>"
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": false,
+        "method": "POST",
+        "path": "/v1/capabilities/domain.pricing.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "Domain TLD pricing"
     },
@@ -5319,6 +6723,84 @@
         },
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "downloadPath": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "enum": [
+                      "reference_view",
+                      "reference_contact_sheet",
+                      "reference_manifest"
+                    ],
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "artifactId",
+                  "mediaType",
+                  "kind"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "structured": {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "properties": {
+                  "artifactId": {
+                    "type": "string"
+                  },
+                  "downloadPath": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "enum": [
+                      "reference_view",
+                      "reference_contact_sheet",
+                      "reference_manifest"
+                    ],
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "artifactId",
+                  "mediaType",
+                  "kind"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": false,
@@ -5329,13 +6811,44 @@
         "mode": "free",
         "pricingContext": "catalog_default",
         "pricingFactors": [],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [],
           "supported": false
         }
       },
       "readySummary": "Execution available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "source": {
+              "artifactId": "x"
+            }
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/3d.render_reference.v1/jobs"
+      },
       "routingProfiles": [],
       "title": "Review a 3D model"
     },
@@ -5352,7 +6865,7 @@
             "mode": "free",
             "pricingContext": "catalog_default",
             "pricingFactors": [],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -5369,7 +6882,7 @@
             "mode": "zero",
             "pricingContext": "catalog_default",
             "pricingFactors": [],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/compute.evaluate.v1/quote"
           },
           "providerChargesExternal": false,
@@ -5522,6 +7035,84 @@
         ],
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "additionalProperties": false,
+          "properties": {
+            "engine": {
+              "const": "hydracept-compute",
+              "type": "string"
+            },
+            "normalizedExpression": {
+              "description": "Canonical rendering of the parsed expression.",
+              "type": "string"
+            },
+            "precision": {
+              "type": "integer"
+            },
+            "result": {
+              "description": "The numeric result as a decimal string.",
+              "type": "string"
+            },
+            "rounding": {
+              "type": "string"
+            },
+            "warnings": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "result",
+            "normalizedExpression",
+            "precision",
+            "rounding",
+            "engine",
+            "warnings"
+          ],
+          "type": "object"
+        },
+        "structured": {
+          "additionalProperties": false,
+          "properties": {
+            "engine": {
+              "const": "hydracept-compute",
+              "type": "string"
+            },
+            "normalizedExpression": {
+              "description": "Canonical rendering of the parsed expression.",
+              "type": "string"
+            },
+            "precision": {
+              "type": "integer"
+            },
+            "result": {
+              "description": "The numeric result as a decimal string.",
+              "type": "string"
+            },
+            "rounding": {
+              "type": "string"
+            },
+            "warnings": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "result",
+            "normalizedExpression",
+            "precision",
+            "rounding",
+            "engine",
+            "warnings"
+          ],
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": false,
@@ -5533,7 +7124,7 @@
         "mode": "zero",
         "pricingContext": "catalog_default",
         "pricingFactors": [],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [],
           "supported": true
@@ -5541,6 +7132,36 @@
         "quoteEndpoint": "/v1/capabilities/compute.evaluate.v1/quote"
       },
       "readySummary": "Execution available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "expression": "x"
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/compute.evaluate.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/compute.evaluate.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "Evaluate an expression"
     },
@@ -5570,7 +7191,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -5600,7 +7221,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/text.vision.structured.v1/quote"
           },
           "providerChargesExternal": false,
@@ -5662,6 +7283,7 @@
           "discover": "execution-targets",
           "doesNotChangeRoute": true,
           "processingTier": "standard",
+          "selectionConstraint": "required_eligibility",
           "supportedProviders": [
             "openai-text",
             "zai-text"
@@ -5801,6 +7423,30 @@
         },
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "properties": {
+            "content": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "structured": {
+          "properties": {
+            "content": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -5825,7 +7471,7 @@
             "requiredForEstimate": true
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [
             "/input/maxOutputTokens",
@@ -5836,6 +7482,41 @@
         "quoteEndpoint": "/v1/capabilities/text.vision.structured.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "messages": [
+              {
+                "content": "Example document text with a name Alice and value 42.",
+                "role": "system"
+              }
+            ]
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/text.vision.structured.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/text.vision.structured.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "Structured vision text"
     },
@@ -5871,7 +7552,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -5907,7 +7588,7 @@
                 "requiredForEstimate": true
               }
             ],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/text.translate.v1/quote"
           },
           "providerChargesExternal": false,
@@ -5970,6 +7651,7 @@
           "discover": "execution-targets",
           "doesNotChangeRoute": true,
           "processingTier": "standard",
+          "selectionConstraint": "required_eligibility",
           "supportedProviders": [
             "openai-text",
             "zai-text"
@@ -6119,6 +7801,64 @@
         ],
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "additionalProperties": false,
+          "properties": {
+            "items": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "translation": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "translation"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "items"
+          ],
+          "type": "object"
+        },
+        "structured": {
+          "additionalProperties": false,
+          "properties": {
+            "items": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "translation": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "translation"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "items"
+          ],
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -6149,7 +7889,7 @@
             "requiredForEstimate": true
           }
         ],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [
             "/input/maxOutputTokens",
@@ -6160,6 +7900,42 @@
         "quoteEndpoint": "/v1/capabilities/text.translate.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "items": [
+              {
+                "id": "x",
+                "text": "Example document text with a name Alice and value 42."
+              }
+            ],
+            "targetLocale": "xx"
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/text.translate.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/text.translate.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "Translation"
     },
@@ -6176,7 +7952,374 @@
             "mode": "free",
             "pricingContext": "catalog_default",
             "pricingFactors": [],
-            "pricingVersion": "price_2026_08_1"
+            "pricingVersion": "price_2026_10_22_actual_cost"
+          },
+          "providerChargesExternal": true,
+          "providerChargesIncluded": false
+        },
+        "managed": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Free. The managed OpenAI omni-moderation classifier is included at a zero retail price with no per-call minimum. Optional /quote preview; the API seals pricing at job admission.",
+            "estimateEndpoint": "/v1/capabilities/text.moderate.v1/estimate",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "fixed",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [],
+            "pricingVersion": "price_2026_10_22_actual_cost",
+            "quoteEndpoint": "/v1/capabilities/text.moderate.v1/quote"
+          },
+          "providerChargesExternal": false,
+          "providerChargesIncluded": true,
+          "serviceFeeBps": 600
+        }
+      },
+      "category": "analysis",
+      "description": "Classify text for policy risk with a provider-neutral modifier. Hydracept selects the classifier, records the execution, and returns category flags and scores. The result is evidence for the caller's own policy: flagged=true is a classifier signal, not a Hydracept block. Managed execution uses the sealed provider omni-moderation route; callers never choose the model.",
+      "estimateAvailable": true,
+      "execution": {
+        "benchmarksHref": "/v1/capabilities/text.moderate.v1/benchmarks",
+        "estimateAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "selection": "managed",
+        "supportsExplicitTarget": true,
+        "targetsHref": "/v1/capabilities/text.moderate.v1/execution-targets",
+        "trialEligible": false
+      },
+      "executionModes": [
+        "invoke_sync"
+      ],
+      "family": "text",
+      "features": {
+        "classificationOnly": true,
+        "durableJobRequired": false,
+        "minimalInput": {
+          "text": "Example document text with a name Alice and value 42."
+        },
+        "modelAlias": "omni-moderation-latest",
+        "movingModelAlias": true,
+        "productPolicyEngine": false,
+        "productPolicyOwnedByCaller": true,
+        "providerClassifier": true,
+        "providerNeutralOutput": true,
+        "providerNeutralRequest": true,
+        "providerReportedCategoryNames": true,
+        "structuredOutput": true
+      },
+      "funding": {
+        "eligible": false,
+        "mode": "managed",
+        "status": "catalog_available"
+      },
+      "idempotencyRequired": true,
+      "inputConstraints": {
+        "text": {
+          "max": 20000,
+          "measurement": "characters",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "description": "Text to classify. The caller owns the surrounding policy decision.",
+            "maxLength": 20000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "type": "object"
+      },
+      "interaction": {
+        "typicallyRequired": false
+      },
+      "key": "text.moderate.v1",
+      "modality": "moderation",
+      "output": {
+        "kind": "structured",
+        "mediaType": "application/json"
+      },
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "availability": {
+            "enum": [
+              "Available",
+              "TimedOut",
+              "ProviderError"
+            ],
+            "type": "string"
+          },
+          "categories": {
+            "additionalProperties": {
+              "additionalProperties": false,
+              "properties": {
+                "flagged": {
+                  "type": "boolean"
+                },
+                "score": {
+                  "maximum": 1.0,
+                  "minimum": 0.0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "flagged",
+                "score"
+              ],
+              "type": "object"
+            },
+            "description": "Provider category names mapped to their flag and score.",
+            "type": "object"
+          },
+          "error": {
+            "type": "string"
+          },
+          "flagged": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Provider classifier output. Null means no classification was produced; it is never an implicit approval."
+          },
+          "model": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "schemaVersion": {
+            "const": "text.moderate.v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "flagged",
+          "categories",
+          "provider",
+          "model"
+        ],
+        "type": "object"
+      },
+      "outputSchemas": {
+        "json_object": {
+          "additionalProperties": false,
+          "properties": {
+            "availability": {
+              "enum": [
+                "Available",
+                "TimedOut",
+                "ProviderError"
+              ],
+              "type": "string"
+            },
+            "categories": {
+              "additionalProperties": {
+                "additionalProperties": false,
+                "properties": {
+                  "flagged": {
+                    "type": "boolean"
+                  },
+                  "score": {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "flagged",
+                  "score"
+                ],
+                "type": "object"
+              },
+              "description": "Provider category names mapped to their flag and score.",
+              "type": "object"
+            },
+            "error": {
+              "type": "string"
+            },
+            "flagged": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Provider classifier output. Null means no classification was produced; it is never an implicit approval."
+            },
+            "model": {
+              "type": "string"
+            },
+            "provider": {
+              "type": "string"
+            },
+            "schemaVersion": {
+              "const": "text.moderate.v1",
+              "type": "string"
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "flagged",
+            "categories",
+            "provider",
+            "model"
+          ],
+          "type": "object"
+        },
+        "structured": {
+          "additionalProperties": false,
+          "properties": {
+            "availability": {
+              "enum": [
+                "Available",
+                "TimedOut",
+                "ProviderError"
+              ],
+              "type": "string"
+            },
+            "categories": {
+              "additionalProperties": {
+                "additionalProperties": false,
+                "properties": {
+                  "flagged": {
+                    "type": "boolean"
+                  },
+                  "score": {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "flagged",
+                  "score"
+                ],
+                "type": "object"
+              },
+              "description": "Provider category names mapped to their flag and score.",
+              "type": "object"
+            },
+            "error": {
+              "type": "string"
+            },
+            "flagged": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Provider classifier output. Null means no classification was produced; it is never an implicit approval."
+            },
+            "model": {
+              "type": "string"
+            },
+            "provider": {
+              "type": "string"
+            },
+            "schemaVersion": {
+              "const": "text.moderate.v1",
+              "type": "string"
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "flagged",
+            "categories",
+            "provider",
+            "model"
+          ],
+          "type": "object"
+        }
+      },
+      "pricing": {
+        "authoritativeForExecution": false,
+        "billable": true,
+        "billingCurrency": "USD",
+        "display": "Free. The managed OpenAI omni-moderation classifier is included at a zero retail price with no per-call minimum. Optional /quote preview; the API seals pricing at job admission.",
+        "estimateEndpoint": "/v1/capabilities/text.moderate.v1/estimate",
+        "estimateRequired": false,
+        "examples": [],
+        "mode": "fixed",
+        "pricingContext": "catalog_default",
+        "pricingFactors": [],
+        "pricingVersion": "price_2026_10_22_actual_cost",
+        "quote": {
+          "requirements": [],
+          "supported": true
+        },
+        "quoteEndpoint": "/v1/capabilities/text.moderate.v1/quote"
+      },
+      "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "text": "Example document text with a name Alice and value 42."
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/text.moderate.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/text.moderate.v1/invoke"
+      },
+      "routingProfiles": [],
+      "title": "Text moderation"
+    },
+    {
+      "billingModes": {
+        "byok": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Hydracept charge: Free. Provider charges your connected account separately.",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "free",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [],
+            "pricingVersion": "price_2026_10_22_actual_cost"
           },
           "providerChargesExternal": true,
           "providerChargesIncluded": false
@@ -6193,7 +8336,7 @@
             "mode": "fixed",
             "pricingContext": "catalog_default",
             "pricingFactors": [],
-            "pricingVersion": "price_2026_08_1",
+            "pricingVersion": "price_2026_10_22_actual_cost",
             "quoteEndpoint": "/v1/capabilities/moderation.content.v1/quote"
           },
           "providerChargesExternal": false,
@@ -6202,7 +8345,7 @@
         }
       },
       "category": "analysis",
-      "description": "Classify user-authored text for policy risk using the sealed provider moderation classifier (omni-moderation-latest when managed credentials are available). Returns provider-aligned category scores, flags, and an overall risk score \u2014 callers enforce product policy; Hydracept does not block publication.",
+      "description": "Deprecated provider-aligned moderation contract. Use text.moderate.v1 for new integrations. This alias keeps the original output shape for existing callers.",
       "estimateAvailable": true,
       "execution": {
         "benchmarksHref": "/v1/capabilities/moderation.content.v1/benchmarks",
@@ -6222,9 +8365,11 @@
       ],
       "family": "text",
       "features": {
+        "deprecated": true,
         "minimalInput": {},
         "productPolicyOwnedByCaller": true,
         "providerClassifier": true,
+        "replacement": "text.moderate.v1",
         "structuredOutput": true
       },
       "funding": {
@@ -6397,6 +8542,194 @@
         ],
         "type": "object"
       },
+      "outputSchemas": {
+        "json_object": {
+          "additionalProperties": false,
+          "properties": {
+            "availability": {
+              "enum": [
+                "Available",
+                "ProviderError",
+                "TimedOut"
+              ],
+              "type": "string"
+            },
+            "categories": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "category": {
+                    "type": "string"
+                  },
+                  "providerFlagged": {
+                    "type": "boolean"
+                  },
+                  "score": {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "category",
+                  "score",
+                  "providerFlagged"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "error": {
+              "type": "string"
+            },
+            "flags": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "category": {
+                    "type": "string"
+                  },
+                  "confidence": {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "type": "number"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "severity": {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "category",
+                  "reason",
+                  "severity",
+                  "confidence"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "overallRiskScore": {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            "providerFlagged": {
+              "type": "boolean"
+            },
+            "schemaVersion": {
+              "const": "moderation.content.v1",
+              "type": "string"
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "providerFlagged",
+            "overallRiskScore",
+            "availability",
+            "categories",
+            "flags"
+          ],
+          "type": "object"
+        },
+        "structured": {
+          "additionalProperties": false,
+          "properties": {
+            "availability": {
+              "enum": [
+                "Available",
+                "ProviderError",
+                "TimedOut"
+              ],
+              "type": "string"
+            },
+            "categories": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "category": {
+                    "type": "string"
+                  },
+                  "providerFlagged": {
+                    "type": "boolean"
+                  },
+                  "score": {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "category",
+                  "score",
+                  "providerFlagged"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "error": {
+              "type": "string"
+            },
+            "flags": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "category": {
+                    "type": "string"
+                  },
+                  "confidence": {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "type": "number"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "severity": {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "category",
+                  "reason",
+                  "severity",
+                  "confidence"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "overallRiskScore": {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            "providerFlagged": {
+              "type": "boolean"
+            },
+            "schemaVersion": {
+              "const": "moderation.content.v1",
+              "type": "string"
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "providerFlagged",
+            "overallRiskScore",
+            "availability",
+            "categories",
+            "flags"
+          ],
+          "type": "object"
+        }
+      },
       "pricing": {
         "authoritativeForExecution": false,
         "billable": true,
@@ -6408,7 +8741,7 @@
         "mode": "fixed",
         "pricingContext": "catalog_default",
         "pricingFactors": [],
-        "pricingVersion": "price_2026_08_1",
+        "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
           "requirements": [],
           "supported": true
@@ -6416,8 +8749,35 @@
         "quoteEndpoint": "/v1/capabilities/moderation.content.v1/quote"
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>"
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/moderation.content.v1/estimate",
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": false,
+        "method": "POST",
+        "path": "/v1/capabilities/moderation.content.v1/invoke"
+      },
       "routingProfiles": [],
-      "title": "Content moderation"
+      "title": "Content moderation (legacy name)"
     },
     {
       "billingModes": {
@@ -6468,6 +8828,7 @@
           "discover": "execution-targets",
           "doesNotChangeRoute": true,
           "processingTier": "standard",
+          "selectionConstraint": "required_eligibility",
           "supportedProviders": [
             "openai-text",
             "zai-text"
@@ -6583,24 +8944,40 @@
         "mediaType": "text/plain"
       },
       "outputSchema": {
-        "properties": {
-          "assistantMessage": {
-            "type": "object"
-          },
-          "content": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string"
-          },
-          "toolCalls": {
-            "items": {
+        "type": "string"
+      },
+      "outputSchemas": {
+        "assistant_message": {
+          "properties": {
+            "assistantMessage": {
               "type": "object"
             },
-            "type": "array"
-          }
+            "content": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string"
+            },
+            "toolCalls": {
+              "items": {
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "role",
+            "content",
+            "toolCalls"
+          ],
+          "type": "object"
         },
-        "type": "object"
+        "json_object": {
+          "type": "object"
+        },
+        "text": {
+          "type": "string"
+        }
       },
       "pricing": {
         "billable": true,
@@ -6610,6 +8987,40 @@
         }
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "messages": [
+              {
+                "content": "Example document text with a name Alice and value 42.",
+                "role": "system"
+              }
+            ]
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/text.editorial.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "Editorial text"
     },
@@ -6676,6 +9087,7 @@
           "discover": "execution-targets",
           "doesNotChangeRoute": true,
           "processingTier": "standard",
+          "selectionConstraint": "required_eligibility",
           "supportedProviders": [
             "openai-text",
             "zai-text"
@@ -6791,24 +9203,40 @@
         "mediaType": "text/plain"
       },
       "outputSchema": {
-        "properties": {
-          "assistantMessage": {
-            "type": "object"
-          },
-          "content": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string"
-          },
-          "toolCalls": {
-            "items": {
+        "type": "string"
+      },
+      "outputSchemas": {
+        "assistant_message": {
+          "properties": {
+            "assistantMessage": {
               "type": "object"
             },
-            "type": "array"
-          }
+            "content": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string"
+            },
+            "toolCalls": {
+              "items": {
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "role",
+            "content",
+            "toolCalls"
+          ],
+          "type": "object"
         },
-        "type": "object"
+        "json_object": {
+          "type": "object"
+        },
+        "text": {
+          "type": "string"
+        }
       },
       "pricing": {
         "billable": true,
@@ -6818,6 +9246,40 @@
         }
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "messages": [
+              {
+                "content": "Example document text with a name Alice and value 42.",
+                "role": "system"
+              }
+            ]
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/text.editorial.deep.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "Deep editorial text"
     },
@@ -6884,6 +9346,7 @@
           "discover": "execution-targets",
           "doesNotChangeRoute": true,
           "processingTier": "standard",
+          "selectionConstraint": "required_eligibility",
           "supportedProviders": [
             "openai-text",
             "zai-text"
@@ -7013,24 +9476,40 @@
         "mediaType": "text/plain"
       },
       "outputSchema": {
-        "properties": {
-          "assistantMessage": {
-            "type": "object"
-          },
-          "content": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string"
-          },
-          "toolCalls": {
-            "items": {
+        "type": "string"
+      },
+      "outputSchemas": {
+        "assistant_message": {
+          "properties": {
+            "assistantMessage": {
               "type": "object"
             },
-            "type": "array"
-          }
+            "content": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string"
+            },
+            "toolCalls": {
+              "items": {
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "role",
+            "content",
+            "toolCalls"
+          ],
+          "type": "object"
         },
-        "type": "object"
+        "json_object": {
+          "type": "object"
+        },
+        "text": {
+          "type": "string"
+        }
       },
       "pricing": {
         "billable": true,
@@ -7040,6 +9519,40 @@
         }
       },
       "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.05
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "messages": [
+              {
+                "content": "Example document text with a name Alice and value 42.",
+                "role": "system"
+              }
+            ]
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "recommendedUsd": 0.05,
+          "serverEnforced": true
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/text.editorial.multimodal.v1/invoke"
+      },
       "routingProfiles": [],
       "title": "Multimodal editorial text"
     }
@@ -7085,7 +9598,7 @@
       "bootstrap-session.json"
     ]
   },
-  "contentHash": "bc23c8bb9c383a63b7b8debe41e9b8b8d915754b44f6890b8a0a20b5bbf22a31",
+  "contentHash": "4c25f36e59f14019e31e5bffc9868c9318140174d9793417dc5b7d61d7f22942",
   "credentialSafety": {
     "browserAlternative": "Open interaction_required.action.url; then run python -m hydracept init --apply --yes --json --wait",
     "multiAccountHint": "If the user has multiple GitHub or Google accounts, tell them to pick the correct account on the connect page (Use a different account if needed).",
@@ -7121,6 +9634,7 @@
     "compute.evaluate.v1",
     "text.vision.structured.v1",
     "text.translate.v1",
+    "text.moderate.v1",
     "moderation.content.v1",
     "text.editorial.v1",
     "text.editorial.deep.v1",
@@ -7416,6 +9930,7 @@
       "compute.evaluate.v1",
       "text.vision.structured.v1",
       "text.translate.v1",
+      "text.moderate.v1",
       "moderation.content.v1",
       "text.editorial.v1",
       "text.editorial.deep.v1",

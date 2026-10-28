@@ -29,6 +29,8 @@ A receipt answers:
 
 Pinned receipts (`GET /v1/inference/pinned/{receipt_id}`) provide the strongest guarantee: an exact pin, native hashes, no fallback, and evidence that is immutable after completion. Routed jobs also leave receipts, including the routing Hydracept applied. Receipt funding is copied from admission evidence; missing evidence stays `unknown` and must not be inferred as BYOK or managed trial.
 
+Every receipt carries an Ed25519 `seal` over its canonical body. Verify it with the public key from `GET /v1/public/receipts/verification-key`; see [Durable Jobs & Receipts](../jobs/#receipt).
+
 See [Pinned Execution](../pinned-execution/) and [Durable Jobs & Receipts](../jobs/).
 
 ## Run manifest

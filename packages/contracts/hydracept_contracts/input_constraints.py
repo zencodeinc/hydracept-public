@@ -22,11 +22,12 @@ TTS_MODEL_CHARACTER_LIMITS: dict[str, int] = {
     "eleven_turbo_v2_5": 40_000,
     "eleven_flash_v2_5": 40_000,
 }
-# Downstream OpenAI Images prompt caps (gpt-image-1 / gpt-image-2).
+# Downstream OpenAI Images prompt caps (GPT Image 2 / 2.5).
 IMAGE_DEFAULT_CHARACTER_LIMIT = 32_000
 IMAGE_MODEL_CHARACTER_LIMITS: dict[str, int] = {
     "gpt-image-2": 32_000,
-    "gpt-image-1": 32_000,
+    "gpt-image-2.5-flare": 32_000,
+    "gpt-image-2.5-sunburst": 32_000,
 }
 MESH_TEXTURE_PROMPT_MAX = 800
 SFX_PROMPT_CHARACTER_LIMIT = 450

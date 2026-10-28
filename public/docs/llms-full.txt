@@ -192,7 +192,7 @@ For one asset: `python -m hydracept run image.generate.v1 --prompt "..." --json`
 Pick one:
 
 1. **CLI bootstrap (recommended):** `pip install -U hydracept` then `python -m hydracept init --apply --yes --json`. Init infers the current git/workspace project when you are already signed in. Browser project selection is only required when that inference is ambiguous.
-2. **Studio (browser):** [app.hydracept.com/login](https://app.hydracept.com/login) — sign in with GitHub or Google, complete onboarding, then generate in Studio. Manage plans at [Studio Billing](https://app.hydracept.com/studio/billing).
+2. **Studio (browser):** [app.hydracept.com/login](https://app.hydracept.com/login) — sign in with GitHub or Google, then generate in Studio or [create an API key](https://app.hydracept.com/studio/keys) for a library, script, or backend. Manage plans at [Studio Billing](https://app.hydracept.com/studio/billing).
 3. **Agents / headless:** `python -m hydracept init --apply --yes --json` (or use an existing key out of band with `HYDRACEPT_API_KEY`).
 
 For coding agents, `interaction_required` is a hard human boundary. If `presentation.agentAction` is `present_and_yield` and stdio MCP exposes `hydracept_interaction_surface`, invoke that surface once with the supplied context and stop the turn. Otherwise present `action.url` verbatim. In either case, stop until the human completes activation; only then run `afterCompletion.command` / `--wait`.
@@ -223,6 +223,10 @@ python -m hydracept agent-context
 
 `configure` and `quickstart` are deprecated aliases for `init`. Device login (`python -m hydracept login`) still works for advanced flows.
 
+
+## No-agent integrations
+
+For PHP, .NET, TypeScript, Python or direct HTTP, create a named key at [Studio API keys](https://app.hydracept.com/studio/keys). Copy `HYDRACEPT_API_KEY` and `HYDRACEPT_PROJECT` once, then store them in your server-side environment. See [Library integration](./library-integration/).
 
 ## SDKs
 
@@ -261,6 +265,39 @@ curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
 The live catalog is `GET /v1/capabilities` (or `python -m hydracept agent-context`). Do not freeze a launch-key list from the docs index.
 
 See [Capabilities](./capabilities/) for how capability keys work.
+
+## Invoke text synchronously
+
+`POST /v1/capabilities/text.general.fast.v1/invoke` returns the generated text
+directly. Omit `context`: a bound API key supplies its own project and environment.
+If you send an explicit `context`, it must match the credential or the request is
+rejected with `403` before admission.
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": {
+      "messages": [
+        { "role": "user", "content": "Write a silly haiku about a sleepy robot." }
+      ],
+      "maxOutputTokens": 64
+    },
+    "execution": {
+      "executionPreference": "automatic",
+      "executionConstraints": { "maxCostUsd": 0.02 }
+    },
+    "idempotencyKey": "<uuid-v4>"
+  }' \
+  https://api.hydracept.com/v1/capabilities/text.general.fast.v1/invoke
+```
+
+The response contains `typedOutput` as a string matching the descriptor's
+`outputSchemas.text`, plus `executionId`, `receiptId`, `resolvedProvider`, and
+`resolvedModel`. Reusing the same `idempotencyKey` returns the same execution and
+receipt instead of charging again. Use `GET /v1/public/receipts/{receiptId}` to
+retrieve the receipt.
 
 For image production (Sheet & Slice, transparent output, variants), see [Image production](./image-production/).
 
@@ -330,6 +367,7 @@ See [Durable Jobs & Receipts](./jobs/) for filters, artifacts, inspection, and o
 
 - [5-minute game asset](./five-minute-game-asset/)
 - [Authentication & Activation](./authentication/)
+- [SDKs and HTTP without an agent](./library-integration/)
 - [Durable Jobs & Receipts](./jobs/)
 - [Pinned Execution](./pinned-execution/)
 - [Execution provenance](./provenance/)
@@ -568,15 +606,18 @@ Humans can activate in the browser or through the CLI connect flow.
 1. Visit [https://app.hydracept.com/login](https://app.hydracept.com/login)
 2. Sign in with GitHub or Google
 3. Complete onboarding (project name and use case)
-4. Generate in Studio; connect BYOK under **Connections**; upgrade under **Billing**
+4. For a library, SDK, or direct HTTP client, [create an API key in Studio](https://app.hydracept.com/studio/keys) and copy it once. For generation inside Studio, connect BYOK under **Connections** or use managed inference; plans are under **Billing**.
 
 If you use multiple GitHub or Google accounts, pick the account that owns your Hydracept workspace when signing in.
 
-### Browser API activation
+### Browser API keys (no agent needed)
 
-1. Visit [https://hydracept.com/start](https://hydracept.com/start)
-2. Sign in with GitHub or Google
-3. Save the one-time API key shown on the completion page
+1. Sign in with GitHub or Google at [Hydracept Studio](https://app.hydracept.com/login).
+2. Open [API keys](https://app.hydracept.com/studio/keys) from the Studio navigation or account menu.
+3. Select the project and environment, name the key, then copy the secret and `HYDRACEPT_PROJECT` from the one-time display.
+4. Save them in your server-side environment or secrets manager. The secret cannot be retrieved again. Return to Studio to list, rotate, or revoke keys.
+
+This works for PHP, Python, TypeScript, .NET and raw HTTP without installing the CLI. See [Library integration](../library-integration/).
 
 ### CLI connect flow (recommended for local projects)
 
@@ -780,7 +821,86 @@ GET /v1/diagnostics/session
 Authorization: Bearer <HYDRACEPT_API_KEY>
 ```
 
+For a bearer-key check that executes nothing:
+
+```bash
+HYDRACEPT_API_KEY=... python -m hydracept keys verify --json
+```
+
+A successful response establishes that the credential is active and reports its project,
+environment, auth method, scopes, expiry, and credential id. Revoked or expired keys return
+`401`. The command reads the key from `HYDRACEPT_API_KEY` or stdin; it never accepts a key
+as a command-line argument.
+
 For agent discovery without hardcoding internals: `GET /v1/agent-context`.
+
+## Library integration
+URL: https://docs.hydracept.com/library-integration/
+
+# Use Hydracept without a coding agent
+
+Hydracept works from PHP, Python, TypeScript, .NET, or any HTTP client. You do not need a coding agent or Hydracept CLI to obtain an API key.
+
+## Create an API key in Studio
+
+1. Sign in at [Hydracept Studio](https://app.hydracept.com/login) using GitHub or Google.
+2. Open [API keys](https://app.hydracept.com/studio/keys), also linked from Studio's navigation and account menu.
+3. Give the key a name and choose its project and environment.
+4. Copy the API key and server setup variables. **The secret is displayed only once.**
+5. Store the key only on your server, in an environment file excluded from Git or in a secrets manager.
+
+Example server-side environment:
+
+```dotenv
+HYDRACEPT_API_KEY=replace_with_your_api_key
+HYDRACEPT_PROJECT=cpr_your_project_id
+HYDRACEPT_ENVIRONMENT=development
+HYDRACEPT_API_URL=https://api.hydracept.com
+```
+
+The value of `HYDRACEPT_PROJECT` is the project ID, not its display name. The environment must match the key's environment. Treat the key as a bearer secret: do not embed it in browser JavaScript, a mobile app, or a public repository.
+
+## PHP / Prisma
+
+For the Hydracept adapter proposed in [Prisma PR #176](https://github.com/aimeos/prisma/pull/176), the server-side configuration is:
+
+```php
+// config/services.php
+'hydracept' => [
+    'api_key' => env('HYDRACEPT_API_KEY'),
+    'project_id' => env('HYDRACEPT_PROJECT'),
+    'url' => env('HYDRACEPT_API_URL'),
+],
+```
+
+Keep the raw values in your application's server-side `.env` (or production secret store), rather than in `config/services.php`. The proposed adapter covers image, video, voice, music, and sound-effect operations. Check [PR #176](https://github.com/aimeos/prisma/pull/176) for its merge/release status.
+
+## Direct HTTP
+
+Use the new API key to query the live capability catalog:
+
+```bash
+curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  https://api.hydracept.com/v1/capabilities
+```
+
+For jobs, pass `projectId` and `environment` in the execution context, then poll and fetch the sealed receipt. See [Durable jobs](../jobs/) and [Quick Start](../).
+
+## Optional CLI
+
+You can also create keys without opening Studio:
+
+```bash
+pip install -U hydracept
+python -m hydracept login
+python -m hydracept keys create --name my-app --json
+```
+
+The CLI returns `apiKey` and `projectId`. The key is shown only at creation, as in Studio. Run `python -m hydracept doctor` to verify a local installation.
+
+## Rotate or revoke
+
+Open [Studio API keys](https://app.hydracept.com/studio/keys) to list active keys and see their name, prefix, project, and recent use. For rotation, create a replacement, update and restart consumers, then revoke the old key. Revocation immediately invalidates it. Provider BYOK credentials are separate and managed under **Connections**.
 
 ## Capabilities
 URL: https://docs.hydracept.com/capabilities/
@@ -883,7 +1003,17 @@ Use jobs for image, audio, 3D mesh, and any generation that may take longer than
 
 Durable text jobs (`executionModes` includes `job_async`) on eligible models also use **deferred processing**: Hydracept waits for the cheaper latency-tolerant provider tier and charges **50% of standard token rates**. Check `features.deferredProcessing` on the capability descriptor, or read [Deferred processing](../deferred-processing/). Synchronous invoke and stream stay on standard processing.
 
-Audio capabilities (`audio.sfx.generate.v1`, `audio.voice.generate.v1`, `audio.music.generate.v1`) run as durable jobs. Artifacts are **Ogg** (`audio/ogg`) with a `.ogg` filename, not WAV. Set `variantCount` (1–4) in job input to request multiple takes. See [variant selection](../jobs/#select-a-variant) when you need to pick one output before the next pipeline step.
+Audio capabilities (`audio.sfx.generate.v1`, `audio.voice.generate.v1`, `audio.music.generate.v1`) run as durable jobs. Output defaults to **Ogg** (`audio/ogg`) with a `.ogg` filename. Set `outputFormatPreference` to request another format — for example `mp3_44100_128` returns `audio/mpeg` with a `.mp3` filename. Supported values are `mp3_22050_32`, `mp3_24000_48`, `mp3_44100_32`, `mp3_44100_64`, `mp3_44100_96`, `mp3_44100_128`, `mp3_44100_192`, `opus_48000_32`, `opus_48000_64`, `opus_48000_96`, `opus_48000_128`, and `opus_48000_192`. The artifact `mediaType` and filename always match the format returned. Set `variantCount` (1–4) in job input to request multiple takes. See [variant selection](../jobs/#select-a-variant) when you need to pick one output before the next pipeline step.
+
+For `audio.voice.generate.v1`, omit `voiceId` to use the managed default voice. Quotes, job snapshots, and receipts include the effective `voiceId`. Voice choice does not change the metered hold.
+
+List other selectable voices with `GET /v1/capabilities/audio.voice.generate.v1/voices`. The response includes `voiceId`, `name`, and optional category, description, and preview URL. It uses the project's bound provider credential when configured, otherwise the managed platform key, and reports which source supplied the list.
+
+Audio model ids are enumerable from each capability: `GET /v1/capabilities/{capabilityKey}` returns
+`inputSchema.properties.modelId.enum`. Use one of those ids as `modelId`; a provider model name that is not in
+the list is not executable. The canonical values are `eleven_text_to_sound_v2` for SFX; `eleven_v4` (default),
+`eleven_multilingual_v2`, `eleven_turbo_v2_5`, and `eleven_flash_v2_5` for voice; and `music_v2` (default) and
+`music_v1` for music.
 
 `image.generate.v1` width and height snap up to multiples of 16 (Open Graph 1200×630 becomes 1200×640).
 
@@ -1270,7 +1400,7 @@ GET /v1/jobs/{jobId}/artifacts/{artifactId}
 Authorization: Bearer <HYDRACEPT_API_KEY>
 ```
 
-Public receipts emit SHA-256 as hex. Older jobs may still advertise `sha256:<hex>` — compare the hex digest only. `HydraceptWorkspace.jobs.run(..., download_dir=...)` (CLI 0.3.1+) strips the prefix. Audio SFX artifacts are Ogg files (`filename` ends in `.ogg`), not WAV.
+Public receipts emit SHA-256 as hex. Older jobs may still advertise `sha256:<hex>` — compare the hex digest only. `HydraceptWorkspace.jobs.run(..., download_dir=...)` (CLI 0.3.1+) strips the prefix. Audio artifacts default to Ogg (`filename` ends in `.ogg`); set `outputFormatPreference` (for example `mp3_44100_128`) to receive MP3 (`audio/mpeg`, `.mp3`). The artifact `mediaType` and filename match the returned format.
 
 ## Receipt
 
@@ -1280,6 +1410,21 @@ Authorization: Bearer <HYDRACEPT_API_KEY>
 ```
 
 Receipts include the request, provider, model, cost, retries, and resulting artifacts. Funding and billing mode on the receipt come from admission evidence. Missing evidence stays `unknown` — do not display that as BYOK or managed trial. Use receipts to review a result, debug a failed run, or keep a record for your team. Related receipts can be grouped into a [run manifest](../provenance/); a stable pin can be emitted as an [AI lockfile](../provenance/).
+
+Every receipt carries a `seal`:
+
+```json
+"seal": {
+  "algorithm": "Ed25519",
+  "keyId": "ed25519-<public-key-fingerprint>",
+  "publicKey": "<base64url Ed25519 public key>",
+  "receiptHash": "<sha256 of the canonical receipt without seal>",
+  "signature": "<base64url Ed25519 signature>",
+  "signedAt": "2026-10-24T12:00:05Z"
+}
+```
+
+`receiptHash` is SHA-256 over canonical JSON with sorted keys and no `seal` member. `signature` signs the same bytes. Fetch `GET /v1/public/receipts/verification-key` and confirm `seal.keyId` and `seal.publicKey` match before verifying, so a receipt from an untrusted channel cannot substitute its own key. `pricing.providerCost.status` distinguishes `measured` provider usage from `estimated` usage priced on a pinned schedule when the provider omits per-request usage.
 
 ## Sheet & Slice (image.generate.v1)
 
@@ -1544,6 +1689,8 @@ A receipt answers:
 - what the provider returned, what it cost, and which artifact resulted
 
 Pinned receipts (`GET /v1/inference/pinned/{receipt_id}`) provide the strongest guarantee: an exact pin, native hashes, no fallback, and evidence that is immutable after completion. Routed jobs also leave receipts, including the routing Hydracept applied. Receipt funding is copied from admission evidence; missing evidence stays `unknown` and must not be inferred as BYOK or managed trial.
+
+Every receipt carries an Ed25519 `seal` over its canonical body. Verify it with the public key from `GET /v1/public/receipts/verification-key`; see [Durable Jobs & Receipts](../jobs/#receipt).
 
 See [Pinned Execution](../pinned-execution/) and [Durable Jobs & Receipts](../jobs/).
 

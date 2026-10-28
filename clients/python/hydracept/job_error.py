@@ -80,6 +80,17 @@ JOB_ERROR_TAXONOMY: dict[str, dict[str, Any]] = {
         "The provider rejected the request as invalid or unsupported. Change the prompt, "
         "parameters, or model, then submit with a new idempotencyKey."
     ),
+    "ProviderContentRestricted": _resolved(
+        "The provider's content policy refused this request for that model. Retrying the "
+        "same model will not help. Use an explicitly authorized fallback "
+        "(modelSelection mode ordered or prefer) or adjust the content, then submit with "
+        "a new idempotencyKey."
+    ),
+    "ModelIncompatible": _resolved(
+        "The requested model cannot satisfy this request's contract. Read details.reasons "
+        "and details.alternatives, choose a compatible model or an ordered/prefer "
+        "selection, then submit with a new idempotencyKey."
+    ),
     "ProviderTimeout": _transient(
         "The provider did not respond in time. Retry after a short wait; the platform may "
         "reseal to an alternate route."
@@ -153,6 +164,18 @@ JOB_ERROR_TAXONOMY: dict[str, dict[str, Any]] = {
     "ProjectCredentialMismatch": _resolved(
         "The stored provider credential does not belong to this project. Reconnect the "
         "provider with credentials for this project, then retry."
+    ),
+    "EnvironmentMismatch": _resolved(
+        "This API key belongs to a different environment. Use a key created for the "
+        "requested environment, or omit context.environment."
+    ),
+    "ProjectBindingMismatch": _resolved(
+        "This API key is bound to a different project. Use the bound project or a key "
+        "created for the requested project."
+    ),
+    "ServicePrincipalUnresolved": _resolved(
+        "This credential authenticates, but has no runtime workspace identity for the "
+        "requested project. Complete workspace setup or use a project-scoped key."
     ),
     "ProviderCredentialUnavailable": _resolved(
         "The stored provider credential could not be decrypted, or no BYOK credential is "

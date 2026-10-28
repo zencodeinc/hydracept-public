@@ -29,6 +29,97 @@
     "description": "One API to run external AI capabilities\u2014with durable jobs, receipts, and BYOK. Public integration surface for Hydracept capabilities and jobs. Authenticate with a Hydracept API key (Bearer). The info.version field tracks the current published Hydracept client release, not a separate HTTP API semver."
   },
   "paths": {
+    "/v1/capabilities/audio.voice.generate.v1/voices": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "voice-catalog"
+        ],
+        "summary": "List Voice Options",
+        "description": "List selectable voice IDs for audio.voice.generate.v1. Uses the project's bound provider credential when configured, otherwise the managed platform key; returns the curated catalog when no managed key is configured.",
+        "operationId": "list_voice_catalog_v1_capabilities_audio_voice_generate_v1_voices_get",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Projectid"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Environment"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HydraceptVoiceCatalog"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "403": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": [
+          "service_principal",
+          "human_session",
+          "panel_session"
+        ],
+        "x-hydracept-client-codegen": true,
+        "security": [
+          {
+            "HydraceptApiKey": []
+          }
+        ]
+      }
+    },
     "/v1/adapter-aliases": {
       "post": {
         "tags": [
@@ -5515,6 +5606,7 @@
           "diagnostics"
         ],
         "summary": "Diagnostics Session",
+        "description": "Return the effective project, environment, permissions, and expiry.\n\nThe response is a typed contract for bearer keys and browser sessions. It makes\nno provider calls and creates no billable reservation.",
         "operationId": "diagnostics_session_v1_diagnostics_session_get",
         "responses": {
           "200": {
@@ -5522,9 +5614,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Diagnostics Session V1 Diagnostics Session Get"
+                  "$ref": "#/components/schemas/SessionDiagnosticsResponse"
                 }
               }
             }
@@ -9948,6 +10038,53 @@
         ]
       }
     },
+    "/v1/public/receipts/verification-key": {
+      "get": {
+        "tags": [
+          "public_api",
+          "external",
+          "public"
+        ],
+        "summary": "Get Receipt Verification Key",
+        "description": "Publish the Ed25519 key that signs receipts. No secret is returned.",
+        "operationId": "get_receipt_verification_key_v1_public_receipts_verification_key_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Get Receipt Verification Key V1 Public Receipts Verification Key Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/PublicValidationError"
+          },
+          "429": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "500": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "502": {
+            "$ref": "#/components/responses/PublicError"
+          },
+          "503": {
+            "$ref": "#/components/responses/PublicError"
+          }
+        },
+        "x-hydracept-surface": "public_api",
+        "x-hydracept-auth": "anonymous",
+        "x-hydracept-client-codegen": true,
+        "security": []
+      }
+    },
     "/v1/public/receipts/{receipt_id}": {
       "get": {
         "tags": [
@@ -11751,7 +11888,8 @@
                 "type": "null"
               }
             ],
-            "title": "Providerpin"
+            "title": "Providerpin",
+            "description": "Hard provider pin: one authorized model and no substitution. Use modelSelection mode ordered or prefer when fallback is intended."
           },
           "preferredModel": {
             "anyOf": [
@@ -11762,13 +11900,25 @@
                 "type": "null"
               }
             ],
-            "title": "Preferredmodel"
+            "title": "Preferredmodel",
+            "description": "Legacy hard pin. An ineligible model fails the request; this field does not authorize substitution. Use modelSelection for exact, ordered, prefer, or auto selection."
           },
           "autoSelect": {
             "type": "boolean",
             "title": "Autoselect",
-            "description": "Opt in to smart fallback when preferredModel is physically unavailable. Ignored when preferredModel is omitted.",
+            "description": "Opt in to physical-unavailability fallback for preferredModel. This does not authorize substitution for content or a mandatory execution requirement. Ignored when preferredModel is omitted.",
             "default": false
+          },
+          "modelSelection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelSelection"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Ordered model-selection contract: exact, ordered, prefer, or auto. Cannot be combined with preferredModel or autoSelect."
           },
           "budgetEnforcement": {
             "anyOf": [
@@ -12770,6 +12920,16 @@
             ],
             "title": "Status"
           },
+          "seal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HydraceptReceiptSeal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "provenance": {
             "anyOf": [
               {
@@ -13415,10 +13575,100 @@
               }
             ],
             "title": "Routebundlehash"
+          },
+          "requestedModel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requestedmodel"
+          },
+          "requestedMode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requestedmode"
+          },
+          "routingPolicy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routingpolicy"
+          },
+          "fallbackReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallbackreason"
           }
         },
         "type": "object",
         "title": "HydraceptReceiptRoute"
+      },
+      "HydraceptReceiptSeal": {
+        "properties": {
+          "algorithm": {
+            "type": "string",
+            "title": "Algorithm",
+            "default": "Ed25519"
+          },
+          "keyId": {
+            "type": "string",
+            "title": "Keyid"
+          },
+          "publicKey": {
+            "type": "string",
+            "title": "Publickey"
+          },
+          "receiptHash": {
+            "type": "string",
+            "title": "Receipthash"
+          },
+          "signature": {
+            "type": "string",
+            "title": "Signature"
+          },
+          "signedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "keyId",
+          "publicKey",
+          "receiptHash",
+          "signature"
+        ],
+        "title": "HydraceptReceiptSeal",
+        "description": "Tamper-evident seal over the receipt as issued.\n\n``receiptHash`` covers the canonical JSON without the ``seal`` member;\n``signature`` is an Ed25519 signature over the same bytes. ``publicKey`` is\nthe base64url Ed25519 public key; compare it with\n``GET /v1/public/receipts/verification-key`` before trusting a receipt from\nan untrusted channel."
       },
       "HydraceptReceiptTimestamps": {
         "properties": {
@@ -13580,6 +13830,88 @@
           "failedCount"
         ],
         "title": "HydraceptVariantSet"
+      },
+      "HydraceptVoiceCatalog": {
+        "properties": {
+          "capabilityKey": {
+            "type": "string",
+            "title": "Capabilitykey"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "byok",
+              "managed",
+              "curated"
+            ],
+            "title": "Source"
+          },
+          "voices": {
+            "items": {
+              "$ref": "#/components/schemas/HydraceptVoiceOption"
+            },
+            "type": "array",
+            "title": "Voices"
+          }
+        },
+        "type": "object",
+        "required": [
+          "capabilityKey",
+          "source",
+          "voices"
+        ],
+        "title": "HydraceptVoiceCatalog"
+      },
+      "HydraceptVoiceOption": {
+        "properties": {
+          "voiceId": {
+            "type": "string",
+            "title": "Voiceid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "previewUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previewurl"
+          }
+        },
+        "type": "object",
+        "required": [
+          "voiceId",
+          "name"
+        ],
+        "title": "HydraceptVoiceOption"
       },
       "JobApproveBody": {
         "properties": {
@@ -14016,6 +14348,37 @@
           "query"
         ],
         "title": "ModelAdapterSourcePreviewRequest"
+      },
+      "ModelSelection": {
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/ModelSelectionMode",
+            "default": "prefer"
+          },
+          "models": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Models",
+            "description": "Ordered model references, each 'model' or 'provider:model'."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ModelSelection",
+        "description": "One ordered model preference contract.\n\n``models`` is ordered. For ``exact`` it must contain exactly one entry; for\n``ordered`` every entry is an authorized fallback; for ``prefer`` the first\nentry is the preference and later entries are explicit fallbacks tried\nbefore Hydracept's own eligible ordering. ``auto`` carries no explicit\nmodels because the caller delegates identity entirely."
+      },
+      "ModelSelectionMode": {
+        "type": "string",
+        "enum": [
+          "exact",
+          "ordered",
+          "prefer",
+          "auto"
+        ],
+        "title": "ModelSelectionMode"
       },
       "Money": {
         "properties": {
@@ -15859,6 +16222,119 @@
         ],
         "title": "RoutingSelection"
       },
+      "RuntimeBindingDiagnostics": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projectid"
+          },
+          "environment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Environment"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "runtimeProductId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runtimeproductid"
+          },
+          "boundProjectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Boundprojectid"
+          },
+          "requestedProjectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requestedprojectid"
+          },
+          "keyEnvironment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keyenvironment"
+          },
+          "requestedEnvironment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requestedenvironment"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "RuntimeBindingDiagnostics",
+        "description": "Whether this credential resolves to a runtime workspace identity."
+      },
       "ScaledFxRate": {
         "properties": {
           "rateScaled": {
@@ -15920,6 +16396,129 @@
         ],
         "title": "ServiceClass",
         "description": "Provider-neutral delivery urgency/cost preference."
+      },
+      "SessionDiagnosticsResponse": {
+        "properties": {
+          "principalId": {
+            "type": "string",
+            "title": "Principalid"
+          },
+          "authMethod": {
+            "type": "string",
+            "title": "Authmethod"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projectid"
+          },
+          "tokenProjectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokenprojectid"
+          },
+          "environment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Environment"
+          },
+          "organizationId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organizationid"
+          },
+          "credentialId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credentialid"
+          },
+          "scopes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scopes"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "routeBundleVersion": {
+            "type": "string",
+            "title": "Routebundleversion"
+          },
+          "routeBundleHash": {
+            "type": "string",
+            "title": "Routebundlehash"
+          },
+          "capabilitiesAlpha": {
+            "type": "integer",
+            "title": "Capabilitiesalpha"
+          },
+          "runtimeBinding": {
+            "$ref": "#/components/schemas/RuntimeBindingDiagnostics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "principalId",
+          "authMethod",
+          "scope",
+          "routeBundleVersion",
+          "routeBundleHash",
+          "capabilitiesAlpha"
+        ],
+        "title": "SessionDiagnosticsResponse",
+        "description": "Effective credential context. A 200 means the credential is active."
       },
       "StorageAccountingOut": {
         "properties": {
@@ -17011,6 +17610,27 @@
             "additionalProperties": true,
             "title": "Outputschema",
             "type": "object"
+          },
+          "outputSchemas": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Outputschemas",
+            "type": "object"
+          },
+          "requestTemplate": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Requesttemplate"
           },
           "executionModes": {
             "items": {

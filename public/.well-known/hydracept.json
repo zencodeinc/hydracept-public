@@ -32,6 +32,7 @@
     "3d.render_reference.v1",
     "compute.evaluate.v1",
     "decision.evaluate.v1",
+    "text.moderate.v1",
     "moderation.content.v1",
     "domain.search.v1",
     "domain.pricing.v1"
@@ -84,6 +85,7 @@
     "3d.render_reference.v1",
     "compute.evaluate.v1",
     "decision.evaluate.v1",
+    "text.moderate.v1",
     "moderation.content.v1",
     "domain.search.v1",
     "domain.pricing.v1"

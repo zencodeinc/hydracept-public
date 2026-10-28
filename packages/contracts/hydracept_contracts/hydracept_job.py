@@ -200,6 +200,17 @@ JOB_ERROR_TAXONOMY: Mapping[str, JobErrorGuidance] = {
         "The provider rejected the request as invalid or unsupported. Change the prompt, "
         "parameters, or model, then submit with a new idempotencyKey."
     ),
+    HydraceptErrorCode.PROVIDER_CONTENT_RESTRICTED.value: _resolved(
+        "The provider's content policy refused this request for that model. Retrying the "
+        "same model will not help. Use an explicitly authorized fallback "
+        "(modelSelection mode ordered or prefer) or adjust the content, then submit with "
+        "a new idempotencyKey."
+    ),
+    HydraceptErrorCode.MODEL_INCOMPATIBLE.value: _resolved(
+        "The requested model cannot satisfy this request's contract. Read details.reasons "
+        "and details.alternatives, choose a compatible model or an ordered/prefer "
+        "selection, then submit with a new idempotencyKey."
+    ),
     HydraceptErrorCode.PROVIDER_TIMEOUT.value: _transient(
         "The provider did not respond in time. Retry after a short wait; the platform may "
         "reseal to an alternate route."
@@ -273,6 +284,18 @@ JOB_ERROR_TAXONOMY: Mapping[str, JobErrorGuidance] = {
     HydraceptErrorCode.PROJECT_CREDENTIAL_MISMATCH.value: _resolved(
         "The stored provider credential does not belong to this project. Reconnect the "
         "provider with credentials for this project, then retry."
+    ),
+    HydraceptErrorCode.ENVIRONMENT_MISMATCH.value: _resolved(
+        "This API key belongs to a different environment. Use a key created for the "
+        "requested environment, or omit context.environment."
+    ),
+    HydraceptErrorCode.PROJECT_BINDING_MISMATCH.value: _resolved(
+        "This API key is bound to a different project. Use the bound project or a key "
+        "created for the requested project."
+    ),
+    HydraceptErrorCode.SERVICE_PRINCIPAL_UNRESOLVED.value: _resolved(
+        "This credential authenticates, but has no runtime workspace identity for the "
+        "requested project. Complete workspace setup or use a project-scoped key."
     ),
     HydraceptErrorCode.PROVIDER_CREDENTIAL_UNAVAILABLE.value: _resolved(
         "The stored provider credential could not be decrypted, or no BYOK credential is "
@@ -509,6 +532,12 @@ class HydraceptReceiptRoute(BaseModel):
     model: str | None = None
     route_bundle_version: str | None = Field(default=None, alias="routeBundleVersion")
     route_bundle_hash: str | None = Field(default=None, alias="routeBundleHash")
+    # Requested identity and the policy that resolved it. ``model`` stays the
+    # executed model; these fields make an authorized substitution explicit.
+    requested_model: str | None = Field(default=None, alias="requestedModel")
+    requested_mode: str | None = Field(default=None, alias="requestedMode")
+    routing_policy: str | None = Field(default=None, alias="routingPolicy")
+    fallback_reason: str | None = Field(default=None, alias="fallbackReason")
 
     model_config = {"populate_by_name": True}
 
@@ -568,6 +597,26 @@ class HydraceptReceiptProvenance(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class HydraceptReceiptSeal(BaseModel):
+    """Tamper-evident seal over the receipt as issued.
+
+    ``receiptHash`` covers the canonical JSON without the ``seal`` member;
+    ``signature`` is an Ed25519 signature over the same bytes. ``publicKey`` is
+    the base64url Ed25519 public key; compare it with
+    ``GET /v1/public/receipts/verification-key`` before trusting a receipt from
+    an untrusted channel.
+    """
+
+    algorithm: str = "Ed25519"
+    key_id: str = Field(alias="keyId")
+    public_key: str = Field(alias="publicKey")
+    receipt_hash: str = Field(alias="receiptHash")
+    signature: str
+    signed_at: datetime | None = Field(default=None, alias="signedAt")
+
+    model_config = {"populate_by_name": True}
+
+
 class HydraceptReceipt(BaseModel):
     receipt_id: str = Field(alias="receiptId")
     job_id: str = Field(alias="jobId")
@@ -595,6 +644,7 @@ class HydraceptReceipt(BaseModel):
     artifacts: list[HydraceptJobArtifactRef] = Field(default_factory=list)
     timestamps: HydraceptReceiptTimestamps | None = None
     status: HydraceptJobStatus | str
+    seal: HydraceptReceiptSeal | None = None
     provenance: HydraceptReceiptProvenance | None = None
     text: dict[str, Any] | None = None
     media: dict[str, Any] | None = None

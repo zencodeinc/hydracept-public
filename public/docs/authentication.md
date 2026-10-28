@@ -11,15 +11,18 @@ Humans can activate in the browser or through the CLI connect flow.
 1. Visit [https://app.hydracept.com/login](https://app.hydracept.com/login)
 2. Sign in with GitHub or Google
 3. Complete onboarding (project name and use case)
-4. Generate in Studio; connect BYOK under **Connections**; upgrade under **Billing**
+4. For a library, SDK, or direct HTTP client, [create an API key in Studio](https://app.hydracept.com/studio/keys) and copy it once. For generation inside Studio, connect BYOK under **Connections** or use managed inference; plans are under **Billing**.
 
 If you use multiple GitHub or Google accounts, pick the account that owns your Hydracept workspace when signing in.
 
-### Browser API activation
+### Browser API keys (no agent needed)
 
-1. Visit [https://hydracept.com/start](https://hydracept.com/start)
-2. Sign in with GitHub or Google
-3. Save the one-time API key shown on the completion page
+1. Sign in with GitHub or Google at [Hydracept Studio](https://app.hydracept.com/login).
+2. Open [API keys](https://app.hydracept.com/studio/keys) from the Studio navigation or account menu.
+3. Select the project and environment, name the key, then copy the secret and `HYDRACEPT_PROJECT` from the one-time display.
+4. Save them in your server-side environment or secrets manager. The secret cannot be retrieved again. Return to Studio to list, rotate, or revoke keys.
+
+This works for PHP, Python, TypeScript, .NET and raw HTTP without installing the CLI. See [Library integration](../library-integration/).
 
 ### CLI connect flow (recommended for local projects)
 
@@ -222,5 +225,16 @@ Exit code is non-zero when a fatal check fails. Use `--json` for CI output.
 GET /v1/diagnostics/session
 Authorization: Bearer <HYDRACEPT_API_KEY>
 ```
+
+For a bearer-key check that executes nothing:
+
+```bash
+HYDRACEPT_API_KEY=... python -m hydracept keys verify --json
+```
+
+A successful response establishes that the credential is active and reports its project,
+environment, auth method, scopes, expiry, and credential id. Revoked or expired keys return
+`401`. The command reads the key from `HYDRACEPT_API_KEY` or stdin; it never accepts a key
+as a command-line argument.
 
 For agent discovery without hardcoding internals: `GET /v1/agent-context`.

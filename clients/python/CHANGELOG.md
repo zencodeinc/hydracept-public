@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.4 (unreleased)
+
+- `hydracept keys create --print-env` prints `HYDRACEPT_API_KEY`, `HYDRACEPT_PROJECT`, `HYDRACEPT_ENVIRONMENT`, and `HYDRACEPT_API_URL` for one-time server setup. The secret goes to stdout and a warning goes to stderr. `--print-env` cannot be combined with `--json` or `--configure`.
+- `hydracept keys verify --json` checks the effective credential context through the typed `/v1/diagnostics/session` contract. It makes no provider calls and reserves no spend. The key is read from `HYDRACEPT_API_KEY` or stdin, never from a command-line argument.
+
 ## 0.5.3 (unreleased)
 
 - MCP discovery profiles: stdio defaults to **full**; **compact** is opt-in (`HYDRACEPT_MCP_TOOL_PROFILE=compact` or `--tool-profile compact`).

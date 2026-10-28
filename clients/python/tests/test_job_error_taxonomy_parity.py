@@ -7,6 +7,9 @@ mirror. This test - not a "keep in sync" comment - is what makes the duplication
 
 from __future__ import annotations
 
+import ast
+from pathlib import Path
+
 from hydracept.job_error import (
     JOB_ERROR_TAXONOMY as CLIENT_TAXONOMY,
     UNKNOWN_JOB_ERROR_RESOLUTION as CLIENT_UNKNOWN,
@@ -19,6 +22,46 @@ from hydracept_contracts.hydracept_job import (
     UNKNOWN_JOB_ERROR_RESOLUTION,
     project_job_error as authority_project_job_error,
 )
+
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _taxonomy_source_keys(path: Path, name: str) -> list[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            targets, value = node.targets, node.value
+        elif isinstance(node, ast.AnnAssign):
+            targets, value = [node.target], node.value
+        else:
+            continue
+        if not any(isinstance(target, ast.Name) and target.id == name for target in targets):
+            continue
+        if not isinstance(value, ast.Dict):
+            continue
+        keys: list[str] = []
+        for key in value.keys:
+            if isinstance(key, ast.Attribute):
+                keys.append(ast.unparse(key))
+            elif isinstance(key, ast.Constant) and isinstance(key.value, str):
+                keys.append(key.value)
+        return keys
+    raise AssertionError(f"{name} literal not found in {path}")
+
+
+def test_taxonomy_source_has_no_duplicate_keys() -> None:
+    server = _taxonomy_source_keys(
+        _REPO_ROOT / "packages/contracts/hydracept_contracts/hydracept_job.py",
+        "JOB_ERROR_TAXONOMY",
+    )
+    client = _taxonomy_source_keys(
+        _REPO_ROOT / "clients/python/hydracept/job_error.py",
+        "JOB_ERROR_TAXONOMY",
+    )
+    assert server and client
+    assert len(server) == len(set(server))
+    assert len(client) == len(set(client))
 
 
 def test_client_taxonomy_matches_the_authority_exactly() -> None:

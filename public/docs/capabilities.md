@@ -96,7 +96,17 @@ Use jobs for image, audio, 3D mesh, and any generation that may take longer than
 
 Durable text jobs (`executionModes` includes `job_async`) on eligible models also use **deferred processing**: Hydracept waits for the cheaper latency-tolerant provider tier and charges **50% of standard token rates**. Check `features.deferredProcessing` on the capability descriptor, or read [Deferred processing](../deferred-processing/). Synchronous invoke and stream stay on standard processing.
 
-Audio capabilities (`audio.sfx.generate.v1`, `audio.voice.generate.v1`, `audio.music.generate.v1`) run as durable jobs. Artifacts are **Ogg** (`audio/ogg`) with a `.ogg` filename, not WAV. Set `variantCount` (1–4) in job input to request multiple takes. See [variant selection](../jobs/#select-a-variant) when you need to pick one output before the next pipeline step.
+Audio capabilities (`audio.sfx.generate.v1`, `audio.voice.generate.v1`, `audio.music.generate.v1`) run as durable jobs. Output defaults to **Ogg** (`audio/ogg`) with a `.ogg` filename. Set `outputFormatPreference` to request another format — for example `mp3_44100_128` returns `audio/mpeg` with a `.mp3` filename. Supported values are `mp3_22050_32`, `mp3_24000_48`, `mp3_44100_32`, `mp3_44100_64`, `mp3_44100_96`, `mp3_44100_128`, `mp3_44100_192`, `opus_48000_32`, `opus_48000_64`, `opus_48000_96`, `opus_48000_128`, and `opus_48000_192`. The artifact `mediaType` and filename always match the format returned. Set `variantCount` (1–4) in job input to request multiple takes. See [variant selection](../jobs/#select-a-variant) when you need to pick one output before the next pipeline step.
+
+For `audio.voice.generate.v1`, omit `voiceId` to use the managed default voice. Quotes, job snapshots, and receipts include the effective `voiceId`. Voice choice does not change the metered hold.
+
+List other selectable voices with `GET /v1/capabilities/audio.voice.generate.v1/voices`. The response includes `voiceId`, `name`, and optional category, description, and preview URL. It uses the project's bound provider credential when configured, otherwise the managed platform key, and reports which source supplied the list.
+
+Audio model ids are enumerable from each capability: `GET /v1/capabilities/{capabilityKey}` returns
+`inputSchema.properties.modelId.enum`. Use one of those ids as `modelId`; a provider model name that is not in
+the list is not executable. The canonical values are `eleven_text_to_sound_v2` for SFX; `eleven_v4` (default),
+`eleven_multilingual_v2`, `eleven_turbo_v2_5`, and `eleven_flash_v2_5` for voice; and `music_v2` (default) and
+`music_v1` for music.
 
 `image.generate.v1` width and height snap up to multiples of 16 (Open Graph 1200×630 becomes 1200×640).
 

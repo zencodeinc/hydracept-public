@@ -17,7 +17,7 @@ For one asset: `python -m hydracept run image.generate.v1 --prompt "..." --json`
 Pick one:
 
 1. **CLI bootstrap (recommended):** `pip install -U hydracept` then `python -m hydracept init --apply --yes --json`. Init infers the current git/workspace project when you are already signed in. Browser project selection is only required when that inference is ambiguous.
-2. **Studio (browser):** [app.hydracept.com/login](https://app.hydracept.com/login) — sign in with GitHub or Google, complete onboarding, then generate in Studio. Manage plans at [Studio Billing](https://app.hydracept.com/studio/billing).
+2. **Studio (browser):** [app.hydracept.com/login](https://app.hydracept.com/login) — sign in with GitHub or Google, then generate in Studio or [create an API key](https://app.hydracept.com/studio/keys) for a library, script, or backend. Manage plans at [Studio Billing](https://app.hydracept.com/studio/billing).
 3. **Agents / headless:** `python -m hydracept init --apply --yes --json` (or use an existing key out of band with `HYDRACEPT_API_KEY`).
 
 For coding agents, `interaction_required` is a hard human boundary. If `presentation.agentAction` is `present_and_yield` and stdio MCP exposes `hydracept_interaction_surface`, invoke that surface once with the supplied context and stop the turn. Otherwise present `action.url` verbatim. In either case, stop until the human completes activation; only then run `afterCompletion.command` / `--wait`.
@@ -48,6 +48,10 @@ python -m hydracept agent-context
 
 `configure` and `quickstart` are deprecated aliases for `init`. Device login (`python -m hydracept login`) still works for advanced flows.
 <!-- docs:endif -->
+
+## No-agent integrations
+
+For PHP, .NET, TypeScript, Python or direct HTTP, create a named key at [Studio API keys](https://app.hydracept.com/studio/keys). Copy `HYDRACEPT_API_KEY` and `HYDRACEPT_PROJECT` once, then store them in your server-side environment. See [Library integration](./library-integration/).
 
 ## SDKs
 
@@ -90,6 +94,39 @@ curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
 The live catalog is `GET /v1/capabilities` (or `python -m hydracept agent-context`). Do not freeze a launch-key list from the docs index.
 
 See [Capabilities](./capabilities/) for how capability keys work.
+
+## Invoke text synchronously
+
+`POST /v1/capabilities/text.general.fast.v1/invoke` returns the generated text
+directly. Omit `context`: a bound API key supplies its own project and environment.
+If you send an explicit `context`, it must match the credential or the request is
+rejected with `403` before admission.
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": {
+      "messages": [
+        { "role": "user", "content": "Write a silly haiku about a sleepy robot." }
+      ],
+      "maxOutputTokens": 64
+    },
+    "execution": {
+      "executionPreference": "automatic",
+      "executionConstraints": { "maxCostUsd": 0.02 }
+    },
+    "idempotencyKey": "<uuid-v4>"
+  }' \
+  https://api.hydracept.com/v1/capabilities/text.general.fast.v1/invoke
+```
+
+The response contains `typedOutput` as a string matching the descriptor's
+`outputSchemas.text`, plus `executionId`, `receiptId`, `resolvedProvider`, and
+`resolvedModel`. Reusing the same `idempotencyKey` returns the same execution and
+receipt instead of charging again. Use `GET /v1/public/receipts/{receiptId}` to
+retrieve the receipt.
 
 For image production (Sheet & Slice, transparent output, variants), see [Image production](./image-production/).
 
@@ -159,6 +196,7 @@ See [Durable Jobs & Receipts](./jobs/) for filters, artifacts, inspection, and o
 
 - [5-minute game asset](./five-minute-game-asset/)
 - [Authentication & Activation](./authentication/)
+- [SDKs and HTTP without an agent](./library-integration/)
 - [Durable Jobs & Receipts](./jobs/)
 - [Pinned Execution](./pinned-execution/)
 - [Execution provenance](./provenance/)

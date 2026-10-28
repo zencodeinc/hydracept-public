@@ -103,7 +103,7 @@ Canonical CLI: `python -m hydracept run image.generate.v1 --input '{"prompt":"..
 7. Sheet & Slice: size by either cell (sheet.normalize.width/height; canvas = cell × columns,rows) or canvas (width/height; cell = canvas ÷ columns,rows) — both given must agree. The resulting canvas must meet the model minimum; slices may be any size. Read sheetSlicing/canvasFloor on GET /v1/capabilities/image.generate.v1 (default 816×816, 16-aligned).
 8. `image.generate.v1` width/height snap up to multiples of 16. Open Graph 1200×630 becomes 1200×640.
 9. `jobs.run(..., download_dir=...)` compares receipt SHA-256 as hex; `sha256:<hex>` is a prefix, not part of the hash.
-10. `audio.sfx.generate.v1` artifacts are Ogg (`audio/ogg`) with a `.ogg` filename, not WAV.
+10. Audio artifacts default to Ogg (`audio/ogg`, `.ogg`). Set `outputFormatPreference` (for example `mp3_44100_128`) to request MP3; the artifact `mediaType` and filename match the returned format.
 11. Hosted Hydracept MCP can list tools with no workspace key. Use `HydraceptWorkspace.open()` or stdio MCP after `python -m hydracept init`. Do not put the workspace key in **Plugins → Configure**.
 
 ## Job contract (methods, waits, inputs, outputs)

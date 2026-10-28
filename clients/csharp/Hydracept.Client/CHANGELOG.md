@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.4 (unreleased)
+
+- Version aligned with the Python client 0.5.4. No .NET SDK API changes in this release.
+
 ## 0.5.3 (unreleased)
 
 - Version aligned with the Python client 0.5.3. No .NET SDK API changes in this release.

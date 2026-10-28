@@ -14,6 +14,7 @@ from hydracept_contracts.execution_contract_error import (
     EXECUTION_CONSTRAINT_FIELDS,
     ExecutionContractError,
 )
+from hydracept_contracts.model_selection import ModelSelection
 
 
 class ExecutionPreferenceAlpha(StrEnum):
@@ -29,6 +30,7 @@ _REJECTED_CONSTRAINT_KEYS = frozenset({"maxLatencyMs"})
 _FOLD_CONSTRAINT_KEYS = (
     ("preferredModel", "preferred_model"),
     ("autoSelect", "auto_select"),
+    ("modelSelection", "model_selection"),
     ("providerPin", "provider_pin"),
     ("maxCostUsd", "max_cost_usd"),
     ("maxDurationSeconds", "max_duration_seconds"),
@@ -45,14 +47,38 @@ _FOLD_EXECUTION_OPTION_KEYS = (
 
 class ExecutionConstraints(BaseModel):
     max_cost_usd: float | None = Field(default=None, alias="maxCostUsd", gt=0)
-    provider_pin: str | None = Field(default=None, alias="providerPin")
-    preferred_model: str | None = Field(default=None, alias="preferredModel")
+    provider_pin: str | None = Field(
+        default=None,
+        alias="providerPin",
+        description=(
+            "Hard provider pin: one authorized model and no substitution. "
+            "Use modelSelection mode ordered or prefer when fallback is intended."
+        ),
+    )
+    preferred_model: str | None = Field(
+        default=None,
+        alias="preferredModel",
+        description=(
+            "Legacy hard pin. An ineligible model fails the request; this field "
+            "does not authorize substitution. Use modelSelection for exact, "
+            "ordered, prefer, or auto selection."
+        ),
+    )
     auto_select: bool = Field(
         default=False,
         alias="autoSelect",
         description=(
-            "Opt in to smart fallback when preferredModel is physically unavailable. "
-            "Ignored when preferredModel is omitted."
+            "Opt in to physical-unavailability fallback for preferredModel. This "
+            "does not authorize substitution for content or a mandatory execution "
+            "requirement. Ignored when preferredModel is omitted."
+        ),
+    )
+    model_selection: ModelSelection | None = Field(
+        default=None,
+        alias="modelSelection",
+        description=(
+            "Ordered model-selection contract: exact, ordered, prefer, or auto. "
+            "Cannot be combined with preferredModel or autoSelect."
         ),
     )
     budget_enforcement: str | None = Field(
@@ -89,6 +115,16 @@ class ExecutionConstraints(BaseModel):
             raise ValueError("conflicting timeoutSeconds and maxDurationSeconds")
         payload["maxDurationSeconds"] = timeout
         return payload
+
+    @model_validator(mode="after")
+    def _model_selectors_are_exclusive(self) -> "ExecutionConstraints":
+        if self.model_selection is not None and (
+            (self.preferred_model or "").strip() or self.auto_select
+        ):
+            raise ValueError(
+                "modelSelection cannot be combined with preferredModel or autoSelect"
+            )
+        return self
 
     @field_validator("budget_enforcement")
     @classmethod
