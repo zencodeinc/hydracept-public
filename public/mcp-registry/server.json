@@ -3,7 +3,7 @@
   "name": "com.hydracept/hydracept",
   "title": "Hydracept",
   "description": "Hosted MCP for Hydracept: discover capabilities, run jobs, receipts, BYOK or managed billing.",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "websiteUrl": "https://hydracept.com/plugin",
   "repository": {
     "url": "https://github.com/zencodeinc/hydracept-public",
@@ -20,7 +20,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "hydracept",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"

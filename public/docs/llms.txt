@@ -11,7 +11,7 @@ Full documentation: https://hydracept.com/llms-full.txt
 - Plugin id: hydracept-agent-plugin
 - In a git checkout: python -m hydracept init --apply --yes --json (binds stdio MCP). Init may reuse an existing GitHub (`gh`) or Google Cloud (`gcloud`) user login, or HYDRACEPT_API_KEY, instead of opening a browser — see docs/authentication. Reload MCP once. Do not copy the workspace key into Plugins → Configure.
 - Stdio MCP (coding-agent default): python -m hydracept mcp serve
-- Hydracept panel (PyPI hydracept >= 0.5.3): one MCP App ui://hydracept/app.html; seven states, not seven iframes
+- Hydracept panel (PyPI hydracept >= 0.5.4): one MCP App ui://hydracept/app.html; seven states, not seven iframes
 - Hosted MCP (no checkout: ChatGPT, MCP Registry): https://api.hydracept.com/mcp
 - Install: python -m hydracept agents install --auto
 - Project surfaces: python -m hydracept surface apply PATH
@@ -29,7 +29,7 @@ Hydracept is a public API for software teams and coding agents to discover, quot
 Hydracept is a public API for discovery, quotes, execution, durable jobs, artifacts, receipts, and budgets. BYOK is 0% Hydracept fee; managed billing is provider cost plus 6%. Eligible durable text jobs can use deferred processing at 50% of standard token rates. Games and media are common examples, not the whole product. Hydracept is not a runtime game-engine inference plugin.
 
 ## Client release
-- Current published client: 0.5.3 (PyPI hydracept, npm @hydracept/sdk, NuGet Hydracept.Client)
+- Current published client: 0.5.4 (PyPI hydracept, npm @hydracept/sdk, NuGet Hydracept.Client)
 - Migration guide: https://docs.hydracept.com/migrating-0.5.0/
 - Stream invoke SSE: GET /v1/executions/{executionId}/events (clients < 0.5.0 hit LEGACY_ROUTE_REMOVED on removed routes)
 
