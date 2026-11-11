@@ -73,6 +73,20 @@ class CapabilityDescriptor(BaseModel):
     output_schema: dict[str, Any] = Field(default_factory=dict, alias="outputSchema")
     ui_schema: dict[str, Any] = Field(default_factory=dict, alias="uiSchema")
     execution_modes: list[CapabilityExecutionMode] = Field(alias="executionModes")
+    # BUSINESS declaration, not transport. "Can be invoked without a product
+    # integration commitment." Transport is ``execution_modes`` alone — never
+    # derive this from it, and never infer one from the other. Capabilities that
+    # qualify use the documented default; anything else states ``False``
+    # explicitly so an author records the business fact deliberately.
+    one_shot: bool = Field(
+        default=True,
+        alias="oneShot",
+        description=(
+            "Business property: this capability can be invoked without a product "
+            "integration commitment. NOT a transport fact — read executionModes to "
+            "choose between /invoke and /jobs."
+        ),
+    )
     idempotency_required: bool = Field(default=False, alias="idempotencyRequired")
     estimate_available: bool = Field(default=False, alias="estimateAvailable")
     capability_pricing: CapabilityPricingBlock | None = Field(

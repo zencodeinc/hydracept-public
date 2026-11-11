@@ -2,9 +2,9 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.hydracept/hydracept",
   "title": "Hydracept",
-  "description": "Hosted MCP for Hydracept: discover capabilities, run jobs, receipts, BYOK or managed billing.",
-  "version": "0.5.4",
-  "websiteUrl": "https://hydracept.com/plugin",
+  "description": "Directory-safe MCP: quote and run text/domain jobs with OAuth, receipts, BYOK.",
+  "version": "0.5.5",
+  "websiteUrl": "https://hydracept.com/mcp-registry",
   "repository": {
     "url": "https://github.com/zencodeinc/hydracept-public",
     "source": "github"
@@ -38,13 +38,13 @@
       "environmentVariables": [
         {
           "name": "HYDRACEPT_API_KEY",
-          "description": "Hydracept API key from https://hydracept.com/start (or use project secrets after init)",
+          "description": "Hydracept API key from https://hydracept.com/start (or use project secrets after init). Stdio only — the hosted remote uses OAuth, not this key.",
           "isRequired": true,
           "isSecret": true
         },
         {
           "name": "HYDRACEPT_MCP_TOOL_PROFILE",
-          "description": "Stdio MCP tools/list for the process lifetime: full (default when unset) or compact (eleven lifecycle tools). Hosted POST /mcp defaults to compact for new API keys; POST /mcp/full always lists all specialists.",
+          "description": "Stdio MCP tools/list for the process lifetime: full (default when unset) or compact (eleven lifecycle tools). Hosted POST /mcp defaults to compact for new API keys; POST /mcp/full always lists all specialists. The registry remote (/mcp/claude) is the directory-safe OAuth surface.",
           "isRequired": false,
           "isSecret": false
         }
@@ -54,20 +54,7 @@
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://api.hydracept.com/mcp",
-      "headers": [
-        {
-          "name": "Authorization",
-          "value": "Bearer {HYDRACEPT_API_KEY}",
-          "variables": {
-            "HYDRACEPT_API_KEY": {
-              "description": "Hydracept API key",
-              "isRequired": true,
-              "isSecret": true
-            }
-          }
-        }
-      ]
+      "url": "https://api.hydracept.com/mcp/claude"
     }
   ]
 }

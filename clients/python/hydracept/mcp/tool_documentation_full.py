@@ -16,12 +16,13 @@ FULL_PROFILE_TOOL_DESCRIPTIONS: dict[str, str] = {
     ),
     "hydracept_request_capability_quote": (
         "POST /v1/capability-requests then submit: human-paid commission quote for a missing capability. "
-        "Not retail execution pricing (see hydracept_quote_capability). quoteId from this flow must not "
-        "be used as execution.quoteId on jobs. "
+        "summary is required. Not retail execution pricing (see hydracept_quote_capability). "
+        "quoteId from this flow must not be used as execution.quoteId on jobs. "
         "Auth: bearer required. Cost: none to the agent (humans pay commission). Side effects: creates request rows."
     ),
     "hydracept_get_capability_request_quote": (
         "GET /v1/capability-requests/{id}/quote: read commission quote for an existing request. "
+        "Returns status pending when a human has not priced it yet; that is not a 404. "
         "Use after hydracept_request_capability_quote; not for retail hydracept_quote_capability. "
         "Auth: bearer required. Cost: none. Side effects: none."
     ),
@@ -51,8 +52,9 @@ FULL_PROFILE_TOOL_DESCRIPTIONS: dict[str, str] = {
         "Auth: bearer required. Cost: none. Side effects: none."
     ),
     "hydracept_manifest_create": (
-        "POST /v1/provenance/manifests: hash pinned inference receipts into a manifest id. "
-        "Use after hydracept_pinned_run; capability job receipts are not accepted. "
+        "POST /v1/provenance/manifests: hash receipt ids into a manifest id. "
+        "receiptIds is required. Accepts capability-job receipts (rcp_… from "
+        "hydracept_get_receipt) and pinned inference receipts. "
         "Verify with hydracept_manifest_verify. "
         "Auth: bearer required. Cost: none. Side effects: creates manifest record."
     ),
@@ -62,8 +64,9 @@ FULL_PROFILE_TOOL_DESCRIPTIONS: dict[str, str] = {
         "Auth: bearer required. Cost: none. Side effects: none."
     ),
     "hydracept_lockfile_emit": (
-        "GET /v1/provenance/lockfile?receipt_id=: emit lockfile JSON for a pinned inference receipt. "
-        "Use after hydracept_pinned_run / hydracept_pinned_get; verify with hydracept_verify_lockfile. "
+        "GET /v1/provenance/lockfile?receipt_id=: emit lockfile JSON for a receipt. "
+        "Accepts capability-job receipts from hydracept_get_receipt and pinned "
+        "inference receipts; verify with hydracept_verify_lockfile. "
         "Auth: bearer required. Cost: none. Side effects: none."
     ),
     "hydracept_verify_lockfile": (
@@ -78,7 +81,8 @@ FULL_PROFILE_TOOL_DESCRIPTIONS: dict[str, str] = {
         "Auth: bearer required. Cost: paid image generation. Side effects: creates job/receipt and provider usage."
     ),
     "hydracept_project_request_operation": (
-        "POST /v1/projects/{projectId}/operations: enqueue allowlisted project operation for local execution. "
+        "POST /v1/projects/{projectId}/operations: enqueue a project operation for local execution. "
+        "command status is read-only and available before any allowlist sync. "
         "Hosted MCP does not run argv; stdio watch_once/up executes. "
         "Auth: bearer required. Side effects: creates operation record."
     ),
@@ -218,7 +222,11 @@ FULL_PROFILE_PARAMETER_DESCRIPTIONS: dict[str, dict[str, str]] = {
         "input": "Alias for body.",
     },
     "hydracept_request_capability_quote": {
-        "body": "Capability request create payload (capabilityKey, intent, etc.).",
+        "summary": (
+            "Required. What the missing capability should do, in plain language. "
+            "Humans read this before pricing a commission. This is not an execution quote."
+        ),
+        "body": "Optional extra request fields (capabilityKey, constraints). summary is still required.",
     },
     "hydracept_get_capability_request_quote": {
         "request_id": "Capability request uuid from request_capability_quote (full surfaces only; not on /mcp/compact).",
@@ -232,12 +240,16 @@ FULL_PROFILE_PARAMETER_DESCRIPTIONS: dict[str, dict[str, str]] = {
     "hydracept_pinned_bulk_get": {"bulk_id": "Bulk id from hydracept_pinned_bulk response."},
     "hydracept_manifest_create": {
         "body": (
-            "Object with receiptIds (required array of pinned receipt ids), optional label, pin, experimentHash."
+            "Object with receiptIds (required array of receipt ids from this "
+            "project's jobs or pinned runs), optional label, pin, experimentHash."
         ),
     },
     "hydracept_manifest_verify": {"manifest_id": "Manifest id from hydracept_manifest_create."},
     "hydracept_lockfile_emit": {
-        "receipt_id": "Pinned receipt id from hydracept_pinned_run or hydracept_pinned_get."
+        "receipt_id": (
+            "Receipt id from hydracept_get_receipt, hydracept_pinned_run, or "
+            "hydracept_pinned_get."
+        )
     },
     "hydracept_verify_lockfile": {"body": "Lockfile JSON object to verify."},
     "hydracept_smoke": {
@@ -249,7 +261,10 @@ FULL_PROFILE_PARAMETER_DESCRIPTIONS: dict[str, dict[str, str]] = {
         "output_path": "Stdio: optional local path to persist artifact bytes.",
     },
     "hydracept_project_request_operation": {
-        "command": "Operation command string from project manifest allowlist.",
+        "command": (
+            "Required command. status is the read-only host command available on a new "
+            "project with no synced allowlist. Other commands must be in that allowlist."
+        ),
         "action_key": "Allowlisted action key.",
         "project_id": "Target project id;" + _SESSION_SCOPE,
         "input": "Operation input object.",

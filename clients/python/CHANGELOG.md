@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.5 (unreleased)
+
+- The packaged `hydracept` agent skill now describes audio output format accurately: audio artifacts default to Ogg (`audio/ogg`, `.ogg`), and `outputFormatPreference` (for example `mp3_44100_128`) requests another supported format with a matching `mediaType` and filename. Previously the skill claimed this applied only to `audio.sfx.generate.v1`.
+
 ## 0.5.4 (unreleased)
 
 - `hydracept keys create --print-env` prints `HYDRACEPT_API_KEY`, `HYDRACEPT_PROJECT`, `HYDRACEPT_ENVIRONMENT`, and `HYDRACEPT_API_URL` for one-time server setup. The secret goes to stdout and a warning goes to stderr. `--print-env` cannot be combined with `--json` or `--configure`.

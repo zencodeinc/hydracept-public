@@ -159,13 +159,30 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Created alias plus any identity-strength warnings.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Create Alias V1 Adapter Aliases Post"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ModelAdapterAliasOut"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "warnings"
+                      ],
+                      "properties": {
+                        "warnings": {
+                          "type": "array",
+                          "description": "Identity-strength warnings. Empty when there is nothing to warn about.",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             }
@@ -199,7 +216,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key with access to the project. projectId may be omitted when the key is already bound to that project.\n\nInputs: Alias name plus the adapter target to record.\n\nSide effects: Creates or updates alias bookkeeping for the project. Promoting an alias changes the current version and does not move recipe bindings already pinned to an older version.\n\nBilling: Alias and default bookkeeping does not quote, reserve, or charge.\n\nNext: Bind a recipe to a specific alias version when a run must stay on that adapter, or read the alias before using it."
       },
       "get": {
         "tags": [
@@ -245,13 +263,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Aliases V1 Adapter Aliases Get"
+                  "$ref": "#/components/schemas/ModelAdapterAliasListResponse"
                 }
               }
             }
@@ -285,7 +301,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key with access to the project that owns the alias.\n\nInputs: Alias name, and optional projectId and environment when the key is not already bound.\n\nSide effects: None. Reads alias records.\n\nBilling: Alias and default bookkeeping does not quote, reserve, or charge.\n\nNext: Use the current version, or pin a recipe to a version id from the version list."
       }
     },
     "/v1/adapter-aliases/{alias_name}": {
@@ -342,13 +359,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Alias V1 Adapter Aliases  Alias Name  Get"
+                  "$ref": "#/components/schemas/ModelAdapterAliasOut"
                 }
               }
             }
@@ -385,7 +400,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key with access to the project that owns the alias.\n\nInputs: Alias name, and optional projectId and environment when the key is not already bound.\n\nSide effects: None. Reads alias records.\n\nBilling: Alias and default bookkeeping does not quote, reserve, or charge.\n\nNext: Use the current version, or pin a recipe to a version id from the version list."
       }
     },
     "/v1/adapter-aliases/{alias_name}/versions": {
@@ -442,13 +458,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Alias Versions V1 Adapter Aliases  Alias Name  Versions Get"
+                  "$ref": "#/components/schemas/ModelAdapterAliasVersionListResponse"
                 }
               }
             }
@@ -485,7 +499,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key with access to the project that owns the alias.\n\nInputs: Alias name, and optional projectId and environment when the key is not already bound.\n\nSide effects: None. Reads alias records.\n\nBilling: Alias and default bookkeeping does not quote, reserve, or charge.\n\nNext: Use the current version, or pin a recipe to a version id from the version list."
       }
     },
     "/v1/adapter-aliases/{alias_name}/promotions": {
@@ -552,13 +567,11 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Promote Alias V1 Adapter Aliases  Alias Name  Promotions Post"
+                  "$ref": "#/components/schemas/ModelAdapterAliasPromotionResponse"
                 }
               }
             }
@@ -595,7 +608,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key with access to the project. projectId may be omitted when the key is already bound to that project.\n\nInputs: Alias name plus the adapter target to record.\n\nSide effects: Creates or updates alias bookkeeping for the project. Promoting an alias changes the current version and does not move recipe bindings already pinned to an older version.\n\nBilling: Alias and default bookkeeping does not quote, reserve, or charge.\n\nNext: Bind a recipe to a specific alias version when a run must stay on that adapter, or read the alias before using it."
       }
     },
     "/v1/adapter-aliases/{alias_name}/recipe-binding": {
@@ -662,13 +676,11 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Bind Alias For Recipe V1 Adapter Aliases  Alias Name  Recipe Binding Post"
+                  "$ref": "#/components/schemas/ModelAdapterAliasRecipeBindingResponse"
                 }
               }
             }
@@ -705,7 +717,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key with access to the project. projectId may be omitted when the key is already bound to that project.\n\nInputs: Alias name plus the adapter target to record.\n\nSide effects: Creates or updates alias bookkeeping for the project. Promoting an alias changes the current version and does not move recipe bindings already pinned to an older version.\n\nBilling: Alias and default bookkeeping does not quote, reserve, or charge.\n\nNext: Bind a recipe to a specific alias version when a run must stay on that adapter, or read the alias before using it."
       }
     },
     "/v1/adapter-defaults/{capability_key}": {
@@ -762,13 +775,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Adapter Default V1 Adapter Defaults  Capability Key  Get"
+                  "$ref": "#/components/schemas/ProjectModelAdapterDefaultEnvelope"
                 }
               }
             }
@@ -805,7 +816,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key with access to the project that owns the alias.\n\nInputs: Alias name, and optional projectId and environment when the key is not already bound.\n\nSide effects: None. Reads alias records.\n\nBilling: Alias and default bookkeeping does not quote, reserve, or charge.\n\nNext: Use the current version, or pin a recipe to a version id from the version list."
       },
       "put": {
         "tags": [
@@ -870,13 +882,11 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Put Adapter Default V1 Adapter Defaults  Capability Key  Put"
+                  "$ref": "#/components/schemas/ProjectModelAdapterDefaultEnvelope"
                 }
               }
             }
@@ -913,7 +923,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key with access to the project. projectId may be omitted when the key is already bound to that project.\n\nInputs: Alias name plus the adapter target to record.\n\nSide effects: Creates or updates alias bookkeeping for the project. Promoting an alias changes the current version and does not move recipe bindings already pinned to an older version.\n\nBilling: Alias and default bookkeeping does not quote, reserve, or charge.\n\nNext: Bind a recipe to a specific alias version when a run must stay on that adapter, or read the alias before using it."
       },
       "delete": {
         "tags": [
@@ -968,13 +979,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Delete Adapter Default V1 Adapter Defaults  Capability Key  Delete"
+                  "$ref": "#/components/schemas/ProjectModelAdapterDefaultDeleteResponse"
                 }
               }
             }
@@ -1011,7 +1020,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key with access to the project. projectId may be omitted when the key is already bound to that project.\n\nInputs: Alias name plus the adapter target to record.\n\nSide effects: Creates or updates alias bookkeeping for the project. Promoting an alias changes the current version and does not move recipe bindings already pinned to an older version.\n\nBilling: Alias and default bookkeeping does not quote, reserve, or charge.\n\nNext: Bind a recipe to a specific alias version when a run must stay on that adapter, or read the alias before using it."
       }
     },
     "/v1/capabilities/image.generate.v1/estimate": {
@@ -1931,7 +1941,7 @@
     "/v1/capabilities/resolve": {
       "post": {
         "summary": "Resolve Capability",
-        "description": "Resolve semantic suitability, then project authenticated access truth.",
+        "description": "Resolve semantic suitability, then project authenticated access truth.\n\nPrerequisite: A Hydracept API key. Project access is applied when the key is bound to a project.\n\nInputs: Capability resolve body: the work to match and any constraints.\n\nSide effects: None. Resolve checks semantic fit and whether this workspace may run the capability. It does not execute it.\n\nBilling: This call does not reserve funds and does not charge. Managed execution is quoted separately and billed only when a later invoke or job is admitted.\n\nNext: Quote the returned capability, then invoke it or submit a durable job.",
         "operationId": "resolve_capability_for_workspace_v1_capabilities_resolve_post",
         "requestBody": {
           "required": true,
@@ -2085,6 +2095,14 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RetailEstimateRequest"
+              },
+              "example": {
+                "input": {
+                  "prompt": "A small transparent app icon"
+                },
+                "execution": {
+                  "billingMode": "managed"
+                }
               }
             }
           }
@@ -2096,6 +2114,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RetailEstimateResponse"
+                },
+                "example": {
+                  "status": "ok",
+                  "missing": [],
+                  "quoteId": "qte_example",
+                  "estimateId": "qte_example",
+                  "capabilityKey": "image.generate.v1",
+                  "pricingVersion": "retail-example",
+                  "pricing": {
+                    "quote": {
+                      "quoteId": "qte_example",
+                      "kind": "estimate"
+                    },
+                    "hydraceptInferenceFeeMicros": 0,
+                    "pricingSnapshotIds": [],
+                    "quoteId": "qte_example",
+                    "estimateId": "qte_example"
+                  },
+                  "basis": {},
+                  "spending": "none"
                 }
               }
             }
@@ -2395,13 +2433,14 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key with capability invoke scope, and a capability the workspace is allowed to run.\n\nInputs: CapabilityInvokeRequest: input, optional execution.quoteId from a fresh quote, and an idempotency key when retrying.\n\nSide effects: Runs the capability once and returns the invocation result, including a receipt id when one was sealed.\n\nBilling: Admission can charge a managed wallet (provider usage plus the Hydracept service fee) or use a bring-your-own-key credential, which adds no Hydracept fee. A stale quote id is rejected and is not charged. Failure before admission does not charge.\n\nNext: Read the result. If the call created a durable job, poll GET /v1/jobs/{jobId}, then GET /v1/jobs/{jobId}/receipt."
       }
     },
     "/v1/capabilities/image.generate.v1/jobs": {
       "post": {
         "summary": "Submit Image Generation Job",
-        "description": "Submit an image generation job using the quoted model and billing mode from the request.",
+        "description": "Submit an image generation job using the quoted model and billing mode from the request.\n\nPrerequisite: A Hydracept API key with capability invoke scope, and a capability the workspace is allowed to run.\n\nInputs: CapabilityJobRequest: input, optional execution.quoteId, and an idempotencyKey. Reuse the same idempotency key only to retry the same submission.\n\nSide effects: Creates a durable job. The call returns when the job is accepted, not when the artifact is ready.\n\nBilling: Admission can charge a managed wallet (provider usage plus the Hydracept service fee) or use a bring-your-own-key credential, which adds no Hydracept fee. A stale quote id is rejected and is not charged. Failure before admission does not charge.\n\nNext: Poll GET /v1/jobs/{jobId} until status is terminal, then GET /v1/jobs/{jobId}/receipt.",
         "operationId": "submit_image_generate_job_v1_capabilities_image_generate_v1_jobs_post",
         "requestBody": {
           "required": true,
@@ -2490,6 +2529,16 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CapabilityJobRequest"
+              },
+              "example": {
+                "input": {
+                  "prompt": "A small transparent app icon"
+                },
+                "execution": {
+                  "billingMode": "managed",
+                  "quoteId": "qte_example"
+                },
+                "idempotencyKey": "job-example-1"
               }
             }
           }
@@ -2501,6 +2550,22 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HydraceptJob"
+                },
+                "example": {
+                  "jobId": "job_example",
+                  "capabilityKey": "image.generate.v1",
+                  "status": "queued",
+                  "tags": [],
+                  "metadata": {},
+                  "currency": "USD",
+                  "artifacts": [],
+                  "warnings": [],
+                  "nextAction": "poll",
+                  "pollAfterSeconds": 2,
+                  "retry": {
+                    "sameKey": true,
+                    "newKeySafe": false
+                  }
                 }
               }
             }
@@ -2550,7 +2615,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key with capability invoke scope, and a capability the workspace is allowed to run.\n\nInputs: CapabilityJobRequest: input, optional execution.quoteId, and an idempotencyKey. Reuse the same idempotency key only to retry the same submission.\n\nSide effects: Creates a durable job. The call returns when the job is accepted, not when the artifact is ready.\n\nBilling: Admission can charge a managed wallet (provider usage plus the Hydracept service fee) or use a bring-your-own-key credential, which adds no Hydracept fee. A stale quote id is rejected and is not charged. Failure before admission does not charge.\n\nNext: Poll GET /v1/jobs/{jobId} until status is terminal, then GET /v1/jobs/{jobId}/receipt."
       }
     },
     "/v1/capabilities": {
@@ -2608,6 +2674,29 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PublicCapabilityListResponse"
+                },
+                "example": {
+                  "bundleVersion": "catalog-example",
+                  "bundleHash": "example",
+                  "capabilities": [
+                    {
+                      "key": "image.generate.v1",
+                      "title": "Generate an image",
+                      "description": "Create one image from a text prompt.",
+                      "modality": "image",
+                      "inputSchema": {},
+                      "outputSchema": {},
+                      "outputSchemas": {},
+                      "executionModes": [],
+                      "idempotencyRequired": false,
+                      "estimateAvailable": true,
+                      "features": {},
+                      "inputConstraints": {},
+                      "inputMediaTypes": [],
+                      "readySummary": "Quote this capability, then submit a job.",
+                      "routingProfiles": []
+                    }
+                  ]
                 }
               }
             }
@@ -2793,6 +2882,22 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HydraceptJob"
+                },
+                "example": {
+                  "jobId": "job_example",
+                  "capabilityKey": "image.generate.v1",
+                  "status": "queued",
+                  "tags": [],
+                  "metadata": {},
+                  "currency": "USD",
+                  "artifacts": [],
+                  "warnings": [],
+                  "nextAction": "poll",
+                  "pollAfterSeconds": 2,
+                  "retry": {
+                    "sameKey": true,
+                    "newKeySafe": false
+                  }
                 }
               }
             }
@@ -2832,7 +2937,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key that can read the job, and the job id returned by submit or invoke.\n\nInputs: Path jobId. No request body.\n\nSide effects: None. Returns the current job projection, including nextAction and pollAfterSeconds when the job is still running.\n\nBilling: Reading a job does not charge.\n\nNext: When status is succeeded or failed, GET /v1/jobs/{jobId}/receipt. While running, wait pollAfterSeconds and poll again."
       }
     },
     "/v1/jobs/{job_id}/events": {
@@ -2843,7 +2949,7 @@
           "capabilities"
         ],
         "summary": "List Job Events",
-        "description": "Append-only lifecycle stream for a job.\n\nEvents are ordered by monotonic cursor ids. Use the cursor parameter to page forward.",
+        "description": "Append-only lifecycle stream for a job.\n\nEvents are ordered by monotonic cursor ids. Use the cursor parameter to page forward.\n\nPrerequisite: A Hydracept API key that can read the job, and the job id returned by submit or invoke.\n\nInputs: Path jobId. No request body.\n\nSide effects: None. Returns the current job projection, including nextAction and pollAfterSeconds when the job is still running.\n\nBilling: Reading a job does not charge.\n\nNext: When status is succeeded or failed, GET /v1/jobs/{jobId}/receipt. While running, wait pollAfterSeconds and poll again.",
         "operationId": "list_job_events_v1_jobs__job_id__events_get",
         "parameters": [
           {
@@ -2906,13 +3012,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Job Events V1 Jobs  Job Id  Events Get"
+                  "$ref": "#/components/schemas/JobEventPage"
                 }
               }
             }
@@ -2996,13 +3100,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Principal Jobs V1 Jobs Get"
+                  "$ref": "#/components/schemas/ProjectJobListResponse"
                 }
               }
             }
@@ -3062,13 +3164,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Job Request Snapshot V1 Jobs  Job Id  Request Get"
+                  "$ref": "#/components/schemas/JobRequestSnapshotView"
                 }
               }
             }
@@ -3499,6 +3599,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HydraceptReceipt"
+                },
+                "example": {
+                  "receiptId": "rcpt_job_example",
+                  "jobId": "job_example",
+                  "capabilityKey": "image.generate.v1",
+                  "tags": [],
+                  "metadata": {},
+                  "currency": "USD",
+                  "artifacts": [],
+                  "status": "succeeded"
                 }
               }
             }
@@ -3538,7 +3648,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key that can read the job, and a job that has sealed a receipt.\n\nInputs: Path jobId.\n\nSide effects: None. Returns the sealed receipt for that job.\n\nBilling: Reading a receipt does not charge. The receipt's pricing object is the charge already recorded.\n\nNext: Verify the seal with GET /v1/public/receipts/verification-key when the receipt will be checked outside this API."
       }
     },
     "/v1/jobs/{job_id}/public-receipt-verification": {
@@ -3563,15 +3674,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Revoke Job Public Receipt Verification Route V1 Jobs  Job Id  Public Receipt Verification Delete"
+                  "$ref": "#/components/schemas/PublicReceiptVerificationRevocation"
                 }
               }
             }
@@ -4016,7 +4123,7 @@
           "capability-requests"
         ],
         "summary": "Get commission quote for a capability request",
-        "description": "Human-paid implementation quote (quoteKind=commission). Never pass this quoteId as execution.quoteId on jobs.",
+        "description": "Human-paid implementation quote (quoteKind=commission). A request that exists but has not been priced returns status pending, not 404. Never pass this quoteId as execution.quoteId on jobs.",
         "operationId": "get_capability_request_quote_v1_capability_requests__request_id__quote_get",
         "parameters": [
           {
@@ -4035,7 +4142,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CapabilityQuoteView"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CapabilityQuoteView"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CapabilityQuotePendingView"
+                    }
+                  ],
+                  "title": "Response Get Capability Request Quote V1 Capability Requests  Request Id  Quote Get"
                 }
               }
             }
@@ -4089,13 +4204,11 @@
         "operationId": "list_pinned_receipts_v1_inference_pinned_get",
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Pinned Receipts V1 Inference Pinned Get"
+                  "$ref": "#/components/schemas/PinnedReceiptListResponse"
                 }
               }
             }
@@ -4132,7 +4245,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key that can read the project or organization that owns the receipt.\n\nInputs: Receipt id, or no body for the list.\n\nSide effects: None. Reads stored pinned receipts.\n\nBilling: Reading a pinned receipt does not charge.\n\nNext: Use pinVerified and pricing on the receipt. Do not treat an unverified receipt as a successful pin."
       },
       "post": {
         "tags": [
@@ -4156,13 +4270,11 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Create Pinned Inference V1 Inference Pinned Post"
+                  "$ref": "#/components/schemas/PinnedInferenceAccepted"
                 }
               }
             }
@@ -4199,7 +4311,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key bound to a project or organization, with a provider credential or managed funding that can run the pin.\n\nInputs: JSON body with pin (the model to lock), input text, and optional sampling, cache, budget, and limits. isolation must be stateless.\n\nSide effects: Calls the pinned model, stores a receipt, and returns the decoded text only when the pin is verified.\n\nBilling: Billing follows the admitted credential. Bring-your-own-key adds no Hydracept fee. Managed wallet calls charge provider usage plus the Hydracept service fee. The response pricing object is the charge record for this call.\n\nNext: Keep the receipt id. Read it later with GET /v1/inference/pinned/{receiptId}."
       }
     },
     "/v1/inference/pinned/bulk": {
@@ -4225,13 +4338,11 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Create Pinned Inference Bulk V1 Inference Pinned Bulk Post"
+                  "$ref": "#/components/schemas/PinnedBulkResponse"
                 }
               }
             }
@@ -4268,7 +4379,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: Same credential and funding prerequisite as a single pinned call.\n\nInputs: A shared pin plus the items to run, and a concurrency limit.\n\nSide effects: Accepts a bulk run and dispatches it. Items complete independently.\n\nBilling: Each admitted item follows the same managed or bring-your-own-key charge as a single pinned call.\n\nNext: Poll GET /v1/inference/pinned/bulk/{bulkId} until nextAction is stop."
       }
     },
     "/v1/inference/pinned/bulk/{bulk_id}": {
@@ -4293,13 +4405,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Pinned Inference Bulk V1 Inference Pinned Bulk  Bulk Id  Get"
+                  "$ref": "#/components/schemas/PinnedBulkResponse"
                 }
               }
             }
@@ -4339,7 +4449,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: Same credential and funding prerequisite as a single pinned call.\n\nInputs: A shared pin plus the items to run, and a concurrency limit.\n\nSide effects: Accepts a bulk run and dispatches it. Items complete independently.\n\nBilling: Each admitted item follows the same managed or bring-your-own-key charge as a single pinned call.\n\nNext: Poll GET /v1/inference/pinned/bulk/{bulkId} until nextAction is stop."
       }
     },
     "/v1/inference/pinned/{receipt_id}": {
@@ -4364,13 +4475,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Pinned Receipt V1 Inference Pinned  Receipt Id  Get"
+                  "$ref": "#/components/schemas/PinnedReceiptDetail"
                 }
               }
             }
@@ -4410,7 +4519,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key that can read the project or organization that owns the receipt.\n\nInputs: Receipt id, or no body for the list.\n\nSide effects: None. Reads stored pinned receipts.\n\nBilling: Reading a pinned receipt does not charge.\n\nNext: Use pinVerified and pricing on the receipt. Do not treat an unverified receipt as a successful pin."
       }
     },
     "/v1/provenance/manifests": {
@@ -4814,7 +4924,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key for an organization that owns the panel. Project origin also requires access to that project.\n\nInputs: Panel definition or session body, or a definition id / session id in the path.\n\nSide effects: Creates, updates, reads, or revokes panel configuration. Revoke stops that session. A launch code is a short-lived credential for that session.\n\nBilling: Saving a panel definition or session does not run a capability and does not charge. Work launched from the panel uses the normal quote and job flow.\n\nNext: Create a session from a definition, issue a launch code, then exchange that code to open the panel."
       },
       "get": {
         "tags": [
@@ -4885,7 +4996,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key for an organization that owns the panel. Project origin also requires access to that project.\n\nInputs: Panel definition or session body, or a definition id / session id in the path.\n\nSide effects: Creates, updates, reads, or revokes panel configuration. Revoke stops that session. A launch code is a short-lived credential for that session.\n\nBilling: Saving a panel definition or session does not run a capability and does not charge. Work launched from the panel uses the normal quote and job flow.\n\nNext: Create a session from a definition, issue a launch code, then exchange that code to open the panel."
       }
     },
     "/v1/panel-definitions/{definition_id}": {
@@ -4954,7 +5066,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key for an organization that owns the panel. Project origin also requires access to that project.\n\nInputs: Panel definition or session body, or a definition id / session id in the path.\n\nSide effects: Creates, updates, reads, or revokes panel configuration. Revoke stops that session. A launch code is a short-lived credential for that session.\n\nBilling: Saving a panel definition or session does not run a capability and does not charge. Work launched from the panel uses the normal quote and job flow.\n\nNext: Create a session from a definition, issue a launch code, then exchange that code to open the panel."
       },
       "patch": {
         "tags": [
@@ -5031,7 +5144,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key for an organization that owns the panel. Project origin also requires access to that project.\n\nInputs: Panel definition or session body, or a definition id / session id in the path.\n\nSide effects: Creates, updates, reads, or revokes panel configuration. Revoke stops that session. A launch code is a short-lived credential for that session.\n\nBilling: Saving a panel definition or session does not run a capability and does not charge. Work launched from the panel uses the normal quote and job flow.\n\nNext: Create a session from a definition, issue a launch code, then exchange that code to open the panel."
       }
     },
     "/v1/panel-sessions": {
@@ -5096,7 +5210,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key for an organization that owns the panel. Project origin also requires access to that project.\n\nInputs: Panel definition or session body, or a definition id / session id in the path.\n\nSide effects: Creates, updates, reads, or revokes panel configuration. Revoke stops that session. A launch code is a short-lived credential for that session.\n\nBilling: Saving a panel definition or session does not run a capability and does not charge. Work launched from the panel uses the normal quote and job flow.\n\nNext: Create a session from a definition, issue a launch code, then exchange that code to open the panel."
       }
     },
     "/v1/panel-sessions/{session_id}": {
@@ -5165,7 +5280,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key for an organization that owns the panel. Project origin also requires access to that project.\n\nInputs: Panel definition or session body, or a definition id / session id in the path.\n\nSide effects: Creates, updates, reads, or revokes panel configuration. Revoke stops that session. A launch code is a short-lived credential for that session.\n\nBilling: Saving a panel definition or session does not run a capability and does not charge. Work launched from the panel uses the normal quote and job flow.\n\nNext: Create a session from a definition, issue a launch code, then exchange that code to open the panel."
       }
     },
     "/v1/panel-sessions/{session_id}/revoke": {
@@ -5234,7 +5350,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key for an organization that owns the panel. Project origin also requires access to that project.\n\nInputs: Panel definition or session body, or a definition id / session id in the path.\n\nSide effects: Creates, updates, reads, or revokes panel configuration. Revoke stops that session. A launch code is a short-lived credential for that session.\n\nBilling: Saving a panel definition or session does not run a capability and does not charge. Work launched from the panel uses the normal quote and job flow.\n\nNext: Create a session from a definition, issue a launch code, then exchange that code to open the panel."
       }
     },
     "/v1/panel-sessions/{session_id}/launch-codes": {
@@ -5303,7 +5420,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key for an organization that owns the panel. Project origin also requires access to that project.\n\nInputs: Panel definition or session body, or a definition id / session id in the path.\n\nSide effects: Creates, updates, reads, or revokes panel configuration. Revoke stops that session. A launch code is a short-lived credential for that session.\n\nBilling: Saving a panel definition or session does not run a capability and does not charge. Work launched from the panel uses the normal quote and job flow.\n\nNext: Create a session from a definition, issue a launch code, then exchange that code to open the panel."
       }
     },
     "/v1/panel/bootstrap": {
@@ -5355,7 +5473,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key for an organization that owns the panel. Project origin also requires access to that project.\n\nInputs: Panel definition or session body, or a definition id / session id in the path.\n\nSide effects: Creates, updates, reads, or revokes panel configuration. Revoke stops that session. A launch code is a short-lived credential for that session.\n\nBilling: Saving a panel definition or session does not run a capability and does not charge. Work launched from the panel uses the normal quote and job flow.\n\nNext: Create a session from a definition, issue a launch code, then exchange that code to open the panel."
       }
     },
     "/v1/capabilities/{capability_key}/comparisons": {
@@ -9553,13 +9672,11 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Create Plan V1 Connections Onboarding Plan Post"
+                  "$ref": "#/components/schemas/OnboardingPlan"
                 }
               }
             }
@@ -9593,7 +9710,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key for the organization that will hold the provider credential.\n\nInputs: Capabilities to connect, optional projectId, environment, and accountClass. Complete sends the provider credential.\n\nSide effects: Plan and session create store an onboarding session. Complete verifies the credential, stores the connection, and can bind it to the session project.\n\nBilling: Onboarding does not run a capability and does not charge. Later jobs use the stored credential or managed funding.\n\nNext: Poll the session until status is ready, then quote and submit work with that connection."
       }
     },
     "/v1/connections/onboarding/sessions": {
@@ -9611,19 +9729,41 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/OnboardingSessionCreate"
+              },
+              "example": {
+                "capabilities": [
+                  "image.generate.v1"
+                ],
+                "environment": "development",
+                "accountClass": "individual"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Create Session V1 Connections Onboarding Sessions Post"
+                  "$ref": "#/components/schemas/OnboardingSessionCreated"
+                },
+                "example": {
+                  "requirements": [
+                    {
+                      "capability": "image.generate.v1",
+                      "choices": [
+                        {
+                          "provider": "example",
+                          "recommended": true
+                        }
+                      ]
+                    }
+                  ],
+                  "bootstrapSessionUrl": "https://api.hydracept.com/v1/connections/onboarding/sessions/cos_example",
+                  "accountClass": "individual",
+                  "automationAdvertised": false,
+                  "sessionId": "cos_example"
                 }
               }
             }
@@ -9657,7 +9797,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key for the organization that will hold the provider credential.\n\nInputs: Capabilities to connect, optional projectId, environment, and accountClass. Complete sends the provider credential.\n\nSide effects: Plan and session create store an onboarding session. Complete verifies the credential, stores the connection, and can bind it to the session project.\n\nBilling: Onboarding does not run a capability and does not charge. Later jobs use the stored credential or managed funding.\n\nNext: Poll the session until status is ready, then quote and submit work with that connection."
       }
     },
     "/v1/connections/onboarding/sessions/{session_id}": {
@@ -9682,13 +9823,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Session V1 Connections Onboarding Sessions  Session Id  Get"
+                  "$ref": "#/components/schemas/OnboardingSessionView"
                 }
               }
             }
@@ -9725,7 +9864,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key for the organization that will hold the provider credential.\n\nInputs: Capabilities to connect, optional projectId, environment, and accountClass. Complete sends the provider credential.\n\nSide effects: Plan and session create store an onboarding session. Complete verifies the credential, stores the connection, and can bind it to the session project.\n\nBilling: Onboarding does not run a capability and does not charge. Later jobs use the stored credential or managed funding.\n\nNext: Poll the session until status is ready, then quote and submit work with that connection."
       }
     },
     "/v1/connections/onboarding/sessions/{session_id}/complete": {
@@ -9736,7 +9876,7 @@
           "connections-onboarding"
         ],
         "summary": "Complete Session",
-        "description": "Receive provisioned inference credential (local bootstrap / manual).",
+        "description": "Receive provisioned inference credential (local bootstrap / manual).\n\nPrerequisite: A Hydracept API key for the organization that will hold the provider credential.\n\nInputs: Capabilities to connect, optional projectId, environment, and accountClass. Complete sends the provider credential.\n\nSide effects: Plan and session create store an onboarding session. Complete verifies the credential, stores the connection, and can bind it to the session project.\n\nBilling: Onboarding does not run a capability and does not charge. Later jobs use the stored credential or managed funding.\n\nNext: Poll the session until status is ready, then quote and submit work with that connection.",
         "operationId": "complete_session_v1_connections_onboarding_sessions__session_id__complete_post",
         "parameters": [
           {
@@ -9761,13 +9901,11 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Complete Session V1 Connections Onboarding Sessions  Session Id  Complete Post"
+                  "$ref": "#/components/schemas/OnboardingSessionCompleted"
                 }
               }
             }
@@ -9829,13 +9967,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Session Result V1 Connections Onboarding Sessions  Session Id  Result Get"
+                  "$ref": "#/components/schemas/OnboardingSessionResult"
                 }
               }
             }
@@ -9872,7 +10008,8 @@
           {
             "HydraceptApiKey": []
           }
-        ]
+        ],
+        "description": "Prerequisite: A Hydracept API key for the organization that will hold the provider credential.\n\nInputs: Capabilities to connect, optional projectId, environment, and accountClass. Complete sends the provider credential.\n\nSide effects: Plan and session create store an onboarding session. Complete verifies the credential, stores the connection, and can bind it to the session project.\n\nBilling: Onboarding does not run a capability and does not charge. Later jobs use the stored credential or managed funding.\n\nNext: Poll the session until status is ready, then quote and submit work with that connection."
       }
     },
     "/v1/projects/{project_id}/jobs": {
@@ -10050,15 +10187,11 @@
         "operationId": "get_receipt_verification_key_v1_public_receipts_verification_key_get",
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object",
-                  "title": "Response Get Receipt Verification Key V1 Public Receipts Verification Key Get"
+                  "$ref": "#/components/schemas/ReceiptVerificationKey"
                 }
               }
             }
@@ -10107,13 +10240,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Public Receipt Verification V1 Public Receipts  Receipt Id  Get"
+                  "$ref": "#/components/schemas/PublicReceiptVerification"
                 }
               }
             }
@@ -10464,6 +10595,17 @@
               }
             ],
             "title": "Humangate"
+          },
+          "classificationReach": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CapabilityClassificationReach"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Which data classifications this principal may actually submit for this capability, with the principal ceiling, the route's own admission set, and the capability's own constraints reported separately. Each gate can subtract reach, so the resolved set alone does not explain a denial."
           }
         },
         "additionalProperties": false,
@@ -10474,6 +10616,122 @@
           "runnable"
         ],
         "title": "CapabilityAccessDecision"
+      },
+      "CapabilityClassificationReach": {
+        "properties": {
+          "capabilityKey": {
+            "type": "string",
+            "title": "Capabilitykey"
+          },
+          "principalCeiling": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DataClassification"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "principalCeilingRecognized": {
+            "type": "boolean",
+            "title": "Principalceilingrecognized",
+            "default": false
+          },
+          "principalCeilingClassifications": {
+            "items": {
+              "$ref": "#/components/schemas/DataClassification"
+            },
+            "type": "array",
+            "title": "Principalceilingclassifications"
+          },
+          "routeAdmissionsApplicable": {
+            "type": "boolean",
+            "title": "Routeadmissionsapplicable",
+            "default": false
+          },
+          "routeAllowedClassifications": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DataClassification"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routeallowedclassifications"
+          },
+          "routeCeiling": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DataClassification"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "capabilityRequiredClassifications": {
+            "items": {
+              "$ref": "#/components/schemas/DataClassification"
+            },
+            "type": "array",
+            "title": "Capabilityrequiredclassifications"
+          },
+          "capabilityRefusedClassifications": {
+            "items": {
+              "$ref": "#/components/schemas/DataClassification"
+            },
+            "type": "array",
+            "title": "Capabilityrefusedclassifications"
+          },
+          "capabilityConstraintSource": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capabilityconstraintsource"
+          },
+          "permittedClassifications": {
+            "items": {
+              "$ref": "#/components/schemas/DataClassification"
+            },
+            "type": "array",
+            "title": "Permittedclassifications"
+          },
+          "deniedClassifications": {
+            "items": {
+              "$ref": "#/components/schemas/ClassificationDenial"
+            },
+            "type": "array",
+            "title": "Deniedclassifications"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "capabilityKey"
+        ],
+        "title": "CapabilityClassificationReach",
+        "description": "Resolved classification reach for one capability and one principal.\n\n``permittedClassifications`` is the intersection. Everything else is a gate\ncontribution kept separately on purpose: a caller must be able to see that\nits ceiling is not the only limiter, and an operator raising a ceiling must\nbe able to see which capabilities stay closed because of their own route."
       },
       "CapabilityContext": {
         "properties": {
@@ -11021,6 +11279,61 @@
         ],
         "title": "CapabilityModality"
       },
+      "CapabilityQuotePendingView": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "pending",
+            "title": "Status"
+          },
+          "quoteReady": {
+            "type": "boolean",
+            "const": false,
+            "title": "Quoteready"
+          },
+          "requestId": {
+            "type": "string",
+            "title": "Requestid"
+          },
+          "requestRevisionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requestrevisionid"
+          },
+          "quoteKind": {
+            "type": "string",
+            "const": "commission",
+            "title": "Quotekind",
+            "default": "commission"
+          },
+          "notExecutionQuoteId": {
+            "type": "boolean",
+            "title": "Notexecutionquoteid",
+            "description": "No commission quoteId exists yet. Never pass one as execution.quoteId.",
+            "default": true
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "quoteReady",
+          "requestId",
+          "message"
+        ],
+        "title": "CapabilityQuotePendingView",
+        "description": "A submitted commission request that a human has not priced yet.\n\nThis is a status, not a 404 and not an execution quote."
+      },
       "CapabilityQuoteView": {
         "properties": {
           "quoteId": {
@@ -11339,6 +11652,48 @@
           "resolution"
         ],
         "title": "CapabilityResolutionResponse"
+      },
+      "ClassificationDenial": {
+        "properties": {
+          "classification": {
+            "$ref": "#/components/schemas/DataClassification"
+          },
+          "gates": {
+            "items": {
+              "$ref": "#/components/schemas/ClassificationGate"
+            },
+            "type": "array",
+            "title": "Gates"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "classification"
+        ],
+        "title": "ClassificationDenial",
+        "description": "One unreachable classification and the gates that remove it.\n\n``gates`` is ordered by the order admission applies them, so ``gates[0]`` is\nthe gate whose error the caller would receive first."
+      },
+      "ClassificationGate": {
+        "type": "string",
+        "enum": [
+          "capabilityConstraint",
+          "principalCeiling",
+          "route"
+        ],
+        "title": "ClassificationGate",
+        "description": "Which independent gate removed a classification from reach."
       },
       "ComparisonCreateRequest": {
         "properties": {
@@ -11702,7 +12057,8 @@
           "Internal",
           "Confidential",
           "PrivateUserContent",
-          "Manuscript"
+          "Manuscript",
+          "ChildDirected"
         ],
         "title": "DataClassification"
       },
@@ -14971,6 +15327,17 @@
             "type": "boolean",
             "title": "Requiredforestimate",
             "default": true
+          },
+          "inputKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inputkey"
           }
         },
         "type": "object",
@@ -16504,6 +16871,30 @@
             "type": "integer",
             "title": "Capabilitiesalpha"
           },
+          "managedTrialRemaining": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Managedtrialremaining",
+            "description": "Active managed-trial bucket remaining, in USD. Null when the org is unknown."
+          },
+          "managedCreditRemaining": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Managedcreditremaining",
+            "description": "Customer-visible managed credit remaining, in USD. Null when the org is unknown."
+          },
           "runtimeBinding": {
             "$ref": "#/components/schemas/RuntimeBindingDiagnostics"
           }
@@ -17266,6 +17657,18 @@
             ],
             "default": null,
             "title": "Servicefeebps"
+          },
+          "workspaceConnected": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Workspaceconnected"
           }
         },
         "required": [
@@ -17291,10 +17694,9 @@
         "type": "object"
       },
       "CapabilityExecutionFacts": {
-        "description": "Static invocation facts; authenticated runnability lives in workspaceRunnable.",
+        "description": "Static invocation facts; authenticated runnability lives in workspaceRunnable.\n\n``oneShot`` here is a business fact \u2014 \"invocable without a product\nintegration commitment\" \u2014 and is not a transport claim. Read\n``executionModes`` on the descriptor for how the capability is reached.",
         "properties": {
           "oneShot": {
-            "default": true,
             "title": "Oneshot",
             "type": "boolean"
           },
@@ -17386,6 +17788,9 @@
             "title": "Benchmarkshref"
           }
         },
+        "required": [
+          "oneShot"
+        ],
         "title": "CapabilityExecutionFacts",
         "type": "object"
       },
@@ -17868,6 +18273,30 @@
           "model": {
             "title": "Model",
             "type": "string"
+          },
+          "providerLabel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Providerlabel"
+          },
+          "modelLabel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Modellabel"
           },
           "apis": {
             "items": {
@@ -18458,6 +18887,1755 @@
         ],
         "title": "PanelBootstrap",
         "type": "object"
+      },
+      "JobEventRecord": {
+        "properties": {
+          "cursor": {
+            "title": "Cursor",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Schemaversion"
+          },
+          "occurredAt": {
+            "title": "Occurredat",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          }
+        },
+        "required": [
+          "cursor",
+          "type",
+          "occurredAt"
+        ],
+        "title": "JobEventRecord",
+        "type": "object"
+      },
+      "JobEventPage": {
+        "description": "GET /v1/jobs/{jobId}/events page. ``nextCursor`` is null when the page is complete.",
+        "properties": {
+          "jobId": {
+            "title": "Jobid",
+            "type": "string"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/JobEventRecord"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Nextcursor"
+          }
+        },
+        "required": [
+          "jobId"
+        ],
+        "title": "JobEventPage",
+        "type": "object"
+      },
+      "JobRequestSnapshotView": {
+        "properties": {
+          "jobId": {
+            "title": "Jobid",
+            "type": "string"
+          },
+          "capabilityKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Capabilitykey"
+          },
+          "requestSnapshot": {
+            "additionalProperties": true,
+            "title": "Requestsnapshot",
+            "type": "object"
+          }
+        },
+        "required": [
+          "jobId",
+          "requestSnapshot"
+        ],
+        "title": "JobRequestSnapshotView",
+        "type": "object"
+      },
+      "ReceiptVerificationKey": {
+        "properties": {
+          "algorithm": {
+            "title": "Algorithm",
+            "type": "string"
+          },
+          "keyId": {
+            "title": "Keyid",
+            "type": "string"
+          },
+          "publicKey": {
+            "title": "Publickey",
+            "type": "string"
+          }
+        },
+        "required": [
+          "algorithm",
+          "keyId",
+          "publicKey"
+        ],
+        "title": "ReceiptVerificationKey",
+        "type": "object"
+      },
+      "PublicReceiptVerification": {
+        "properties": {
+          "receiptId": {
+            "title": "Receiptid",
+            "type": "string"
+          },
+          "verificationUrl": {
+            "title": "Verificationurl",
+            "type": "string"
+          },
+          "jobId": {
+            "title": "Jobid",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "capabilityKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Capabilitykey"
+          },
+          "artifactSha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Artifactsha256"
+          },
+          "completedOn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Completedon"
+          },
+          "generator": {
+            "title": "Generator",
+            "type": "string"
+          },
+          "seal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HydraceptReceiptSeal"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "receiptId",
+          "verificationUrl",
+          "jobId",
+          "status",
+          "generator"
+        ],
+        "title": "PublicReceiptVerification",
+        "type": "object"
+      },
+      "PublicReceiptVerificationRevocation": {
+        "properties": {
+          "revoked": {
+            "title": "Revoked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "revoked"
+        ],
+        "title": "PublicReceiptVerificationRevocation",
+        "type": "object"
+      },
+      "AdapterAliasIdentityStrength": {
+        "enum": [
+          "content_hash",
+          "source_revision",
+          "provider_ref",
+          "source_ref_only"
+        ],
+        "title": "AdapterAliasIdentityStrength",
+        "type": "string"
+      },
+      "ModelAdapterAliasOut": {
+        "properties": {
+          "aliasId": {
+            "title": "Aliasid",
+            "type": "string"
+          },
+          "customerProjectId": {
+            "title": "Customerprojectid",
+            "type": "string"
+          },
+          "environment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Environment"
+          },
+          "alias": {
+            "title": "Alias",
+            "type": "string"
+          },
+          "currentVersionId": {
+            "title": "Currentversionid",
+            "type": "string"
+          },
+          "currentVersion": {
+            "$ref": "#/components/schemas/ModelAdapterAliasVersionOut"
+          },
+          "createdAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updatedat"
+          }
+        },
+        "required": [
+          "aliasId",
+          "customerProjectId",
+          "alias",
+          "currentVersionId",
+          "currentVersion",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "ModelAdapterAliasOut",
+        "type": "object"
+      },
+      "ModelAdapterAliasVersionOut": {
+        "properties": {
+          "versionId": {
+            "title": "Versionid",
+            "type": "string"
+          },
+          "aliasId": {
+            "title": "Aliasid",
+            "type": "string"
+          },
+          "alias": {
+            "title": "Alias",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          },
+          "adapterId": {
+            "title": "Adapterid",
+            "type": "string"
+          },
+          "identityStrength": {
+            "$ref": "#/components/schemas/AdapterAliasIdentityStrength"
+          },
+          "resolvedAdapter": {
+            "$ref": "#/components/schemas/ResolvedGenerationAdapter"
+          },
+          "routingReadiness": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelAdapterRoutingReadiness"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "createdAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdat"
+          }
+        },
+        "required": [
+          "versionId",
+          "aliasId",
+          "alias",
+          "version",
+          "adapterId",
+          "identityStrength",
+          "resolvedAdapter",
+          "createdAt"
+        ],
+        "title": "ModelAdapterAliasVersionOut",
+        "type": "object"
+      },
+      "ModelAdapterRouteCandidate": {
+        "description": "Compatibility result for one concrete provider/model execution route.",
+        "properties": {
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "compatible": {
+            "title": "Compatible",
+            "type": "boolean"
+          },
+          "rejectionCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rejectioncode"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "provider",
+          "model",
+          "compatible"
+        ],
+        "title": "ModelAdapterRouteCandidate",
+        "type": "object"
+      },
+      "ModelAdapterRoutingReadiness": {
+        "description": "Static route compatibility known before quote-time credential resolution.\n\n`routeCompatible` means at least one registered provider/model route can\nrepresent the adapter. It deliberately does not claim that the project has\nworking credentials or provider capacity; those are checked by normal\nrouting/quote execution.",
+        "properties": {
+          "capabilityKey": {
+            "const": "image.generate.v1",
+            "default": "image.generate.v1",
+            "title": "Capabilitykey",
+            "type": "string"
+          },
+          "routeCompatible": {
+            "title": "Routecompatible",
+            "type": "boolean"
+          },
+          "compatibleRoutes": {
+            "items": {
+              "$ref": "#/components/schemas/ModelAdapterRouteCandidate"
+            },
+            "title": "Compatibleroutes",
+            "type": "array"
+          },
+          "evaluatedRoutes": {
+            "items": {
+              "$ref": "#/components/schemas/ModelAdapterRouteCandidate"
+            },
+            "title": "Evaluatedroutes",
+            "type": "array"
+          },
+          "credentialAvailability": {
+            "const": "not_checked",
+            "default": "not_checked",
+            "title": "Credentialavailability",
+            "type": "string"
+          }
+        },
+        "required": [
+          "routeCompatible"
+        ],
+        "title": "ModelAdapterRoutingReadiness",
+        "type": "object"
+      },
+      "ResolvedGenerationAdapter": {
+        "description": "Immutable execution interpretation sealed into quote/workflow/receipt.",
+        "properties": {
+          "adapterId": {
+            "title": "Adapterid",
+            "type": "string"
+          },
+          "adapterType": {
+            "const": "lora",
+            "default": "lora",
+            "title": "Adaptertype",
+            "type": "string"
+          },
+          "displayName": {
+            "title": "Displayname",
+            "type": "string"
+          },
+          "sourceKind": {
+            "$ref": "#/components/schemas/AdapterSourceKind"
+          },
+          "sourceRef": {
+            "title": "Sourceref",
+            "type": "string"
+          },
+          "sourceProvider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sourceprovider"
+          },
+          "sourceRevision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sourcerevision"
+          },
+          "sourcePath": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sourcepath"
+          },
+          "contentSha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Contentsha256"
+          },
+          "baseModelFamily": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Basemodelfamily"
+          },
+          "weight": {
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Weight",
+            "type": "number"
+          },
+          "triggerWords": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Triggerwords",
+            "type": "array"
+          },
+          "triggerWordsApplied": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Triggerwordsapplied",
+            "type": "array"
+          },
+          "resolvedRepresentationVersion": {
+            "default": "hydracept.model-adapter.v1",
+            "title": "Resolvedrepresentationversion",
+            "type": "string"
+          }
+        },
+        "required": [
+          "adapterId",
+          "displayName",
+          "sourceKind",
+          "sourceRef",
+          "weight"
+        ],
+        "title": "ResolvedGenerationAdapter",
+        "type": "object"
+      },
+      "ModelAdapterAliasListResponse": {
+        "properties": {
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "environment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Environment"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ModelAdapterAliasOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "projectId"
+        ],
+        "title": "ModelAdapterAliasListResponse",
+        "type": "object"
+      },
+      "ModelAdapterAliasVersionListResponse": {
+        "properties": {
+          "alias": {
+            "title": "Alias",
+            "type": "string"
+          },
+          "currentVersionId": {
+            "title": "Currentversionid",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ModelAdapterAliasVersionOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "alias",
+          "currentVersionId"
+        ],
+        "title": "ModelAdapterAliasVersionListResponse",
+        "type": "object"
+      },
+      "ModelAdapterAliasPromotionResponse": {
+        "properties": {
+          "alias": {
+            "$ref": "#/components/schemas/ModelAdapterAliasOut"
+          },
+          "promotedVersion": {
+            "$ref": "#/components/schemas/ModelAdapterAliasVersionOut"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "alias",
+          "promotedVersion",
+          "note"
+        ],
+        "title": "ModelAdapterAliasPromotionResponse",
+        "type": "object"
+      },
+      "ProjectRecipeAdapterBinding": {
+        "description": "Frozen binding stored with a project recipe; never follows later alias promotion.",
+        "properties": {
+          "schemaVersion": {
+            "const": "hydracept.model-adapter-binding.v1",
+            "default": "hydracept.model-adapter-binding.v1",
+            "title": "Schemaversion",
+            "type": "string"
+          },
+          "alias": {
+            "title": "Alias",
+            "type": "string"
+          },
+          "aliasVersionId": {
+            "title": "Aliasversionid",
+            "type": "string"
+          },
+          "aliasVersion": {
+            "minimum": 1,
+            "title": "Aliasversion",
+            "type": "integer"
+          },
+          "identityStrength": {
+            "$ref": "#/components/schemas/AdapterAliasIdentityStrength"
+          },
+          "resolvedAdapter": {
+            "$ref": "#/components/schemas/ResolvedGenerationAdapter"
+          }
+        },
+        "required": [
+          "alias",
+          "aliasVersionId",
+          "aliasVersion",
+          "identityStrength",
+          "resolvedAdapter"
+        ],
+        "title": "ProjectRecipeAdapterBinding",
+        "type": "object"
+      },
+      "ModelAdapterAliasRecipeBindingResponse": {
+        "properties": {
+          "binding": {
+            "$ref": "#/components/schemas/ProjectRecipeAdapterBinding"
+          },
+          "inputPatch": {
+            "additionalProperties": true,
+            "title": "Inputpatch",
+            "type": "object"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "binding",
+          "inputPatch",
+          "note"
+        ],
+        "title": "ModelAdapterAliasRecipeBindingResponse",
+        "type": "object"
+      },
+      "ProjectModelAdapterDefaultOut": {
+        "properties": {
+          "capabilityKey": {
+            "const": "image.generate.v1",
+            "title": "Capabilitykey",
+            "type": "string"
+          },
+          "alias": {
+            "title": "Alias",
+            "type": "string"
+          },
+          "aliasId": {
+            "title": "Aliasid",
+            "type": "string"
+          },
+          "currentVersionId": {
+            "title": "Currentversionid",
+            "type": "string"
+          },
+          "routingReadiness": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelAdapterRoutingReadiness"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "inputPatch": {
+            "additionalProperties": true,
+            "title": "Inputpatch",
+            "type": "object"
+          }
+        },
+        "required": [
+          "capabilityKey",
+          "alias",
+          "aliasId",
+          "currentVersionId",
+          "inputPatch"
+        ],
+        "title": "ProjectModelAdapterDefaultOut",
+        "type": "object"
+      },
+      "ProjectModelAdapterDefaultEnvelope": {
+        "description": "GET returns either ``{capabilityKey, default: null}`` or ``{default: ...}``. PUT returns ``{default: ...}``.",
+        "properties": {
+          "capabilityKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Capabilitykey"
+          },
+          "default": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectModelAdapterDefaultOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "title": "ProjectModelAdapterDefaultEnvelope",
+        "type": "object"
+      },
+      "ProjectModelAdapterDefaultDeleteResponse": {
+        "properties": {
+          "capabilityKey": {
+            "title": "Capabilitykey",
+            "type": "string"
+          },
+          "deleted": {
+            "title": "Deleted",
+            "type": "boolean"
+          },
+          "effectiveDefault": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectModelAdapterDefaultOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "capabilityKey",
+          "deleted"
+        ],
+        "title": "ProjectModelAdapterDefaultDeleteResponse",
+        "type": "object"
+      },
+      "PinnedReceiptListItem": {
+        "properties": {
+          "receiptId": {
+            "title": "Receiptid",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "requestedPin": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Requestedpin"
+          },
+          "confirmedPin": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Confirmedpin"
+          },
+          "pinVerified": {
+            "title": "Pinverified",
+            "type": "boolean"
+          },
+          "providerSubmission": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Providersubmission"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Startedat"
+          },
+          "endedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Endedat"
+          }
+        },
+        "required": [
+          "receiptId",
+          "status",
+          "pinVerified"
+        ],
+        "title": "PinnedReceiptListItem",
+        "type": "object"
+      },
+      "PinnedReceiptListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PinnedReceiptListItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "PinnedReceiptListResponse",
+        "type": "object"
+      },
+      "PinnedInferenceAccepted": {
+        "description": "Success body from POST /v1/inference/pinned.\n\n``native_request`` is the provider request as stored. That key is snake_case on\nthis response; the later receipt read uses ``nativeRequest``.",
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "pin": {
+            "additionalProperties": true,
+            "title": "Pin",
+            "type": "object"
+          },
+          "receipt": {
+            "additionalProperties": true,
+            "title": "Receipt",
+            "type": "object"
+          },
+          "native_request": {
+            "additionalProperties": true,
+            "title": "Native Request",
+            "type": "object"
+          },
+          "pricing": {
+            "additionalProperties": true,
+            "title": "Pricing",
+            "type": "object"
+          },
+          "executionSemantics": {
+            "title": "Executionsemantics",
+            "type": "string"
+          },
+          "pinVerified": {
+            "title": "Pinverified",
+            "type": "boolean"
+          },
+          "toolCalls": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Toolcalls"
+          },
+          "nativeResponse": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Nativeresponse"
+          }
+        },
+        "required": [
+          "text",
+          "pin",
+          "receipt",
+          "native_request",
+          "pricing",
+          "executionSemantics",
+          "pinVerified"
+        ],
+        "title": "PinnedInferenceAccepted",
+        "type": "object"
+      },
+      "PinnedBulkItem": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "receiptId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Receiptid"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Result"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          },
+          "acceptedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Acceptedat"
+          },
+          "executionStartedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Executionstartedat"
+          },
+          "dispatchBoundaryAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Dispatchboundaryat"
+          },
+          "providerAcknowledgedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Provideracknowledgedat"
+          },
+          "endedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Endedat"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "PinnedBulkItem",
+        "type": "object"
+      },
+      "PinnedBulkResponse": {
+        "properties": {
+          "bulkId": {
+            "title": "Bulkid",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "concurrency": {
+            "title": "Concurrency",
+            "type": "integer"
+          },
+          "itemCount": {
+            "title": "Itemcount",
+            "type": "integer"
+          },
+          "succeeded": {
+            "title": "Succeeded",
+            "type": "integer"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "integer"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Startedat"
+          },
+          "endedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Endedat"
+          },
+          "nextAction": {
+            "title": "Nextaction",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PinnedBulkItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "pollAfterSeconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pollafterseconds"
+          }
+        },
+        "required": [
+          "bulkId",
+          "status",
+          "concurrency",
+          "itemCount",
+          "succeeded",
+          "failed",
+          "pending",
+          "nextAction"
+        ],
+        "title": "PinnedBulkResponse",
+        "type": "object"
+      },
+      "PinnedReceiptDetail": {
+        "properties": {
+          "receiptId": {
+            "title": "Receiptid",
+            "type": "string"
+          },
+          "executionSemantics": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Executionsemantics"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "transport": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Transport"
+          },
+          "transportVersion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Transportversion"
+          },
+          "requestedPin": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Requestedpin"
+          },
+          "confirmedPin": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Confirmedpin"
+          },
+          "protocolRequestHash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Protocolrequesthash"
+          },
+          "nativeRequestHash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Nativerequesthash"
+          },
+          "nativeResponseHash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Nativeresponsehash"
+          },
+          "decodedResponseHash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Decodedresponsehash"
+          },
+          "providerRequestId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Providerrequestid"
+          },
+          "providerSubmission": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Providersubmission"
+          },
+          "attempts": {
+            "default": null,
+            "title": "Attempts"
+          },
+          "aggregateUsage": {
+            "default": null,
+            "title": "Aggregateusage"
+          },
+          "providerBasisCostMicros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Providerbasiscostmicros"
+          },
+          "hydraceptFeeMicros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Hydraceptfeemicros"
+          },
+          "pricing": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pricing"
+          },
+          "costUsd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Costusd"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Startedat"
+          },
+          "endedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Endedat"
+          },
+          "nativeRequest": {
+            "default": null,
+            "title": "Nativerequest"
+          },
+          "decodedText": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Decodedtext"
+          },
+          "outputLimit": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Outputlimit"
+          },
+          "evidenceSealed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Evidencesealed"
+          },
+          "corrections": {
+            "items": {},
+            "title": "Corrections",
+            "type": "array"
+          },
+          "pinVerified": {
+            "title": "Pinverified",
+            "type": "boolean"
+          },
+          "nativeResponse": {
+            "default": null,
+            "title": "Nativeresponse"
+          }
+        },
+        "required": [
+          "receiptId",
+          "status",
+          "pinVerified"
+        ],
+        "title": "PinnedReceiptDetail",
+        "type": "object"
+      },
+      "OnboardingRequirement": {
+        "properties": {
+          "capability": {
+            "title": "Capability",
+            "type": "string"
+          },
+          "choices": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Choices",
+            "type": "array"
+          }
+        },
+        "required": [
+          "capability"
+        ],
+        "title": "OnboardingRequirement",
+        "type": "object"
+      },
+      "OnboardingPlan": {
+        "properties": {
+          "requirements": {
+            "items": {
+              "$ref": "#/components/schemas/OnboardingRequirement"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "bootstrapSessionUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Bootstrapsessionurl"
+          },
+          "accountClass": {
+            "title": "Accountclass",
+            "type": "string"
+          },
+          "automationAdvertised": {
+            "title": "Automationadvertised",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "accountClass",
+          "automationAdvertised"
+        ],
+        "title": "OnboardingPlan",
+        "type": "object"
+      },
+      "OnboardingSessionCreated": {
+        "properties": {
+          "requirements": {
+            "items": {
+              "$ref": "#/components/schemas/OnboardingRequirement"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "bootstrapSessionUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Bootstrapsessionurl"
+          },
+          "accountClass": {
+            "title": "Accountclass",
+            "type": "string"
+          },
+          "automationAdvertised": {
+            "title": "Automationadvertised",
+            "type": "boolean"
+          },
+          "sessionId": {
+            "title": "Sessionid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accountClass",
+          "automationAdvertised",
+          "sessionId"
+        ],
+        "title": "OnboardingSessionCreated",
+        "type": "object"
+      },
+      "OnboardingSessionView": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/OnboardingPlan"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Projectid"
+          },
+          "environment": {
+            "title": "Environment",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Result"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "plan",
+          "environment"
+        ],
+        "title": "OnboardingSessionView",
+        "type": "object"
+      },
+      "OnboardingSessionCompleted": {
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/OnboardingSessionView"
+          },
+          "connection": {
+            "additionalProperties": true,
+            "title": "Connection",
+            "type": "object"
+          }
+        },
+        "required": [
+          "session",
+          "connection"
+        ],
+        "title": "OnboardingSessionCompleted",
+        "type": "object"
+      },
+      "OnboardingSessionResult": {
+        "additionalProperties": true,
+        "description": "Not-ready polls return ``{status, result}``. A ready session returns the result object itself.",
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Result"
+          },
+          "projectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Projectid"
+          },
+          "environment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Environment"
+          },
+          "connections": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Connections"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Next"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "OnboardingSessionResult",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -18475,6 +20653,13 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/PublicError"
+            },
+            "example": {
+              "code": "QUOTE_MISMATCH",
+              "message": "The quote on this request is stale. Quote again and retry with a new idempotency key.",
+              "requestId": "req_example",
+              "retryable": false,
+              "nextAction": "POST /v1/capabilities/{capabilityKey}/quote, then resubmit."
             }
           }
         }
@@ -18485,6 +20670,32 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/PublicValidationErrorBody"
+            },
+            "example": {
+              "code": "VALIDATION_ERROR",
+              "message": "Request validation failed.",
+              "requestId": "req_example",
+              "retryable": false,
+              "detail": [
+                {
+                  "loc": [
+                    "body",
+                    "input"
+                  ],
+                  "msg": "Field required",
+                  "type": "missing"
+                }
+              ],
+              "validationErrors": [
+                {
+                  "loc": [
+                    "body",
+                    "input"
+                  ],
+                  "msg": "Field required",
+                  "type": "missing"
+                }
+              ]
             }
           }
         }

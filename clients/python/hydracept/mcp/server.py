@@ -734,9 +734,19 @@ def hydracept_run(
 
 @server.tool(name="hydracept_request_capability_quote")
 def hydracept_request_capability_quote(body: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Create a non-binding capability implementation request. Humans must accept commission quotes. Do not pass commission quoteId as execution.quoteId."""
+    """Create a non-binding capability implementation request. summary is required.
+
+    Humans must accept commission quotes. Do not pass commission quoteId as execution.quoteId.
+    """
     def _run() -> dict[str, Any]:
-        created = _client().create_capability_request(dict(body or {}))
+        payload = dict(body or {})
+        text = str(payload.get("summary") or "").strip()
+        if not text:
+            raise ValueError("summary is required")
+        payload["summary"] = text
+        if not str(payload.get("need") or "").strip():
+            payload["need"] = text
+        created = _client().create_capability_request(payload)
         request_id = str(created.get("id") or "")
         if request_id:
             submitted = _client().submit_capability_request(request_id)

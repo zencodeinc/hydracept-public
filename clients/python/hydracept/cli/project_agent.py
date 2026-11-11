@@ -24,7 +24,7 @@ from hydracept.cli.workspace import CliOverrides, resolve_workspace
 
 _COMMAND_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,127}$")
 _SHELLISH = re.compile(r"[;|&`$<>\n]")
-_HOST_COMMANDS = frozenset({"validate"})
+_HOST_COMMANDS = frozenset({"status", "validate"})
 AGENT_ID = "hydracept-cli"
 
 
@@ -242,6 +242,33 @@ def build_operation_report(
     }
 
 
+def build_status_report(
+    *,
+    project_root: Path,
+    project_id: str,
+    operation_id: str,
+) -> dict[str, Any]:
+    """Read-only checkout facts. Does not write the repository."""
+    yaml_path = hydracept_root(project_root) / "project.yaml"
+    return {
+        "schemaVersion": "hydracept.agent-report.v1",
+        "agentId": AGENT_ID,
+        "projectId": project_id,
+        "kind": "status",
+        "status": "succeeded",
+        "operationRequestId": operation_id,
+        "repositoryRevisionAfter": git_revision(project_root),
+        "validationResults": [],
+        "errors": [],
+        "metrics": {},
+        "message": "Read-only project status. No repository changes.",
+        "readOnly": True,
+        "details": {"projectYamlPresent": yaml_path.is_file(), "readOnly": True},
+        "statusFields": [],
+        "table": None,
+    }
+
+
 def build_validate_report(
     *,
     project_id: str,
@@ -271,6 +298,12 @@ def execute_requested_operation(project_root: Path, operation: dict[str, Any]) -
     command = str(operation.get("command") or "")
     operation_id = str(operation.get("id") or "")
     project_id = str(operation.get("projectId") or "")
+    if command == "status":
+        return build_status_report(
+            project_root=project_root,
+            project_id=project_id,
+            operation_id=operation_id,
+        )
     if command == "validate":
         return build_validate_report(
             project_id=project_id,

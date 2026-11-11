@@ -16,7 +16,9 @@ Plugin homepage (Cursor / Claude / MCP listing forms):
 
 Official MCP Registry `description` (≤100 characters):
 
-> Execution control plane for agents: capabilities, durable jobs, budgets, receipts, and BYOK.
+> Directory-safe MCP: quote and run text/domain jobs with OAuth, receipts, BYOK.
+
+Setup page: [https://hydracept.com/mcp-registry/](https://hydracept.com/mcp-registry/)
 
 Publisher: **Zencode Consulting Inc.**
 
@@ -25,9 +27,12 @@ Publisher: **Zencode Consulting Inc.**
 | Transport | When to use | Endpoint |
 |-----------|-------------|----------|
 | Stdio (primary for coding agents) | Git checkout after `hydracept init` | `python -m hydracept mcp serve` |
-| Hosted | No project checkout (ChatGPT, MCP Registry) | `https://api.hydracept.com/mcp` |
+| Hosted (API key) | No project checkout (API-key clients) | `https://api.hydracept.com/mcp` |
+| Official MCP Registry remote | Registry clients; directory-safe OAuth | `https://api.hydracept.com/mcp/claude` |
+| Claude directory | claude.ai connector | `https://api.hydracept.com/mcp/claude` (OAuth; a Hydracept API key is rejected) |
+| OpenAI ChatGPT / Codex | ChatGPT Apps/Connectors + Codex remote MCP | `https://api.hydracept.com/mcp/openai` (OAuth; a Hydracept API key is rejected) |
 
-Stdio authenticates with `.hydracept/secrets.json`. Do not copy that key into a host plugin **Configure** UI. Hosted MCP authenticates with `Authorization: Bearer <HYDRACEPT_API_KEY>` for clients that cannot see the workspace.
+Stdio authenticates with `.hydracept/secrets.json`. Do not copy that key into a host plugin **Configure** UI. API-key hosted MCP authenticates with `Authorization: Bearer <HYDRACEPT_API_KEY>`. The Official MCP Registry remote and Claude directory connector use OAuth at `https://api.hydracept.com/mcp/claude` (API keys rejected). See [https://hydracept.com/mcp-registry/](https://hydracept.com/mcp-registry/) and [https://hydracept.com/claude/](https://hydracept.com/claude/). The OpenAI ChatGPT/Codex connector uses OAuth at `https://api.hydracept.com/mcp/openai`. See [https://hydracept.com/openai/](https://hydracept.com/openai/).
 
 ## Install
 
@@ -41,7 +46,7 @@ python -m hydracept agents install --auto
 | CLI (all hosts) | `python -m hydracept agents install --auto` |
 | Cursor | Not in the Cursor Marketplace yet — install from `zencodeinc/hydracept-plugin` (tag v0.1.10) or `python -m hydracept agents install --auto` |
 | Claude Code | `github.com/zencodeinc/hydracept-plugin` (v0.1.10) or `python -m hydracept agents install --auto` |
-| MCP Registry | `com.hydracept/hydracept` at `https://api.hydracept.com/mcp` |
+| MCP Registry | `com.hydracept/hydracept` at `https://api.hydracept.com/mcp/claude` (OAuth) |
 
 The marketplace name (`hydracept`) participates in the Claude install command.
 

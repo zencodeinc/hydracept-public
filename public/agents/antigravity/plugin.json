@@ -1,0 +1,28 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "hydracept",
+  "displayName": "Hydracept",
+  "version": "1.0.0",
+  "description": "Quote and run text, reasoning, and domain capabilities with durable jobs, artifacts, and receipts. OAuth sign-in. Does not generate images, video, audio, or 3D.",
+  "logo": "assets/logo.png",
+  "suggestedPrompts": [
+    "Check Hydracept status for my workspace",
+    "List Hydracept capabilities available on this connector",
+    "Resolve a capability for translating short product copy and return a quote"
+  ],
+  "author": {
+    "name": "Zencode Consulting Inc.",
+    "url": "https://hydracept.com"
+  },
+  "homepage": "https://hydracept.com/antigravity/",
+  "repository": "https://github.com/zencodeinc/hydracept-public/tree/main/public/agents/antigravity",
+  "license": "MIT",
+  "keywords": [
+    "hydracept",
+    "mcp",
+    "oauth",
+    "capabilities",
+    "durable-jobs",
+    "receipts"
+  ]
+}

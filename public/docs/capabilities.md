@@ -46,7 +46,8 @@ Inference capability descriptors include **`billingModes`**, **`pricing`**, and 
 
 Find by task: `GET /v1/capabilities?q=generate+an+image` or `python -m hydracept capabilities find "generate an image"`.
 
-- **oneShot** — this capability can be invoked without a product integration commitment
+- **oneShot** — this capability can be invoked without a product integration commitment. This is a **business** property, not a transport one: it says the call is worth making on its own, not how to make it. Do not infer the HTTP path from it — **`executionModes` is the only source of truth for transport.** `image.generate.v1` is `oneShot: true` and `job_async` only: submit it to `POST /v1/capabilities/{key}/jobs` and poll `GET /v1/jobs/{id}`.
+- **executionModes** — how this capability can be reached, and the only thing to read before choosing an endpoint. `invoke_sync` / `invoke_stream` mean `POST /v1/capabilities/{key}/invoke`; `job_async` means `POST /v1/capabilities/{key}/jobs`. A capability listing only `job_async` will reject `/invoke`, and vice versa.
 - **managedInferenceAvailable** — catalog-level hint: no provider account is required for this inference call when true and the workspace is runnable
 - **inferenceProviderSetupRequired** — a provider connection is required when true; never ask for a provider key when managed inference is available
 - **trialEligible** — managed first-use policy may cover this capability (server-authoritative remaining balance is on authenticated `funding`)
@@ -82,6 +83,123 @@ Content-Type: application/json
 ```
 
 If a workflow deliberately binds execution to a previously returned quote, the submitted job body must be unchanged and `execution.quoteId` may reference that quote. Execution remeasures pricing inputs against the sealed quote; a mismatch fails before work starts with `409 QUOTE_MISMATCH`. Never attach a stale quote ID just because a quote was requested earlier. `estimateId` is accepted as an inbound alias of `quoteId`.
+
+## Pin an exact execution target
+
+By default Hydracept chooses the provider and model for a capability and may re-seal to another eligible candidate. `pin` asks for one **exact** target and turns substitution off.
+
+```json
+{
+  "context": { "productId": "my-product", "projectId": "cpr_..." },
+  "input": {
+    "messages": [{ "role": "user", "content": "Summarise this changelog." }]
+  },
+  "pin": { "target": "openai-text:gpt-5.6-terra" },
+  "idempotencyKey": "<uuid-v4>"
+}
+```
+
+`pin` is an object with one field, `target`. It is not part of `input` and not part of `execution`; sending it as an unknown extra field anywhere else is rejected with `422`. Where `pin` is supported, it is accepted on both synchronous invoke and durable job submission.
+
+**Pin support is currently limited to `text.*` capabilities.** The durable job route rejects a `pin.target` on any other capability key with `422 PolicyRejected` and `details.reasons: ["target_pin_unsupported"]`, and domain capabilities reject it on invoke for the same reason. Neither `supportsExplicitTarget` nor a populated `targets` list overrides this: a compute capability can advertise targets and still refuse a pin. For a non-text capability, leave `pin` out and let Hydracept select.
+
+`target` is a model reference: either `provider:model` or a bare model id when only one eligible provider ships that model. The provider id never contains `:` and a model id may, so Hydracept splits on the longest provider id it knows — `openai-compat-text:qwen3:14b` is one target, not a malformed one.
+
+### Discover what you may pin
+
+`GET /v1/capabilities/{key}/execution-targets` lists the models that can perform the capability. It is anonymous and it is the authoritative pinnable set — do not assume a model is pinnable because a provider advertises it.
+
+```json
+{
+  "capability": "text.general.fast.v1",
+  "defaultTarget": "openai-text:gpt-6.1-sol",
+  "targets": [
+    {
+      "id": "openai-text:gpt-5.6-terra",
+      "provider": "openai-text",
+      "model": "gpt-5.6-terra",
+      "apis": ["chat", "responses"],
+      "kind": "text",
+      "maturity": "production",
+      "eligible": true,
+      "availableNow": true,
+      "availabilityReason": null,
+      "readerDelivery": true
+    }
+  ]
+}
+```
+
+- `id` is the value to send as `pin.target`. It is `provider:model`.
+- `eligible` means the target can perform this capability. **Eligibility is not availability**: `availableNow: false` with `availabilityReason: "provider_unavailable"` means the target is otherwise valid but the provider is down right now. A pin does not wait for or route around that.
+- `defaultTarget` is the unpinned selection, not a recommendation.
+- `readerDelivery` is a per-target fact. Pinning a target that does not support it does not move the job onto one that does.
+
+Some capabilities deliberately expose a single sealed target — classifiers and sealed decision routes select their own model, so their `targets` list holds exactly one entry and catalog siblings stay undiscoverable as pins. A capability can also expose no pinnable target at all, in which case `supportsExplicitTarget` is `false` on the descriptor (compute and CPU-processing capabilities do), and a pin is refused.
+
+`execution-targets` describes eligibility; it does not by itself promise that a given route accepts a `pin` today. See the text-only limitation above and treat the pin error table below as the authority on what a specific capability will do.
+
+### What "no substitution" means
+
+A `pin` is a hard pin, not a preference:
+
+- Hydracept dispatches only to the pinned provider and model. There is no re-seal to an alternate candidate, no second attempt on another route, and no silent model swap.
+- One `pin` authorizes at most one provider attempt. The sealed routing authority records `fallbackPolicy: "none"` and `maximumAttempts: 1`.
+- If the pinned target turns out to be unknown, ineligible, or momentarily unavailable, the request **fails**. Hydracept does not deliver a different model's output and call it a success.
+- `pin` is not an additive control layered on another selector. Combining it with `modelSelection` rejects the request (`conflicting_model_selectors`); combining it with a `preferredModel` naming a *different* target rejects it as `conflicting_target_pin`. Naming the same target in both is accepted, but redundant.
+
+Use `modelSelection` (`mode: "exact"` for one model, or `ordered` / `prefer` for authorized fallbacks) when you want ordered fallback rather than an exact target. Use no selector at all when you want Hydracept to choose.
+
+### What the response reports back
+
+Both the invocation result and the receipt disclose which target actually ran, so you never have to infer it:
+
+| Field | Where | Meaning |
+|-------|-------|---------|
+| `resolvedProvider` / `resolvedModel` | invoke result, job | The sealed candidate that executed |
+| `servedCandidateId` | invoke result | `provider:model:capabilityKey` of the client that was actually called |
+| `selectedCandidateId` | invoke result | The candidate id chosen at admission |
+| `route.routingPolicy` | receipt | `target_exact` when a `pin` sealed the route |
+| `targetRouting.requestedTarget` / `resolvedTarget` | receipt | What you asked for, and what ran |
+| `targetRouting.substituted` | receipt | `false` on a pinned execution; a pinned run is never substituted |
+
+Read `servedCandidateId` when you need the identity of the execution for your own records. It normally equals `resolvedProvider:resolvedModel:capabilityKey`; a different value is itself evidence that the provider served something other than the sealed candidate, and Hydracept reports it rather than hiding it.
+
+### What the errors mean
+
+A pin that cannot be honored fails closed. The HTTP status separates an unusable request from an admission policy rejection.
+
+| Response | `code` | `details.reasons` | Meaning |
+|----------|--------|-------------------|---------|
+| `422` | `PolicyRejected` | `target_pin_unsupported` | This capability or route does not accept `pin.target` |
+| `422` | `InvalidInput` / `UNKNOWN_EXECUTION_FIELD` | — | `pin` placed at the wrong level, or an unknown key inside it |
+| `403` | `PolicyRejected` | `target_unknown` | `pin.target` is not a known execution target |
+| `403` | `PolicyRejected` | `target_ineligible` | The target exists in the catalog but cannot perform this capability |
+| `403` | `PolicyRejected` | `target_unavailable` | The target is eligible but its provider is temporarily unavailable |
+| `403` | `PolicyRejected` | `conflicting_target_pin` | `pin.target` and `preferredModel` name different targets |
+| `403` | `PolicyRejected` | `conflicting_model_selectors` | `pin.target` was combined with `modelSelection` |
+
+None of these are retryable with the same body except `target_unavailable`, which clears when the provider returns. For the others, either choose an `id` from `/execution-targets` or drop the pin. A retry is a new request: use a new `idempotencyKey`.
+
+Admission policy rejections are recorded on the execution and return a `receiptId`, so a refused pin is still auditable.
+
+### Quotes and pinned execution
+
+`POST /v1/capabilities/{key}/quote` and `/estimate` do **not** accept `pin` — it is an unknown field there and is rejected with `422`. A pinned invoke prices its own pinned target on the way to admission and seals that price onto the execution; you do not pass a separate quote body for it.
+
+When you want an explicit preview of a specific model, name it in the quote body as `input.model`. That is the pricing selector, and it resolves against the same catalog identity space the execution targets use:
+
+```json
+{
+  "context": { "productId": "my-product", "projectId": "cpr_..." },
+  "input": {
+    "messages": [{ "role": "user", "content": "Summarise this changelog." }],
+    "model": "gpt-5.6-terra"
+  }
+}
+```
+
+A quote is a preview and reserves nothing. For a pinned execution, do not attach the returned `quoteId` unless the submitted body is unchanged — otherwise the request fails with `409 QUOTE_MISMATCH` before work starts. The route that actually ran is the one on the receipt, not the one you previewed.
 
 ## Invoke vs durable jobs
 
@@ -132,6 +250,12 @@ curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
 ```
 
 See [Durable Jobs & Receipts](../jobs/) and [Quick Start](../).
+
+## Moderation and classification
+
+`text.moderate.v1` classifies text and returns category evidence your product owns the policy for. It runs as synchronous invoke only, takes `{"text": ...}` up to 20,000 characters, and is free at the managed retail price. `moderation.content.v1` is the deprecated provider-aligned name for the same classifier.
+
+See [Moderation & classification](../moderation/).
 
 ## Prompt limits
 

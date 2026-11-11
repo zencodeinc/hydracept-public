@@ -7,7 +7,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any, Mapping, TypedDict
 
-from pydantic import BaseModel, Field, field_validator, model_serializer, model_validator
+from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_serializer, model_validator
 
 from hydracept_contracts.digests import normalize_sha256_digest
 from hydracept_contracts.errors import HydraceptErrorCode, RETRYABLE_ERROR_CODES
@@ -99,6 +99,9 @@ class HydraceptJobArtifactRef(BaseModel):
     label: str | None = None
     filename: str | None = None
     slice_cell_id: str | None = Field(default=None, alias="sliceCellId")
+    # Stage that produced this file (`geometry` or `texture`). Kept off the public
+    # schema: it only lets primary resolution prefer the textured GLB.
+    _stage: str | None = PrivateAttr(default=None)
 
     model_config = {"populate_by_name": True}
 
@@ -691,6 +694,49 @@ _SHEET_PRIMARY_KINDS = frozenset(
     }
 )
 
+#: GLB deliverables, best first. Texture maps, thumbnails, the pre-remesh copy,
+#: and the raw provider JSON are not in this list, so they cannot win by index.
+_MESH_DELIVERABLE_RANK = {
+    "mesh-raw": 0,
+    "mesh-glb": 1,
+    "mesh-normalized": 2,
+}
+
+
+def _is_mesh_artifact_family(artifacts: list[HydraceptJobArtifactRef]) -> bool:
+    for item in artifacts:
+        kind = str(item.kind or "")
+        if kind == "meshy-task-response" or kind.startswith("mesh-"):
+            return True
+    return False
+
+
+def _mesh_deliverable_id(artifacts: list[HydraceptJobArtifactRef]) -> str | None:
+    """The textured GLB, or the only GLB when the job has no texture stage.
+
+    ``artifacts[0]`` is often the provider JSON. A mesh job also stores texture
+    maps, thumbnails, and a pre-remesh copy beside the model. None of those is
+    the file a caller downloads as the mesh.
+    """
+    deliverables = [
+        item
+        for item in artifacts
+        if str(item.kind or "") in _MESH_DELIVERABLE_RANK
+    ]
+    if not deliverables:
+        return None
+    textured = [
+        item for item in deliverables if getattr(item, "_stage", None) == "texture"
+    ]
+    pool = textured or deliverables
+    best = min(_MESH_DELIVERABLE_RANK[str(item.kind)] for item in pool)
+    ranked = [
+        item for item in pool if _MESH_DELIVERABLE_RANK[str(item.kind)] == best
+    ]
+    # A later stage is registered after geometry. When several files share the
+    # best kind and none is tagged, the last one is the textured model.
+    return ranked[-1].artifact_id
+
 
 def resolve_primary_artifact_id(
     artifacts: list[HydraceptJobArtifactRef],
@@ -717,6 +763,10 @@ def resolve_primary_artifact_id(
     sliced = [item for item in artifacts if item.slice_cell_id]
     if len(sliced) > 1 and not sheet_primaries:
         return None
+    if _is_mesh_artifact_family(artifacts):
+        # A mesh family with no GLB must not fall through to the JSON sidecar
+        # just because it is the only remaining file, or the first of many.
+        return _mesh_deliverable_id(artifacts)
     outputs = [item for item in artifacts if item.artifact_id]
     if len(outputs) == 1:
         return outputs[0].artifact_id

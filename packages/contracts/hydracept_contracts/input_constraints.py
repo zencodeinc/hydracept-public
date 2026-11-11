@@ -26,6 +26,7 @@ TTS_MODEL_CHARACTER_LIMITS: dict[str, int] = {
 IMAGE_DEFAULT_CHARACTER_LIMIT = 32_000
 IMAGE_MODEL_CHARACTER_LIMITS: dict[str, int] = {
     "gpt-image-2": 32_000,
+    "gpt-image-2.6-sunburst": 32_000,
     "gpt-image-2.5-flare": 32_000,
     "gpt-image-2.5-sunburst": 32_000,
 }

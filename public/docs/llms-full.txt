@@ -12,7 +12,12 @@ Full documentation: https://hydracept.com/llms-full.txt
 - In a git checkout: python -m hydracept init --apply --yes --json (binds stdio MCP). Init may reuse an existing GitHub (`gh`) or Google Cloud (`gcloud`) user login, or HYDRACEPT_API_KEY, instead of opening a browser — see docs/authentication. Reload MCP once. Do not copy the workspace key into Plugins → Configure.
 - Stdio MCP (coding-agent default): python -m hydracept mcp serve
 - Hydracept panel (PyPI hydracept >= 0.5.4): one MCP App ui://hydracept/app.html; seven states, not seven iframes
-- Hosted MCP (no checkout: ChatGPT, MCP Registry): https://api.hydracept.com/mcp
+- Hosted MCP (API key, full/compact catalog): https://api.hydracept.com/mcp
+- Official MCP Registry remote (com.hydracept/hydracept): https://api.hydracept.com/mcp/claude (OAuth DCR+PKCE; a Hydracept API key is rejected). Setup: https://hydracept.com/mcp-registry/
+- Claude directory: https://api.hydracept.com/mcp/claude (OAuth; a Hydracept API key is rejected). Setup: https://hydracept.com/claude/
+- VS Code / GitHub Copilot gallery: https://api.hydracept.com/mcp/vscode (OAuth; a Hydracept API key is rejected). Setup: https://hydracept.com/vscode/
+- Antigravity marketplace: https://api.hydracept.com/mcp/antigravity (OAuth; a Hydracept API key is rejected). Setup: https://hydracept.com/antigravity/
+- OpenAI ChatGPT/Codex: https://api.hydracept.com/mcp/openai (OAuth; a Hydracept API key is rejected). Setup: https://hydracept.com/openai/
 - Install: python -m hydracept agents install --auto
 - Project surfaces: python -m hydracept surface apply PATH
 - Job discovery: hydracept_jobs_find (recent | failed | reusable)
@@ -140,6 +145,7 @@ Bootstrap: python -m hydracept init --apply --yes --json
 - https://hydracept.com/changelog
 - https://hydracept.com/trust
 - https://hydracept.com/license
+- https://hydracept.com/case-studies
 - https://hydracept.com/capabilities/image-generation
 - https://hydracept.com/capabilities/video-generation
 - https://hydracept.com/capabilities/voice
@@ -165,6 +171,22 @@ Bootstrap: python -m hydracept init --apply --yes --json
 ## Available capabilities
 - Discover live: GET /v1/capabilities and GET /v1/agent-context
 - Do not freeze a launch-key list from this file
+
+## Exact execution targets
+- Pin one provider and model: `"pin": {"target": "provider:model"}` on invoke or a durable job. Hydracept does not substitute; an unknown, ineligible, or unavailable target fails instead of running another model.
+- Pin support is limited to text.* capabilities today; other capability keys reject pin.target with 422 target_pin_unsupported, even when execution-targets lists models
+- Discover pinnable targets: GET /v1/capabilities/{key}/execution-targets (`id`, `eligible`, `availableNow`); check execution.supportsExplicitTarget first
+- The result reports `resolvedProvider` / `resolvedModel` / `servedCandidateId`; the receipt reports `route.routingPolicy: target_exact` and `targetRouting.substituted: false`
+- Docs: https://docs.hydracept.com/capabilities/
+
+## Moderation and data classification
+- text.moderate.v1 classifies one string (`{"text": ...}`, <=20000 chars) as synchronous invoke only, free at the managed retail price
+- It returns evidence, not a verdict: `flagged` (may be null), provider-reported `categories`, `availability`. Your product owns the policy
+- moderation.content.v1 is the deprecated provider-aligned name for the same classifier
+- A declared context.dataClassification is a constraint, not authorization. ChildDirected is refused with 403 processing_not_permitted
+- Docs: https://docs.hydracept.com/moderation/
+- Docs: https://docs.hydracept.com/data-handling/
+- Docs: https://docs.hydracept.com/conversational-products/
 
 # Full public documentation
 
@@ -370,6 +392,9 @@ See [Durable Jobs & Receipts](./jobs/) for filters, artifacts, inspection, and o
 - [SDKs and HTTP without an agent](./library-integration/)
 - [Durable Jobs & Receipts](./jobs/)
 - [Pinned Execution](./pinned-execution/)
+- [Moderation & classification](./moderation/)
+- [Classification & data handling](./data-handling/)
+- [Conversational products](./conversational-products/)
 - [Execution provenance](./provenance/)
 - [Research Inference Protocol](./research/)
 - [Billing & plans](./billing/)
@@ -953,7 +978,8 @@ Inference capability descriptors include **`billingModes`**, **`pricing`**, and 
 
 Find by task: `GET /v1/capabilities?q=generate+an+image` or `python -m hydracept capabilities find "generate an image"`.
 
-- **oneShot** — this capability can be invoked without a product integration commitment
+- **oneShot** — this capability can be invoked without a product integration commitment. This is a **business** property, not a transport one: it says the call is worth making on its own, not how to make it. Do not infer the HTTP path from it — **`executionModes` is the only source of truth for transport.** `image.generate.v1` is `oneShot: true` and `job_async` only: submit it to `POST /v1/capabilities/{key}/jobs` and poll `GET /v1/jobs/{id}`.
+- **executionModes** — how this capability can be reached, and the only thing to read before choosing an endpoint. `invoke_sync` / `invoke_stream` mean `POST /v1/capabilities/{key}/invoke`; `job_async` means `POST /v1/capabilities/{key}/jobs`. A capability listing only `job_async` will reject `/invoke`, and vice versa.
 - **managedInferenceAvailable** — catalog-level hint: no provider account is required for this inference call when true and the workspace is runnable
 - **inferenceProviderSetupRequired** — a provider connection is required when true; never ask for a provider key when managed inference is available
 - **trialEligible** — managed first-use policy may cover this capability (server-authoritative remaining balance is on authenticated `funding`)
@@ -989,6 +1015,123 @@ Content-Type: application/json
 ```
 
 If a workflow deliberately binds execution to a previously returned quote, the submitted job body must be unchanged and `execution.quoteId` may reference that quote. Execution remeasures pricing inputs against the sealed quote; a mismatch fails before work starts with `409 QUOTE_MISMATCH`. Never attach a stale quote ID just because a quote was requested earlier. `estimateId` is accepted as an inbound alias of `quoteId`.
+
+## Pin an exact execution target
+
+By default Hydracept chooses the provider and model for a capability and may re-seal to another eligible candidate. `pin` asks for one **exact** target and turns substitution off.
+
+```json
+{
+  "context": { "productId": "my-product", "projectId": "cpr_..." },
+  "input": {
+    "messages": [{ "role": "user", "content": "Summarise this changelog." }]
+  },
+  "pin": { "target": "openai-text:gpt-5.6-terra" },
+  "idempotencyKey": "<uuid-v4>"
+}
+```
+
+`pin` is an object with one field, `target`. It is not part of `input` and not part of `execution`; sending it as an unknown extra field anywhere else is rejected with `422`. Where `pin` is supported, it is accepted on both synchronous invoke and durable job submission.
+
+**Pin support is currently limited to `text.*` capabilities.** The durable job route rejects a `pin.target` on any other capability key with `422 PolicyRejected` and `details.reasons: ["target_pin_unsupported"]`, and domain capabilities reject it on invoke for the same reason. Neither `supportsExplicitTarget` nor a populated `targets` list overrides this: a compute capability can advertise targets and still refuse a pin. For a non-text capability, leave `pin` out and let Hydracept select.
+
+`target` is a model reference: either `provider:model` or a bare model id when only one eligible provider ships that model. The provider id never contains `:` and a model id may, so Hydracept splits on the longest provider id it knows — `openai-compat-text:qwen3:14b` is one target, not a malformed one.
+
+### Discover what you may pin
+
+`GET /v1/capabilities/{key}/execution-targets` lists the models that can perform the capability. It is anonymous and it is the authoritative pinnable set — do not assume a model is pinnable because a provider advertises it.
+
+```json
+{
+  "capability": "text.general.fast.v1",
+  "defaultTarget": "openai-text:gpt-6.1-sol",
+  "targets": [
+    {
+      "id": "openai-text:gpt-5.6-terra",
+      "provider": "openai-text",
+      "model": "gpt-5.6-terra",
+      "apis": ["chat", "responses"],
+      "kind": "text",
+      "maturity": "production",
+      "eligible": true,
+      "availableNow": true,
+      "availabilityReason": null,
+      "readerDelivery": true
+    }
+  ]
+}
+```
+
+- `id` is the value to send as `pin.target`. It is `provider:model`.
+- `eligible` means the target can perform this capability. **Eligibility is not availability**: `availableNow: false` with `availabilityReason: "provider_unavailable"` means the target is otherwise valid but the provider is down right now. A pin does not wait for or route around that.
+- `defaultTarget` is the unpinned selection, not a recommendation.
+- `readerDelivery` is a per-target fact. Pinning a target that does not support it does not move the job onto one that does.
+
+Some capabilities deliberately expose a single sealed target — classifiers and sealed decision routes select their own model, so their `targets` list holds exactly one entry and catalog siblings stay undiscoverable as pins. A capability can also expose no pinnable target at all, in which case `supportsExplicitTarget` is `false` on the descriptor (compute and CPU-processing capabilities do), and a pin is refused.
+
+`execution-targets` describes eligibility; it does not by itself promise that a given route accepts a `pin` today. See the text-only limitation above and treat the pin error table below as the authority on what a specific capability will do.
+
+### What "no substitution" means
+
+A `pin` is a hard pin, not a preference:
+
+- Hydracept dispatches only to the pinned provider and model. There is no re-seal to an alternate candidate, no second attempt on another route, and no silent model swap.
+- One `pin` authorizes at most one provider attempt. The sealed routing authority records `fallbackPolicy: "none"` and `maximumAttempts: 1`.
+- If the pinned target turns out to be unknown, ineligible, or momentarily unavailable, the request **fails**. Hydracept does not deliver a different model's output and call it a success.
+- `pin` is not an additive control layered on another selector. Combining it with `modelSelection` rejects the request (`conflicting_model_selectors`); combining it with a `preferredModel` naming a *different* target rejects it as `conflicting_target_pin`. Naming the same target in both is accepted, but redundant.
+
+Use `modelSelection` (`mode: "exact"` for one model, or `ordered` / `prefer` for authorized fallbacks) when you want ordered fallback rather than an exact target. Use no selector at all when you want Hydracept to choose.
+
+### What the response reports back
+
+Both the invocation result and the receipt disclose which target actually ran, so you never have to infer it:
+
+| Field | Where | Meaning |
+|-------|-------|---------|
+| `resolvedProvider` / `resolvedModel` | invoke result, job | The sealed candidate that executed |
+| `servedCandidateId` | invoke result | `provider:model:capabilityKey` of the client that was actually called |
+| `selectedCandidateId` | invoke result | The candidate id chosen at admission |
+| `route.routingPolicy` | receipt | `target_exact` when a `pin` sealed the route |
+| `targetRouting.requestedTarget` / `resolvedTarget` | receipt | What you asked for, and what ran |
+| `targetRouting.substituted` | receipt | `false` on a pinned execution; a pinned run is never substituted |
+
+Read `servedCandidateId` when you need the identity of the execution for your own records. It normally equals `resolvedProvider:resolvedModel:capabilityKey`; a different value is itself evidence that the provider served something other than the sealed candidate, and Hydracept reports it rather than hiding it.
+
+### What the errors mean
+
+A pin that cannot be honored fails closed. The HTTP status separates an unusable request from an admission policy rejection.
+
+| Response | `code` | `details.reasons` | Meaning |
+|----------|--------|-------------------|---------|
+| `422` | `PolicyRejected` | `target_pin_unsupported` | This capability or route does not accept `pin.target` |
+| `422` | `InvalidInput` / `UNKNOWN_EXECUTION_FIELD` | — | `pin` placed at the wrong level, or an unknown key inside it |
+| `403` | `PolicyRejected` | `target_unknown` | `pin.target` is not a known execution target |
+| `403` | `PolicyRejected` | `target_ineligible` | The target exists in the catalog but cannot perform this capability |
+| `403` | `PolicyRejected` | `target_unavailable` | The target is eligible but its provider is temporarily unavailable |
+| `403` | `PolicyRejected` | `conflicting_target_pin` | `pin.target` and `preferredModel` name different targets |
+| `403` | `PolicyRejected` | `conflicting_model_selectors` | `pin.target` was combined with `modelSelection` |
+
+None of these are retryable with the same body except `target_unavailable`, which clears when the provider returns. For the others, either choose an `id` from `/execution-targets` or drop the pin. A retry is a new request: use a new `idempotencyKey`.
+
+Admission policy rejections are recorded on the execution and return a `receiptId`, so a refused pin is still auditable.
+
+### Quotes and pinned execution
+
+`POST /v1/capabilities/{key}/quote` and `/estimate` do **not** accept `pin` — it is an unknown field there and is rejected with `422`. A pinned invoke prices its own pinned target on the way to admission and seals that price onto the execution; you do not pass a separate quote body for it.
+
+When you want an explicit preview of a specific model, name it in the quote body as `input.model`. That is the pricing selector, and it resolves against the same catalog identity space the execution targets use:
+
+```json
+{
+  "context": { "productId": "my-product", "projectId": "cpr_..." },
+  "input": {
+    "messages": [{ "role": "user", "content": "Summarise this changelog." }],
+    "model": "gpt-5.6-terra"
+  }
+}
+```
+
+A quote is a preview and reserves nothing. For a pinned execution, do not attach the returned `quoteId` unless the submitted body is unchanged — otherwise the request fails with `409 QUOTE_MISMATCH` before work starts. The route that actually ran is the one on the receipt, not the one you previewed.
 
 ## Invoke vs durable jobs
 
@@ -1040,6 +1183,12 @@ curl -sS -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
 
 See [Durable Jobs & Receipts](../jobs/) and [Quick Start](../).
 
+## Moderation and classification
+
+`text.moderate.v1` classifies text and returns category evidence your product owns the policy for. It runs as synchronous invoke only, takes `{"text": ...}` up to 20,000 characters, and is free at the managed retail price. `moderation.content.v1` is the deprecated provider-aligned name for the same classifier.
+
+See [Moderation & classification](../moderation/).
+
 ## Prompt limits
 
 Hydracept **never silently truncates** a caller prompt to fit a provider limit. Overflow is rejected **before** quote, wallet reservation, or provider submission (`422` / `PromptTooLong`).
@@ -1066,6 +1215,152 @@ The public OpenAPI document is the API contract for external integrations:
 [https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)
 
 Use that public spec as the source of truth for integrations.
+
+## Moderation & classification
+URL: https://docs.hydracept.com/moderation/
+
+﻿# Moderation and text classification
+
+`text.moderate.v1` classifies text for policy risk. It returns **evidence**, not a verdict: Hydracept selects the classifier, records the execution, and hands you provider category flags and scores. Your product decides whether a flag blocks, warns, or is allowed.
+
+`moderation.content.v1` is the same classifier behind a deprecated provider-aligned name. New integrations should use `text.moderate.v1`.
+
+## Request shape
+
+`text.moderate.v1` takes one string. That is the whole input — there is no `messages` array, no system prompt, and no per-request model choice.
+
+```http
+POST /v1/capabilities/text.moderate.v1/invoke
+Authorization: Bearer <HYDRACEPT_API_KEY>
+Content-Type: application/json
+```
+
+```json
+{
+  "context": { "productId": "my-product", "projectId": "cpr_..." },
+  "input": { "text": "The text you want classified." },
+  "idempotencyKey": "<uuid-v4>"
+}
+```
+
+`input` is `{"text": string}` and nothing else. `text` is required, must be non-empty, and is capped at **20,000 characters**; the limit is published on the descriptor as `inputConstraints.text` with `overflow: "reject"`. Hydracept does not truncate — an over-length body fails with `422 PromptTooLong` before any provider call. Unknown keys inside `input` are rejected.
+
+`text.moderate.v1` runs as synchronous invoke only. `GET /v1/capabilities/text.moderate.v1` reports `executionModes: ["invoke_sync"]`; there is no durable job variant, so you do not need polling, artifacts, or a receipt round-trip to classify text.
+
+There is no separate `minimalInput` shortcut to learn: `features.minimalInput` on the descriptor is `{"text": "..."}`, the same shape.
+
+## Output shape
+
+```json
+{
+  "schemaVersion": "text.moderate.v1",
+  "flagged": true,
+  "categories": {
+    "violence": { "flagged": true, "score": 0.91 },
+    "sexual": { "flagged": false, "score": 0.08 }
+  },
+  "provider": "openai-moderation",
+  "model": "omni-moderation-latest",
+  "availability": "Available"
+}
+```
+
+- `flagged` — the provider's overall verdict. It may be `null`, which means **no classification was produced**. `null` is never an implicit approval; treat it as unknown and fail closed.
+- `categories` — a map of provider category name to `{flagged, score}`, where `score` is `0.0`–`1.0`.
+- `availability` — `Available`, `TimedOut`, or `ProviderError`. When it is not `Available`, `flagged` is `null`, `categories` is `{}`, and `error` carries a short reason.
+- `provider` / `model` — which classifier produced the evidence.
+
+The result arrives as `typedOutput` on the invocation result.
+
+## Category names
+
+**Hydracept does not publish a fixed category list.** Category names are provider-derived and are passed through unchanged — Hydracept does not rename, drop, merge, or reinterpret them, and it does not normalize them across providers. The descriptor advertises this as `features.providerReportedCategoryNames: true`.
+
+Read the keys of `categories` at runtime rather than coding against a remembered set. A category you have never seen is normal, not an error, and a category you expected may be absent when the provider did not evaluate it. This is why a product policy should be written against the categories it actually needs to act on, with an explicit default for everything else.
+
+## `classificationOnly`
+
+`features.classificationOnly: true` states the contract's scope: this capability answers "what does the classifier observe about this text" and does nothing else.
+
+- It does not block, redact, sanitize, quarantine, or rewrite the text.
+- It does not gate your model calls. A `flagged: true` classification is not a Hydracept refusal, and Hydracept will happily classify the same text again.
+- It does not moderate anything Hydracept generates for you. Output moderation is a call you make, in your own order, on text you choose.
+- It is not a content-policy engine: `features.productPolicyEngine` is `false`.
+
+One classification is one data point about one string. Deciding what that means for a turn, a user, or an account is your application's job.
+
+## Who owns policy
+
+**You do.** `features.productPolicyOwnedByCaller: true`.
+
+Hydracept owns the classifier selection, the execution record, and the shape of the evidence. Your product owns the thresholds, the escalation rules, the age-appropriateness judgement, and the user-facing outcome. Two products can receive identical evidence and correctly behave differently — a horror game and a children's app should map the same `violence` score to different actions.
+
+Practical consequences:
+
+- Do not treat a single `flagged` boolean as proof a piece of content is or is not appropriate. Use the scores and your own context.
+- Build the unavailable path first. `availability: "TimedOut"` or `"ProviderError"` must produce a safe fallback in your product, not an unmoderated response. A provider failure is never an approval.
+- Re-classify text you generated before you show or speak it, if your policy requires it. Hydracept will not do that for you.
+
+## Cost
+
+`text.moderate.v1` is **free** at the retail price.
+
+- Managed: `billingModes.managed.pricing` reports `mode: "fixed"` with the display text *"Free. The managed OpenAI omni-moderation classifier is included at a zero retail price with no per-call minimum."* The managed classifier is included; you do not need a provider account.
+- BYOK: `billingModes.byok` is available and carries a 0% Hydracept fee, but the provider charges your connected account separately.
+- `pricingFactors` is empty and `estimateRequired` is `false`. Quoting a zero-priced capability is allowed but tells you nothing you did not already know.
+- Per-token accounting still appears in `usage`; it is priced at zero.
+
+`moderation.content.v1` is priced differently: its managed display reads *"Billed at actual managed provider cost per request with no per-call minimum."* The classifier is currently free upstream, so the charge is zero in practice, but the pricing mode is actual-cost rather than a declared fixed zero. If cost certainty matters, use `text.moderate.v1`.
+
+Both keys run on the managed classifier Hydracept selects. **You cannot pin your way to another moderation model**: the capability exposes exactly one execution target, and a `pin` naming any other model fails with `target_ineligible`. See [Capabilities](../capabilities/#pin-an-exact-execution-target).
+
+## Example
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $HYDRACEPT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "context": { "productId": "my-product", "projectId": "cpr_..." },
+    "input": { "text": "A polite chapter opening." },
+    "idempotencyKey": "moderate-001"
+  }' \
+  https://api.hydracept.com/v1/capabilities/text.moderate.v1/invoke
+```
+
+Fail closed on the result:
+
+```python
+result = response.json()
+output = result["typedOutput"]
+if output.get("availability") != "Available":
+    return safe_fallback()          # never treat a failure as approval
+if output["flagged"] is None:
+    return safe_fallback()          # no classification produced
+if output["flagged"] or output["categories"].get("violence", {}).get("score", 0) > 0.8:
+    return block_or_review()
+```
+
+## The legacy key
+
+`moderation.content.v1` still works and stays in anonymous discovery so existing callers keep running. Differences to know before you migrate or depend on it:
+
+| | `text.moderate.v1` | `moderation.content.v1` |
+|---|---|---|
+| Status | canonical | deprecated (`features.deprecated: true`) |
+| Input | `{"text": string}` | `{"messages": [...]}` or `{"content": string}` |
+| Execution | `invoke_sync` | `invoke_sync`, `job_async` |
+| Output | `flagged`, `categories` map | `providerFlagged`, `overallRiskScore`, `categories` array, `flags` array |
+| Pricing mode | fixed (free) | actual managed provider cost |
+
+`features.replacement` on the legacy descriptor names `text.moderate.v1`. The legacy output shape is frozen and will not gain features.
+
+## Related
+
+- [Capabilities](../capabilities/) — discovery, quotes, and pinning
+- [Errors](../errors/) — `PolicyRejected`, `PromptTooLong`, and retry semantics
+- [Billing & plans](../billing/) — managed fees and the zero-price case
+- [Classification and data handling](../data-handling/) — what a declared `dataClassification` commits you to
 
 ## Capability requests
 URL: https://docs.hydracept.com/capability-requests/
@@ -2479,7 +2774,10 @@ Install into a coding agent:
 - **Plugin homepage:** [https://hydracept.com/plugin](https://hydracept.com/plugin)
 - **Cursor:** Hydracept is not in the Cursor Marketplace yet — use [github.com/zencodeinc/hydracept-plugin](https://github.com/zencodeinc/hydracept-plugin) (plugin distributionVersion **0.1.10**, separate from PyPI client **0.5.x**) or `python -m hydracept agents install --auto`. Then run `python -m hydracept init --apply --yes --json` and reload MCP only when requested.
 - **Claude Code:** install the Hydracept plugin, init in the repo, and reload MCP only when requested.
-- **No checkout (ChatGPT, MCP Registry):** hosted MCP at `https://api.hydracept.com/mcp` with a bearer API key
+- **Claude directory (claude.ai connectors):** `https://api.hydracept.com/mcp/claude` with OAuth sign-in. Do not send a Hydracept API key. See [Using Hydracept for Claude](https://hydracept.com/claude/).
+- **Official MCP Registry:** `com.hydracept/hydracept` remote `https://api.hydracept.com/mcp/claude` with OAuth (DCR+PKCE). Do not send a Hydracept API key. Setup: [https://hydracept.com/mcp-registry/](https://hydracept.com/mcp-registry/).
+- **OpenAI ChatGPT / Codex:** `https://api.hydracept.com/mcp/openai` with OAuth sign-in. Do not send a Hydracept API key. See [Using Hydracept for ChatGPT and Codex](https://hydracept.com/openai/).
+- **No checkout (API-key hosts):** hosted MCP at `https://api.hydracept.com/mcp` with a bearer API key (not the Official MCP Registry remote)
 - **CLI fallback:** `python -m hydracept agents install --auto` / `python -m hydracept mcp serve` / `python -m hydracept run ...`
 
 See [Agent plugin distribution](../agent-plugin-distribution/).
@@ -2539,7 +2837,9 @@ Plugin homepage (Cursor / Claude / MCP listing forms):
 
 Official MCP Registry `description` (≤100 characters):
 
-> Execution control plane for agents: capabilities, durable jobs, budgets, receipts, and BYOK.
+> Directory-safe MCP: quote and run text/domain jobs with OAuth, receipts, BYOK.
+
+Setup page: [https://hydracept.com/mcp-registry/](https://hydracept.com/mcp-registry/)
 
 Publisher: **Zencode Consulting Inc.**
 
@@ -2548,9 +2848,12 @@ Publisher: **Zencode Consulting Inc.**
 | Transport | When to use | Endpoint |
 |-----------|-------------|----------|
 | Stdio (primary for coding agents) | Git checkout after `hydracept init` | `python -m hydracept mcp serve` |
-| Hosted | No project checkout (ChatGPT, MCP Registry) | `https://api.hydracept.com/mcp` |
+| Hosted (API key) | No project checkout (API-key clients) | `https://api.hydracept.com/mcp` |
+| Official MCP Registry remote | Registry clients; directory-safe OAuth | `https://api.hydracept.com/mcp/claude` |
+| Claude directory | claude.ai connector | `https://api.hydracept.com/mcp/claude` (OAuth; a Hydracept API key is rejected) |
+| OpenAI ChatGPT / Codex | ChatGPT Apps/Connectors + Codex remote MCP | `https://api.hydracept.com/mcp/openai` (OAuth; a Hydracept API key is rejected) |
 
-Stdio authenticates with `.hydracept/secrets.json`. Do not copy that key into a host plugin **Configure** UI. Hosted MCP authenticates with `Authorization: Bearer <HYDRACEPT_API_KEY>` for clients that cannot see the workspace.
+Stdio authenticates with `.hydracept/secrets.json`. Do not copy that key into a host plugin **Configure** UI. API-key hosted MCP authenticates with `Authorization: Bearer <HYDRACEPT_API_KEY>`. The Official MCP Registry remote and Claude directory connector use OAuth at `https://api.hydracept.com/mcp/claude` (API keys rejected). See [https://hydracept.com/mcp-registry/](https://hydracept.com/mcp-registry/) and [https://hydracept.com/claude/](https://hydracept.com/claude/). The OpenAI ChatGPT/Codex connector uses OAuth at `https://api.hydracept.com/mcp/openai`. See [https://hydracept.com/openai/](https://hydracept.com/openai/).
 
 ## Install
 
@@ -2564,7 +2867,7 @@ python -m hydracept agents install --auto
 | CLI (all hosts) | `python -m hydracept agents install --auto` |
 | Cursor | Not in the Cursor Marketplace yet — install from `zencodeinc/hydracept-plugin` (tag v0.1.10) or `python -m hydracept agents install --auto` |
 | Claude Code | `github.com/zencodeinc/hydracept-plugin` (v0.1.10) or `python -m hydracept agents install --auto` |
-| MCP Registry | `com.hydracept/hydracept` at `https://api.hydracept.com/mcp` |
+| MCP Registry | `com.hydracept/hydracept` at `https://api.hydracept.com/mcp/claude` (OAuth) |
 
 The marketplace name (`hydracept`) participates in the Claude install command.
 
@@ -2795,6 +3098,258 @@ Require `passed: true` in automated consumer/integration audits. `--strict` expa
 - [Capabilities](../capabilities/)
 - [Coding Agents](../agents/)
 - Public OpenAPI: [https://hydracept.com/openapi/hydracept-v1.json](https://hydracept.com/openapi/hydracept-v1.json)
+
+## Classification & data handling
+URL: https://docs.hydracept.com/data-handling/
+
+﻿# Classification and data handling
+
+Every capability request can declare what kind of data it carries. That declaration is a **constraint you accept**, not a permission you are granted. This page covers what each classification commits you to, how Hydracept resolves the effective classification, and how to build a product that handles restricted data correctly.
+
+## Declaring a classification
+
+`context.dataClassification` on the invoke or job envelope takes one of six values:
+
+| Value | Meaning |
+|-------|---------|
+| `Public` | Nothing sensitive. Safe to publish as-is. |
+| `Internal` | Ordinary business content that should not be published. |
+| `Confidential` | Contractually or commercially restricted content. |
+| `PrivateUserContent` | Content belonging to an identifiable end user. |
+| `Manuscript` | Long-form authored work under revision. |
+| `ChildDirected` | Content from or about a child, under a parental or guardian consent record. |
+
+The default is `Internal`. The enum is published on `CapabilityContext` in the public OpenAPI document.
+
+```json
+{
+  "context": {
+    "productId": "my-product",
+    "projectId": "cpr_...",
+    "dataClassification": "PrivateUserContent"
+  },
+  "input": { "messages": [{ "role": "user", "content": "..." }] },
+  "idempotencyKey": "<uuid-v4>"
+}
+```
+
+`context.retentionRequirement` is a second, independent declaration: `HashesOnly`, `Transient`, `EncryptedShortTerm`, `ProductManaged`, or `ProductionAsset`.
+
+Together these two fields describe the handling you need. Neither one authorizes anything by itself.
+
+## Two facts decide the effective classification
+
+Hydracept computes the classification an execution must actually honor from two inputs, and **the stricter one always wins**:
+
+1. **The project's server-side binding.** A project provisioned for restricted traffic stays restricted even when a caller declares something weaker. A request cannot lower this.
+2. **The request's declaration.** A request can raise the floor but never lower it.
+
+So there are three possible outcomes:
+
+| Situation | Result |
+|-----------|--------|
+| Declaration is stricter than the project binding | The stricter declared class is honored |
+| Declaration matches the binding | The binding is honored |
+| Declaration is weaker than the binding | The request is rejected as a downgrade attempt |
+
+A downgrade attempt returns `403` with `code: "classification_downgrade_rejected"`. This is a terminal caller bug, not a transient condition — never retry it with the same body, and never treat a re-declaration as a fix.
+
+The practical rule: **declare the class your data actually is.** Declaring `Internal` for content that belongs to a user, or for content about a child, does not make the request more likely to succeed. It makes it more likely to be refused, and it is the single most common way integrations break at the classification boundary.
+
+## Restricted classes and route approval
+
+Each classification carries handling obligations that determine whether content may leave the platform at all:
+
+- Content that requires a consent record, or that prohibits external processing, is refused unless an operator has approved the exact provider, model, region, and capability combination for that class.
+- Approval is recorded per route, never as a wildcard over a whole provider catalog. An approved provider is not an approved model.
+- **Absence of approval is denial.** There is no "unknown means allow" path. If no approval covers the route, the execution is refused.
+
+When no route may carry the data, the API returns `403` with `code: "processing_not_permitted"` and `retryable: false`. When a profile covers the class but not this particular route, the code is `processing_route_unavailable` — a different signal, meaning the class is supported in principle but this provider/model is not approved for it.
+
+Both checks run **before** credential resolution, input materialization, cost reservation, and provider dispatch. An ineligible route never produces a paid provider call.
+
+## `ChildDirected` is refused by default
+
+`ChildDirected` is the most restrictive class. It carries all of the following obligations at once:
+
+- External processing is not permitted by default.
+- Content is transient-only — it may not outlive the execution.
+- The subject may not be identified across requests. No profile, no history, no cross-request correlation.
+- Content must never be used to train, fine-tune, or evaluate a model.
+- An externally issued, auditable consent record naming the consenting party is required. Hydracept may issue that record; it will never assume one exists.
+
+Because of this, **`ChildDirected` requests are rejected with `403 processing_not_permitted` today, by design.** No managed route has an approved processing profile for child-directed traffic.
+
+Consequences you should plan for:
+
+- There is no configuration, header, or flag that makes real child traffic work right now. Build and test against synthetic, adult-authored fixtures only.
+- **Do not relabel child content as `Internal` or `Public` to get it through.** A project bound to a restricted floor will reject the attempt as a downgrade, and a project that is not so bound will still be sending child data under a false declaration. Both outcomes are failures, and the second is a compliance incident that Hydracept cannot detect for you.
+- Treat child-data admission as an independent, blocking dependency. It is not solved by picking a faster model, a cheaper route, or a different region.
+- Check the project binding before you launch, not after. A restricted-floor project behaves differently for every capability, not just one.
+
+If you need child-directed processing for a specific workflow, that is an operator decision backed by per-route contractual and technical evidence. It is not a client-side setting.
+
+## Processing profiles
+
+A processing profile is a versioned, operator-approved record that answers two questions for one classification:
+
+1. Which `(provider, model, region, capability)` combinations may serve it.
+2. How its payloads may be retained afterward.
+
+Profile behavior you can rely on:
+
+- **Deny by default at every branch.** No binding, no profile, a disabled profile, an unmatched route, an expired review date, or a missing region all deny.
+- **Explicit model lists, not wildcards.** A profile may cover a version line with a trailing-`*` family pattern, but it never covers a provider's whole future catalog.
+- **Approvals expire.** A route approval carries an `approvedAt` and a `reviewAt`; past the review date it stops authorizing anything.
+- **Credential swaps invalidate approval.** An approval records the account configuration it assumes, so reusing it after swapping credentials is not automatic.
+- **Fallback is constrained.** Under `approved_routes_only`, only routes listed on the same profile may be used. Under `none`, there is no failover at all. Fallback is never authorized by error rate or cost alone.
+- **Retention is per payload class** — raw audio, transcripts, synthesized audio, and receipt content each carry their own mode: `transient`, `bounded`, `durable`, or `metadata_only`. `bounded` requires a TTL; a profile with no approval assumes the strictest possible retention.
+
+Profiles apply where a capability opts in, and always where a project carries a floor. That keeps capabilities outside the registry on their existing behavior while restricting ones with stricter obligations.
+
+## Retention declarations
+
+`context.retentionRequirement` is checked against what your credential is permitted to request. A retention value your principal may not use is rejected with code `RetentionViolation` and `details.reasons: ["retention_not_allowed"]`.
+
+Choose the weakest retention that meets your obligation, not the strongest you can get away with:
+
+- `HashesOnly` — you need to prove an execution happened, not what it contained.
+- `Transient` — you need the output now and nothing later. The default.
+- `EncryptedShortTerm` — you need to read it back within a bounded window.
+- `ProductManaged` — you retain it in your own store and want Hydracept to do the same.
+- `ProductionAsset` — a durable artifact is the deliverable.
+
+`ProductionAsset` on a synchronous invoke is unusual and is flagged as such; durable jobs are the right shape for artifacts.
+
+## Building against these rules
+
+A pattern that holds up:
+
+1. **Classify in the product, not at the API boundary.** Decide the classification where you know what the data is, and pass that value through unchanged. Do not infer it from a prompt scan.
+2. **Fail closed on every non-success.** `processing_not_permitted`, `processing_route_unavailable`, and `classification_downgrade_rejected` all mean "do not proceed with this data on this route." They are not retryable and there is no silent fallback to an unapproved route.
+3. **Keep restricted data out of identifiers.** Do not put names, addresses, or transcript text into idempotency keys, external references, tags, or metric labels. Hydracept does not send `externalRef`, `tags`, or `metadata` to providers, but your own telemetry and logs are your responsibility.
+4. **Treat a provider failure as unknown, not as approval.** If a classifier or an ingestion route is unavailable, the safe outcome is a safe fallback in your product — never an unmoderated or unverified pass-through.
+5. **Verify provider eligibility yourself when you introduce a new dependency.** Hydracept's route approvals cover Hydracept's dispatch. Any third-party service your product calls directly is outside them.
+
+## Related
+
+- [Moderation and text classification](../moderation/) — the classification capability and its evidence shape
+- [Capabilities](../capabilities/) — discovery, quotes, and pinning
+- [Security](../security/) — credentials, transport, and the consumer boundary
+- [Errors](../errors/) — the public error envelope and retry semantics
+- [Privacy](https://hydracept.com/privacy.html) and [Terms](https://hydracept.com/terms.html)
+
+## Conversational products
+URL: https://docs.hydracept.com/conversational-products/
+
+﻿# Building a conversational product
+
+A turn-based conversational product — the user says or types something, gets a spoken or written answer — is a common Hydracept integration. This page covers the integration pattern, the capability boundaries that matter, and the data rules you have to satisfy before any of it can carry real user content.
+
+It is deliberately product-agnostic. It describes how the pieces fit; your product owns the policy, the UX, and the safety gates.
+
+## The shape of a turn
+
+```text
+client (mic / speaker / screen)
+    |
+    v
+your backend  -- auth, rate limits, consent, profiles, turn state
+    |-- classify user input            -> text.moderate.v1
+    |-- generate an answer             -> a text capability
+    |-- classify the generated answer  -> text.moderate.v1
+    |-- speak the approved answer      -> audio.voice.generate.v1 (durable job)
+    |
+    v
+your store  -- turn history, profile state, artifacts you choose to keep
+```
+
+Two rules make this shape work:
+
+**Your client never calls Hydracept, and never holds provider credentials.** The backend holds the API key, decides the route and the cost ceiling, and is the only place that can enforce policy. A Hydracept key in a browser bundle, a mobile app, or a game client is a leak, not an architecture.
+
+**The turn order is your safety contract.** Moderation before generation stops disallowed input from reaching a model. Moderation after generation stops an unsafe answer from reaching a speaker or a screen. Skipping the second call because the first one passed is the most common way this pattern is quietly broken.
+
+## Capability boundaries
+
+| Need | Capability | Notes |
+|------|-----------|-------|
+| Generate an answer | `text.general.fast.v1` and the other text capabilities | Synchronous invoke for short turns; durable jobs when you need retries or receipts |
+| Classify input or output | `text.moderate.v1` | Synchronous only, free, returns evidence not a verdict. See [Moderation](../moderation/) |
+| Speak approved text | `audio.voice.generate.v1` | Durable job producing an audio artifact. One job per utterance |
+| Recognize speech | Not available | Hydracept publishes no speech-recognition capability. Use a product-local adapter you have verified yourself |
+
+Two absences are worth planning around explicitly:
+
+- **No speech recognition.** Client-side or product-local transcription is your dependency, with your own provider-eligibility and retention obligations. A transcription service that is `Commercially licensed` or `encrypted` is not thereby cleared for restricted content.
+- **No incremental speech streaming for the durable voice capability.** `audio.voice.generate.v1` returns a complete artifact. Measure total job-to-playable time before you assume it is too slow; if it genuinely is, that is a product decision about a different capability, not a workaround inside this one.
+
+Whether a capability is present at all is answered by `GET /v1/capabilities` and `GET /v1/capabilities/{key}`, not by this page. Query at runtime.
+
+## Turns that use a durable job
+
+Spoken output is a job, so a turn has to span both a synchronous and an asynchronous phase. The rules that keep that correct:
+
+- **One job per utterance.** Submitting a second job because the first poll was slow doubles your cost and produces two artifacts. Poll the job you already have.
+- **A stable idempotency key per turn phase.** Use the turn id plus the phase, and reuse it across retries. Mint a new key only when you intend a new execution.
+- **A client-side timeout is not a cancellation.** A dropped connection or a wait timeout says nothing about whether the provider ran. Inspect the job before you resubmit.
+- **Bound the spend per turn.** Set `executionConstraints.maxCostUsd` and opt into `budgetEnforcement: "prevent"` for a hard stop, or `"warn"` when you want the turn to complete and record the overage.
+- **Cancellation ends playback in your product.** Billing reconciliation may continue on the server after the user stops listening.
+
+Read `resolvedProvider`, `resolvedModel`, and `servedCandidateId` from results, and the route fields on receipts, so a turn can be explained later. If you pin a target, [pinning](../capabilities/#pin-an-exact-execution-target) guarantees that target or a failure — never a silent swap.
+
+## Classifying each phase
+
+Both moderation calls in the turn are the same capability with the same input shape: one string. What differs is what you do with the answer.
+
+1. **Classify the user's input** before it reaches a generative model. A refusal here is the cheapest possible outcome.
+2. **Classify the model's answer** before it reaches a speaker, a screen, or an image search. A provider failure is not an approval — a `flagged: null` or a non-`Available` result must produce a safe fallback, not a pass-through.
+3. **Write the policy once and apply it to both phases.** Two different thresholds for input and output is a legitimate design decision; forgetting the output call is not.
+
+A single `flagged` boolean cannot establish that an answer is appropriate for a particular audience. Use the per-category scores with your own context, and keep the escalation rules in your product where they can be reviewed.
+
+## Data rules before you carry real content
+
+Everything above is safe to build with synthetic, adult-authored fixtures. Carrying real user content — and especially content from or about a child — requires the data-handling groundwork first. See [Classification and data handling](../data-handling/) for the full rules; the essentials:
+
+- **Declare the classification your data actually is.** `PrivateUserContent` for content belonging to an identifiable user. A weaker declaration does not make a request more likely to succeed; a project bound to a restricted floor rejects it as a downgrade.
+- **`ChildDirected` is refused by default** with `403 processing_not_permitted`. There is no flag that changes that today. Do not relabel child content to get it through, and do not launch a product for children on the assumption that admission will be granted later without evidence.
+- **Restricted classes need per-route approval.** Absence of approval is denial. Route eligibility is decided before any credential is read or any provider is called, so an unapproved route never produces a charge — but it also means the turn simply fails, and your product must handle that as a first-class state.
+- **Retention is per payload class.** Raw audio, transcripts, synthesized audio, and receipt content each have their own mode. Choose the weakest retention that meets the obligation.
+- **Keep restricted content out of identifiers.** No transcript text or personal identifiers in idempotency keys, external references, tags, or metric labels.
+- **Third-party services you call directly are outside Hydracept's route approvals.** Verify each one for the content class and the market yourself.
+
+## A safe fallback is a designed state, not an error handler
+
+Every one of these is a normal outcome that your product must render deliberately:
+
+| Outcome | What the user should experience |
+|---------|--------------------------------|
+| Input classification flags the turn | A refusal that does not echo the content back |
+| Output classification flags the answer | A regenerated or replaced answer, never the flagging one |
+| Classifier unavailable (`TimedOut`, `ProviderError`) | A safe fallback — not an unmoderated answer |
+| `processing_not_permitted` / `processing_route_unavailable` | A clear "this cannot be processed" state, with no silent model swap |
+| Budget prevented | A message that the turn could not run under the current limit |
+| Job still running after your wait | Continue polling the same job; do not resubmit |
+
+Treating any of these as an exception path that falls through to a generic success is the failure mode that matters most in a conversational product.
+
+## Testing before launch
+
+Build a case per row of the table above, plus: empty or silent audio, transcription uncertainty, a very long input, a duplicate submission with the same idempotency key, an over-length prompt (rejected, never truncated), an unsupported output format, and an unapproved data classification.
+
+Assert on behaviour, not on compilation. A provider adapter that "works" because the method signature matches has not been tested — report outcome, error code, time to first usable response, total latency, cost, and audible quality for each case.
+
+Fixtures that submit real work create real executions, receipts, and artifacts. Keep them in an isolated project, and never put real user content — and never any child content — through a test fixture.
+
+## Related
+
+- [Moderation and text classification](../moderation/) — input shape, categories, cost
+- [Classification and data handling](../data-handling/) — classification semantics and processing profiles
+- [Capabilities](../capabilities/) — discovery, quotes, pinning, and invoke vs jobs
+- [Durable Jobs & Receipts](../jobs/) — polling, artifacts, and selection
+- [Errors](../errors/) — codes and retry semantics
+- [Billing & plans](../billing/) — managed fees and BYOK
 
 ## Research Inference Protocol
 URL: https://docs.hydracept.com/research/

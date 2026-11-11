@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "hydracept": {
+      "serverUrl": "https://api.hydracept.com/mcp/antigravity"
+    }
+  }
+}

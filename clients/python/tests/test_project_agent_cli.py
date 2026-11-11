@@ -14,6 +14,7 @@ from hydracept.cli.project_agent import (
     ProjectAgentError,
     _parse_tool_stdout,
     build_sync_payload,
+    execute_requested_operation,
     operations_policy_from_manifest,
     run_named_operation,
 )
@@ -131,6 +132,20 @@ def test_missing_manifest_syncs_empty_allowlist(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     assert operations_policy_from_manifest(tmp_path) == {"allowlisted": []}
+
+
+def test_status_is_read_only_without_an_allowlist(tmp_path: Path) -> None:
+    before = {path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*")}
+    report = execute_requested_operation(
+        tmp_path,
+        {"id": "pop_status", "projectId": "cpr_new", "command": "status"},
+    )
+    after = {path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*")}
+    assert report["status"] == "succeeded"
+    assert report["kind"] == "status"
+    assert report["details"]["readOnly"] is True
+    assert report["details"]["projectYamlPresent"] is False
+    assert after == before
 
 
 def test_local_agent_refuses_non_allowlisted(tmp_path: Path) -> None:

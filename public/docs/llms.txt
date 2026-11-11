@@ -12,7 +12,12 @@ Full documentation: https://hydracept.com/llms-full.txt
 - In a git checkout: python -m hydracept init --apply --yes --json (binds stdio MCP). Init may reuse an existing GitHub (`gh`) or Google Cloud (`gcloud`) user login, or HYDRACEPT_API_KEY, instead of opening a browser — see docs/authentication. Reload MCP once. Do not copy the workspace key into Plugins → Configure.
 - Stdio MCP (coding-agent default): python -m hydracept mcp serve
 - Hydracept panel (PyPI hydracept >= 0.5.4): one MCP App ui://hydracept/app.html; seven states, not seven iframes
-- Hosted MCP (no checkout: ChatGPT, MCP Registry): https://api.hydracept.com/mcp
+- Hosted MCP (API key, full/compact catalog): https://api.hydracept.com/mcp
+- Official MCP Registry remote (com.hydracept/hydracept): https://api.hydracept.com/mcp/claude (OAuth DCR+PKCE; a Hydracept API key is rejected). Setup: https://hydracept.com/mcp-registry/
+- Claude directory: https://api.hydracept.com/mcp/claude (OAuth; a Hydracept API key is rejected). Setup: https://hydracept.com/claude/
+- VS Code / GitHub Copilot gallery: https://api.hydracept.com/mcp/vscode (OAuth; a Hydracept API key is rejected). Setup: https://hydracept.com/vscode/
+- Antigravity marketplace: https://api.hydracept.com/mcp/antigravity (OAuth; a Hydracept API key is rejected). Setup: https://hydracept.com/antigravity/
+- OpenAI ChatGPT/Codex: https://api.hydracept.com/mcp/openai (OAuth; a Hydracept API key is rejected). Setup: https://hydracept.com/openai/
 - Install: python -m hydracept agents install --auto
 - Project surfaces: python -m hydracept surface apply PATH
 - Job discovery: hydracept_jobs_find (recent | failed | reusable)
@@ -140,6 +145,7 @@ Bootstrap: python -m hydracept init --apply --yes --json
 - https://hydracept.com/changelog
 - https://hydracept.com/trust
 - https://hydracept.com/license
+- https://hydracept.com/case-studies
 - https://hydracept.com/capabilities/image-generation
 - https://hydracept.com/capabilities/video-generation
 - https://hydracept.com/capabilities/voice
@@ -165,3 +171,19 @@ Bootstrap: python -m hydracept init --apply --yes --json
 ## Available capabilities
 - Discover live: GET /v1/capabilities and GET /v1/agent-context
 - Do not freeze a launch-key list from this file
+
+## Exact execution targets
+- Pin one provider and model: `"pin": {"target": "provider:model"}` on invoke or a durable job. Hydracept does not substitute; an unknown, ineligible, or unavailable target fails instead of running another model.
+- Pin support is limited to text.* capabilities today; other capability keys reject pin.target with 422 target_pin_unsupported, even when execution-targets lists models
+- Discover pinnable targets: GET /v1/capabilities/{key}/execution-targets (`id`, `eligible`, `availableNow`); check execution.supportsExplicitTarget first
+- The result reports `resolvedProvider` / `resolvedModel` / `servedCandidateId`; the receipt reports `route.routingPolicy: target_exact` and `targetRouting.substituted: false`
+- Docs: https://docs.hydracept.com/capabilities/
+
+## Moderation and data classification
+- text.moderate.v1 classifies one string (`{"text": ...}`, <=20000 chars) as synchronous invoke only, free at the managed retail price
+- It returns evidence, not a verdict: `flagged` (may be null), provider-reported `categories`, `availability`. Your product owns the policy
+- moderation.content.v1 is the deprecated provider-aligned name for the same classifier
+- A declared context.dataClassification is a constraint, not authorization. ChildDirected is refused with 403 processing_not_permitted
+- Docs: https://docs.hydracept.com/moderation/
+- Docs: https://docs.hydracept.com/data-handling/
+- Docs: https://docs.hydracept.com/conversational-products/

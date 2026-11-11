@@ -1,0 +1,46 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "hydracept",
+  "version": "1.0.0",
+  "description": "Quote and run text, reasoning, and domain capabilities with durable jobs, artifacts, and receipts. OAuth sign-in. Does not generate images, video, audio, or 3D.",
+  "author": {
+    "name": "Zencode Consulting Inc.",
+    "email": "support@hydracept.com",
+    "url": "https://hydracept.com"
+  },
+  "homepage": "https://hydracept.com/openai/",
+  "repository": "https://github.com/zencodeinc/hydracept-public/tree/main/public/agents/openai",
+  "license": "MIT",
+  "keywords": [
+    "hydracept",
+    "mcp",
+    "oauth",
+    "chatgpt",
+    "codex",
+    "capabilities",
+    "durable-jobs",
+    "receipts"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Hydracept",
+        "shortDescription": "Quote and run text capabilities with durable jobs and receipts.",
+        "longDescription": "Hydracept quotes and runs text, reasoning, structured, embedding, classification, translation, and domain capabilities for the signed-in account. Jobs are durable. A finished job has an artifact and a sealed receipt. OAuth sign-in. This connector does not generate images, video, audio, or 3D, and it does not transfer money.",
+        "developerName": "Zencode Consulting Inc.",
+        "category": "Developer tools",
+        "capabilities": ["Read", "Write"],
+        "websiteURL": "https://hydracept.com/openai/",
+        "privacyPolicyURL": "https://hydracept.com/privacy.html",
+        "termsOfServiceURL": "https://hydracept.com/terms.html",
+        "defaultPrompt": [
+          "Check Hydracept status for my workspace",
+          "List Hydracept capabilities available on this connector",
+          "Resolve a capability for translating short product copy and return a quote"
+        ],
+        "composerIcon": "./assets/icon.png",
+        "logo": "./assets/logo.png"
+      }
+    }
+  }
+}

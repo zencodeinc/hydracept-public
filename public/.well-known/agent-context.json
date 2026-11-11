@@ -216,7 +216,7 @@
       "audio.sfx.generate.v1 defaults to Ogg (audio/ogg, .ogg); set outputFormatPreference (for example mp3_44100_128) for MP3, and the artifact mediaType and filename match the returned format.",
       "audio.voice.generate.v1 accepts text-only input: omit voiceId to use the managed default voice. GET /v1/capabilities/audio.voice.generate.v1/voices lists other selectable voiceId values using the project bound credential or the managed platform key.",
       "Audio modelId values are enumerable from GET /v1/capabilities/{capabilityKey} (inputSchema.properties.modelId.enum). Use one of them; do not guess provider model names such as music_v2_5 or eleven_v3.",
-      "dns.record.create.v1 upserts when Porkbun reports an ALIAS/conflict; otherwise list records and dns.record.update.v1 with recordId.",
+      "dns.record.delete.v1 and dns.record.update.v1 address one record: send recordId, or 'type' with 'name' (the relative subdomain, \"\" for the apex). A name+type selector matching more than one record is refused with dns_selector_ambiguous \u2014 for MX add prio and content. A delete verifies against the zone and fails with dns_delete_unverified rather than reporting success. dns.record.create.v1 reports dns_record_conflict naming the records already at that name; nothing is overwritten.",
       "domain.list.v1 is invoke (not jobs). Filter with domain or nameContains and read typedOutput; the first page can omit domains \u2014 paginate or filter.",
       "Hosted MCP can list tools with no workspace key. Use stdio MCP after python -m hydracept init. Do not put the workspace key in Plugins \u2192 Configure.",
       "Sheet & Slice: set input.sheet {rows, columns, slice, labels} and variantCount 1. Size the sheet by EITHER width/height (canvas) OR sheet.normalize.width/height (per-cell output); whichever you give determines the other. The resulting canvas must meet the model minimum; individual slices may be any size. Read sheetSlicing + canvasFloor on GET /v1/capabilities/image.generate.v1 for the minimum and a template.",
@@ -324,7 +324,7 @@
         "selection": "managed",
         "supportsExplicitTarget": true,
         "targetsHref": "/v1/capabilities/text.general.fast.v1/execution-targets",
-        "trialEligible": false
+        "trialEligible": true
       },
       "executionModes": [
         "invoke_sync",
@@ -390,8 +390,8 @@
         }
       },
       "funding": {
-        "eligible": false,
-        "mode": "managed",
+        "eligible": true,
+        "mode": "managed_trial",
         "status": "catalog_available"
       },
       "idempotencyRequired": true,
@@ -565,10 +565,7 @@
         ],
         "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
-          "requirements": [
-            "/input/maxOutputTokens",
-            "/input/inputTokens"
-          ],
+          "requirements": [],
           "supported": true
         },
         "quoteEndpoint": "/v1/capabilities/text.general.fast.v1/quote"
@@ -578,7 +575,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.01
             },
             "executionPreference": "automatic"
           },
@@ -600,10 +597,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/text.general.fast.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 10000,
+          "recommendedUsd": 0.01,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -920,10 +919,7 @@
         ],
         "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
-          "requirements": [
-            "/input/maxOutputTokens",
-            "/input/inputTokens"
-          ],
+          "requirements": [],
           "supported": true
         },
         "quoteEndpoint": "/v1/capabilities/text.reasoning.high.v1/quote"
@@ -933,7 +929,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.03
             },
             "executionPreference": "automatic"
           },
@@ -955,10 +951,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/text.reasoning.high.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 30000,
+          "recommendedUsd": 0.03,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -1280,10 +1278,7 @@
         ],
         "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
-          "requirements": [
-            "/input/maxOutputTokens",
-            "/input/inputTokens"
-          ],
+          "requirements": [],
           "supported": true
         },
         "quoteEndpoint": "/v1/capabilities/text.reasoning.maximum.v1/quote"
@@ -1293,7 +1288,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.11
             },
             "executionPreference": "automatic"
           },
@@ -1315,10 +1310,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/text.reasoning.maximum.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 110000,
+          "recommendedUsd": 0.11,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -1541,10 +1538,7 @@
         ],
         "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
-          "requirements": [
-            "/input/maxOutputTokens",
-            "/input/inputTokens"
-          ],
+          "requirements": [],
           "supported": true
         },
         "quoteEndpoint": "/v1/capabilities/text.structured.extraction.v1/quote"
@@ -1554,7 +1548,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.03
             },
             "executionPreference": "automatic"
           },
@@ -1583,10 +1577,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/text.structured.extraction.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 30000,
+          "recommendedUsd": 0.03,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -1859,10 +1855,7 @@
         ],
         "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
-          "requirements": [
-            "/input/maxOutputTokens",
-            "/input/inputTokens"
-          ],
+          "requirements": [],
           "supported": true
         },
         "quoteEndpoint": "/v1/capabilities/text.structured.generation.v1/quote"
@@ -1872,7 +1865,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.03
             },
             "executionPreference": "automatic"
           },
@@ -1894,10 +1887,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/text.structured.generation.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 30000,
+          "recommendedUsd": 0.03,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -2170,10 +2165,7 @@
         ],
         "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
-          "requirements": [
-            "/input/maxOutputTokens",
-            "/input/inputTokens"
-          ],
+          "requirements": [],
           "supported": true
         },
         "quoteEndpoint": "/v1/capabilities/text.structured.ranking.v1/quote"
@@ -2183,7 +2175,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.03
             },
             "executionPreference": "automatic"
           },
@@ -2205,10 +2197,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/text.structured.ranking.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 30000,
+          "recommendedUsd": 0.03,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -2481,10 +2475,7 @@
         ],
         "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
-          "requirements": [
-            "/input/maxOutputTokens",
-            "/input/inputTokens"
-          ],
+          "requirements": [],
           "supported": true
         },
         "quoteEndpoint": "/v1/capabilities/text.structured.adjudication.v1/quote"
@@ -2494,7 +2485,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.03
             },
             "executionPreference": "automatic"
           },
@@ -2516,10 +2507,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/text.structured.adjudication.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 30000,
+          "recommendedUsd": 0.03,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -2833,9 +2826,7 @@
         ],
         "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
-          "requirements": [
-            "/input/inputTokens"
-          ],
+          "requirements": [],
           "supported": true
         },
         "quoteEndpoint": "/v1/capabilities/decision.evaluate.v1/quote"
@@ -2845,7 +2836,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.01
             },
             "executionPreference": "automatic"
           },
@@ -2868,10 +2859,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/decision.evaluate.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 10000,
+          "recommendedUsd": 0.01,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -3186,10 +3179,7 @@
         ],
         "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
-          "requirements": [
-            "/input/maxOutputTokens",
-            "/input/inputTokens"
-          ],
+          "requirements": [],
           "supported": true
         },
         "quoteEndpoint": "/v1/capabilities/text.creative.longform.v1/quote"
@@ -3221,10 +3211,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/text.creative.longform.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
+          "quotedMaximumMicros": 50000,
           "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -3411,6 +3403,9 @@
             },
             "gpt-image-2.5-sunburst": {
               "max": 32000
+            },
+            "gpt-image-2.6-sunburst": {
+              "max": 32000
             }
           },
           "max": 32000,
@@ -3423,6 +3418,15 @@
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
+          "acceptableQuality": {
+            "description": "Optional quality bar. draft selects MAI-Image-2.6-Flash. commercial selects MAI-Image-2.6. final selects gpt-image-2.6-sunburst. When more than one of budget, acceptableQuality, editFidelity, and outputType is set, the highest tier wins (gpt-image-2.6-sunburst over MAI-Image-2.6 over MAI-Image-2.6-Flash). Omitting all four selects gpt-image-2.6-sunburst. An explicit model overrides these fields.",
+            "enum": [
+              "draft",
+              "commercial",
+              "final"
+            ],
+            "type": "string"
+          },
           "adapters": {
             "description": "Registered project model adapters that must be preserved by routing and execution.",
             "items": {
@@ -3453,6 +3457,24 @@
             "maxItems": 4,
             "type": "array"
           },
+          "budget": {
+            "description": "Optional spend preference. low selects MAI-Image-2.6-Flash for bulk, drafts, and automated variations. standard selects MAI-Image-2.6 for commercial images and edits. premium selects gpt-image-2.6-sunburst for final output. When more than one of budget, acceptableQuality, editFidelity, and outputType is set, the highest tier wins (gpt-image-2.6-sunburst over MAI-Image-2.6 over MAI-Image-2.6-Flash). Omitting all four selects gpt-image-2.6-sunburst. An explicit model overrides these fields.",
+            "enum": [
+              "low",
+              "standard",
+              "premium"
+            ],
+            "type": "string"
+          },
+          "editFidelity": {
+            "description": "Optional edit fidelity. variation selects MAI-Image-2.6-Flash. standard selects MAI-Image-2.6. precise selects gpt-image-2.6-sunburst. When more than one of budget, acceptableQuality, editFidelity, and outputType is set, the highest tier wins (gpt-image-2.6-sunburst over MAI-Image-2.6 over MAI-Image-2.6-Flash). Omitting all four selects gpt-image-2.6-sunburst. An explicit model overrides these fields.",
+            "enum": [
+              "variation",
+              "standard",
+              "precise"
+            ],
+            "type": "string"
+          },
           "height": {
             "default": 1024,
             "description": "Requested catalogue height. Rounded up to a multiple of 16. provider image models allow each edge up to 3840 (max 8.29MP). Open Graph 1200\u00d7630 becomes 1200\u00d7640. Provider execution may normalize; sheet cell geometry is a separate constraint.",
@@ -3471,12 +3493,32 @@
             "type": "string"
           },
           "model": {
-            "default": "gpt-image-2.5-flare",
-            "description": "Image model. Flare is the default for everyday provider generation; select Sunburst for maximum provider precision, or Nano Banana for the fal-hosted Gemini image model.",
+            "default": "gpt-image-2.6-sunburst",
+            "description": "Image model. The default is the premium tier: final output, complex instructions, typography, SVG, and animation. Omit model and set budget, acceptableQuality, editFidelity, or outputType to select the draft, commercial, or premium tier. The enum lists every model this capability can send.",
             "enum": [
               "gpt-image-2.5-flare",
               "gpt-image-2.5-sunburst",
-              "fal-ai/nano-banana"
+              "gpt-image-2.6-sunburst",
+              "MAI-Image-2.6-Flash",
+              "MAI-Image-2.6",
+              "fal-ai/nano-banana",
+              "gemini-nano-banana-2.1",
+              "gemini-3.1-flash-image",
+              "gemini-3.1-flash-lite-image",
+              "gemini-3-pro-image",
+              "z-image-turbo",
+              "sdxl-lightning-4step",
+              "flux-schnell"
+            ],
+            "type": "string"
+          },
+          "outputType": {
+            "description": "Optional output. svg, animation, and typography select gpt-image-2.6-sunburst (complex instructions, vector, and motion). raster alone does not change the default. When more than one of budget, acceptableQuality, editFidelity, and outputType is set, the highest tier wins (gpt-image-2.6-sunburst over MAI-Image-2.6 over MAI-Image-2.6-Flash). Omitting all four selects gpt-image-2.6-sunburst. An explicit model overrides these fields.",
+            "enum": [
+              "raster",
+              "svg",
+              "animation",
+              "typography"
             ],
             "type": "string"
           },
@@ -3760,10 +3802,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/image.generate.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
+          "quotedMaximumMicros": 50000,
           "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -3868,7 +3912,7 @@
           "note": "If the sheet canvas meets the model minimum, cells may be any size."
         }
       },
-      "description": "In-place edit of a source PNG via the provider images.edit API. sourceImage is the canvas (image[0]); referenceImages are insert graphics (later image entries); optional mask uses alpha 0 as the editable region so unmasked pixels are preserved by the provider. Not a generate-from-brief alias.",
+      "description": "In-place edit of a source PNG. sourceImage is the canvas (image[0]); referenceImages are insert graphics. The provider default accepts an optional mask (alpha 0 = editable) and preserves unmasked pixels. Native Gemini Nano Banana models accept source + insert images and reject mask requests. Not a generate-from-brief alias.",
       "estimateAvailable": true,
       "execution": {
         "benchmarksHref": "/v1/capabilities/image.edit.v1/benchmarks",
@@ -3914,6 +3958,9 @@
             },
             "gpt-image-2.5-sunburst": {
               "max": 32000
+            },
+            "gpt-image-2.6-sunburst": {
+              "max": 32000
             }
           },
           "max": 32000,
@@ -3926,6 +3973,33 @@
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
+          "acceptableQuality": {
+            "description": "Optional quality bar. draft selects MAI-Image-2.6-Flash. commercial selects MAI-Image-2.6. final selects gpt-image-2.6-sunburst. When more than one of budget, acceptableQuality, editFidelity, and outputType is set, the highest tier wins (gpt-image-2.6-sunburst over MAI-Image-2.6 over MAI-Image-2.6-Flash). Omitting all four selects gpt-image-2.6-sunburst. An explicit model overrides these fields.",
+            "enum": [
+              "draft",
+              "commercial",
+              "final"
+            ],
+            "type": "string"
+          },
+          "budget": {
+            "description": "Optional spend preference. low selects MAI-Image-2.6-Flash for bulk, drafts, and automated variations. standard selects MAI-Image-2.6 for commercial images and edits. premium selects gpt-image-2.6-sunburst for final output. When more than one of budget, acceptableQuality, editFidelity, and outputType is set, the highest tier wins (gpt-image-2.6-sunburst over MAI-Image-2.6 over MAI-Image-2.6-Flash). Omitting all four selects gpt-image-2.6-sunburst. An explicit model overrides these fields.",
+            "enum": [
+              "low",
+              "standard",
+              "premium"
+            ],
+            "type": "string"
+          },
+          "editFidelity": {
+            "description": "Optional edit fidelity. variation selects MAI-Image-2.6-Flash. standard selects MAI-Image-2.6. precise selects gpt-image-2.6-sunburst. When more than one of budget, acceptableQuality, editFidelity, and outputType is set, the highest tier wins (gpt-image-2.6-sunburst over MAI-Image-2.6 over MAI-Image-2.6-Flash). Omitting all four selects gpt-image-2.6-sunburst. An explicit model overrides these fields.",
+            "enum": [
+              "variation",
+              "standard",
+              "precise"
+            ],
+            "type": "string"
+          },
           "height": {
             "maximum": 2048,
             "minimum": 256,
@@ -3945,6 +4019,30 @@
               }
             },
             "type": "object"
+          },
+          "model": {
+            "default": "gpt-image-2.6-sunburst",
+            "description": "Edit model. The default is the premium tier and is the only model that honors a mask. Draft and commercial tiers edit from the source image and reject mask requests, as do native Gemini models.",
+            "enum": [
+              "gpt-image-2.6-sunburst",
+              "MAI-Image-2.6-Flash",
+              "MAI-Image-2.6",
+              "gemini-nano-banana-2.1",
+              "gemini-3.1-flash-image",
+              "gemini-3.1-flash-lite-image",
+              "gemini-3-pro-image"
+            ],
+            "type": "string"
+          },
+          "outputType": {
+            "description": "Optional output. svg, animation, and typography select gpt-image-2.6-sunburst (complex instructions, vector, and motion). raster alone does not change the default. When more than one of budget, acceptableQuality, editFidelity, and outputType is set, the highest tier wins (gpt-image-2.6-sunburst over MAI-Image-2.6 over MAI-Image-2.6-Flash). Omitting all four selects gpt-image-2.6-sunburst. An explicit model overrides these fields.",
+            "enum": [
+              "raster",
+              "svg",
+              "animation",
+              "typography"
+            ],
+            "type": "string"
           },
           "prompt": {
             "description": "What to do in the editable region. Unmasked pixels are preserved by the provider, not by prompt instructions.",
@@ -4154,7 +4252,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.1
             },
             "executionPreference": "automatic"
           },
@@ -4172,10 +4270,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/image.edit.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 100000,
+          "recommendedUsd": 0.1,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -4320,6 +4420,19 @@
           "features": {
             "additionalProperties": true,
             "type": "object"
+          },
+          "model": {
+            "default": "gemini-omni-1.1-flash",
+            "description": "Video model. Omit it to use the capability default. Gemini Omni 1.2 Flash is selectable here; it generates and edits video and does not generate still images.",
+            "enum": [
+              "gemini-omni-1.1-flash",
+              "gemini-omni-1.2-flash",
+              "fal-ai/kling-video/v3/standard/text-to-video",
+              "gen4.5",
+              "fal-ai/kling-video/v3/standard/image-to-video",
+              "veo-3.1-fast-generate-001"
+            ],
+            "type": "string"
           },
           "prompt": {
             "maxLength": 4000,
@@ -4477,7 +4590,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.87
             },
             "executionPreference": "automatic"
           },
@@ -4494,10 +4607,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/video.generate.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 870000,
+          "recommendedUsd": 0.87,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -4592,7 +4707,8 @@
       "features": {
         "minimalInput": {
           "prompt": "Create a concise useful result."
-        }
+        },
+        "requiresRestrictedProcessingProfile": true
       },
       "funding": {
         "eligible": true,
@@ -4801,7 +4917,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.07
             },
             "executionPreference": "automatic"
           },
@@ -4818,10 +4934,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/audio.sfx.generate.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 70000,
+          "recommendedUsd": 0.07,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -4917,6 +5035,7 @@
         "minimalInput": {
           "text": "Example document text with a name Alice and value 42."
         },
+        "requiresRestrictedProcessingProfile": true,
         "voicesEndpoint": "/v1/capabilities/audio.voice.generate.v1/voices"
       },
       "funding": {
@@ -5170,7 +5289,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.02
             },
             "executionPreference": "automatic"
           },
@@ -5187,10 +5306,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/audio.voice.generate.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 20000,
+          "recommendedUsd": 0.02,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -5198,6 +5319,772 @@
       },
       "routingProfiles": [],
       "title": "Voice / TTS generation"
+    },
+    {
+      "billingModes": {
+        "byok": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Hydracept charge: Free. Provider charges your connected account separately.",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "free",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Model",
+                "key": "model",
+                "kind": "selection",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Audio duration",
+                "inputKey": "maxDurationMs",
+                "key": "durationMs",
+                "kind": "measured-usage",
+                "requiredForEstimate": false
+              }
+            ],
+            "pricingVersion": "price_2026_10_22_actual_cost"
+          },
+          "providerChargesExternal": true,
+          "providerChargesIncluded": false
+        },
+        "managed": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Varies by audio duration. Optional /quote preview; the API seals pricing at job admission.",
+            "estimateEndpoint": "/v1/capabilities/audio.transcribe.v1/estimate",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "metered",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Model",
+                "key": "model",
+                "kind": "selection",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Audio duration",
+                "inputKey": "maxDurationMs",
+                "key": "durationMs",
+                "kind": "measured-usage",
+                "requiredForEstimate": false
+              }
+            ],
+            "pricingVersion": "price_2026_10_22_actual_cost",
+            "quoteEndpoint": "/v1/capabilities/audio.transcribe.v1/quote"
+          },
+          "providerChargesExternal": false,
+          "providerChargesIncluded": true,
+          "serviceFeeBps": 600
+        }
+      },
+      "category": "generation",
+      "description": "Convert a bounded audio clip into text. Omit `language` to detect it. Transient by default: neither the clip nor the transcript is persisted unless retention is explicitly authorized.",
+      "estimateAvailable": true,
+      "execution": {
+        "benchmarksHref": "/v1/capabilities/audio.transcribe.v1/benchmarks",
+        "estimateAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "selection": "managed",
+        "supportsExplicitTarget": true,
+        "targetsHref": "/v1/capabilities/audio.transcribe.v1/execution-targets",
+        "trialEligible": false
+      },
+      "executionModes": [
+        "job_async"
+      ],
+      "family": "audio",
+      "features": {
+        "minimalInput": {
+          "audio": "x"
+        },
+        "requiresRestrictedProcessingProfile": true
+      },
+      "funding": {
+        "eligible": false,
+        "mode": "managed",
+        "status": "catalog_available"
+      },
+      "idempotencyRequired": true,
+      "inputConstraints": {
+        "promptHint": {
+          "max": 500,
+          "measurement": "characters",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "audio": {
+            "description": "Base64-encoded audio clip, or a payload reference. Bounded by `maxDurationMs`; the byte cap is enforced independently.",
+            "type": "string"
+          },
+          "language": {
+            "description": "BCP-47-ish language hint; omit to auto-detect.",
+            "type": "string"
+          },
+          "maxDurationMs": {
+            "maximum": 600000,
+            "minimum": 100,
+            "type": "integer"
+          },
+          "mediaType": {
+            "default": "audio/webm",
+            "description": "Media type of the decoded clip. Canonical across the capability surface; artifacts report the same field name.",
+            "enum": [
+              "audio/webm",
+              "audio/wav",
+              "audio/mpeg",
+              "audio/ogg",
+              "audio/mp4",
+              "audio/flac"
+            ],
+            "type": "string"
+          },
+          "modelId": {
+            "default": "scribe_v2",
+            "description": "Transcription model id. This enum is the live set of executable audio.transcribe.v1 targets.",
+            "enum": [
+              "scribe_v2"
+            ],
+            "type": "string"
+          },
+          "promptHint": {
+            "description": "Optional domain vocabulary hint. Not instructions to the model. Sent to the default provider as comma-separated keyterms, each at most 50 characters and 5 words.",
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "required": [
+          "audio"
+        ],
+        "type": "object"
+      },
+      "interaction": {
+        "typicallyRequired": false
+      },
+      "key": "audio.transcribe.v1",
+      "modality": "audio",
+      "output": {
+        "kind": "artifact",
+        "mediaType": "audio/ogg"
+      },
+      "outputSchema": {
+        "description": "Transcript of one audio clip. `confidence` and `segments[].confidence` are optional and absent whenever the provider reported no transcription confidence; absence means unknown rather than zero. Language-detection probability is not a transcription confidence and is not exposed here.",
+        "properties": {
+          "confidence": {
+            "description": "Provider-reported confidence in the transcription text, 0..1. Read it only when the field is present. An omitted `confidence` means UNKNOWN, not low and not 0.0: no wired provider currently reports a transcript confidence, so this field is normally absent. Clients must not substitute a default (for example 0.0) and must not treat absence as a failed transcription \u2014 decide whether a transcript is actionable from `text` and your own policy instead.",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "durationMs": {
+            "type": "integer"
+          },
+          "isFinal": {
+            "description": "True for a completed transcription. A durable transcribe job is terminal, so a succeeded job always reports true; the field exists so a streaming transcript can reuse this shape.",
+            "type": "boolean"
+          },
+          "language": {
+            "description": "Detected or requested language. Null/absent when the provider did not report one.",
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "description": "One sequence-numbered transcript unit. `confidence`, when present, scores this segment's text only; absence means unknown.",
+              "properties": {
+                "confidence": {
+                  "description": "Provider-reported confidence in the transcription text, 0..1. Read it only when the field is present. An omitted `confidence` means UNKNOWN, not low and not 0.0: no wired provider currently reports a transcript confidence, so this field is normally absent. Clients must not substitute a default (for example 0.0) and must not treat absence as a failed transcription \u2014 decide whether a transcript is actionable from `text` and your own policy instead.",
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "isFinal": {
+                  "type": "boolean"
+                },
+                "segmentId": {
+                  "type": "string"
+                },
+                "sequence": {
+                  "type": "integer"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sequence",
+                "text"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "text": {
+            "description": "The full transcript text. This is the capability's primary output.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "type": "object"
+      },
+      "outputSchemas": {
+        "json_object": {
+          "description": "Transcript of one audio clip. `confidence` and `segments[].confidence` are optional and absent whenever the provider reported no transcription confidence; absence means unknown rather than zero. Language-detection probability is not a transcription confidence and is not exposed here.",
+          "properties": {
+            "confidence": {
+              "description": "Provider-reported confidence in the transcription text, 0..1. Read it only when the field is present. An omitted `confidence` means UNKNOWN, not low and not 0.0: no wired provider currently reports a transcript confidence, so this field is normally absent. Clients must not substitute a default (for example 0.0) and must not treat absence as a failed transcription \u2014 decide whether a transcript is actionable from `text` and your own policy instead.",
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            "durationMs": {
+              "type": "integer"
+            },
+            "isFinal": {
+              "description": "True for a completed transcription. A durable transcribe job is terminal, so a succeeded job always reports true; the field exists so a streaming transcript can reuse this shape.",
+              "type": "boolean"
+            },
+            "language": {
+              "description": "Detected or requested language. Null/absent when the provider did not report one.",
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "provider": {
+              "type": "string"
+            },
+            "segments": {
+              "items": {
+                "description": "One sequence-numbered transcript unit. `confidence`, when present, scores this segment's text only; absence means unknown.",
+                "properties": {
+                  "confidence": {
+                    "description": "Provider-reported confidence in the transcription text, 0..1. Read it only when the field is present. An omitted `confidence` means UNKNOWN, not low and not 0.0: no wired provider currently reports a transcript confidence, so this field is normally absent. Clients must not substitute a default (for example 0.0) and must not treat absence as a failed transcription \u2014 decide whether a transcript is actionable from `text` and your own policy instead.",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "isFinal": {
+                    "type": "boolean"
+                  },
+                  "segmentId": {
+                    "type": "string"
+                  },
+                  "sequence": {
+                    "type": "integer"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "sequence",
+                  "text"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "text": {
+              "description": "The full transcript text. This is the capability's primary output.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "type": "object"
+        },
+        "structured": {
+          "description": "Transcript of one audio clip. `confidence` and `segments[].confidence` are optional and absent whenever the provider reported no transcription confidence; absence means unknown rather than zero. Language-detection probability is not a transcription confidence and is not exposed here.",
+          "properties": {
+            "confidence": {
+              "description": "Provider-reported confidence in the transcription text, 0..1. Read it only when the field is present. An omitted `confidence` means UNKNOWN, not low and not 0.0: no wired provider currently reports a transcript confidence, so this field is normally absent. Clients must not substitute a default (for example 0.0) and must not treat absence as a failed transcription \u2014 decide whether a transcript is actionable from `text` and your own policy instead.",
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            "durationMs": {
+              "type": "integer"
+            },
+            "isFinal": {
+              "description": "True for a completed transcription. A durable transcribe job is terminal, so a succeeded job always reports true; the field exists so a streaming transcript can reuse this shape.",
+              "type": "boolean"
+            },
+            "language": {
+              "description": "Detected or requested language. Null/absent when the provider did not report one.",
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "provider": {
+              "type": "string"
+            },
+            "segments": {
+              "items": {
+                "description": "One sequence-numbered transcript unit. `confidence`, when present, scores this segment's text only; absence means unknown.",
+                "properties": {
+                  "confidence": {
+                    "description": "Provider-reported confidence in the transcription text, 0..1. Read it only when the field is present. An omitted `confidence` means UNKNOWN, not low and not 0.0: no wired provider currently reports a transcript confidence, so this field is normally absent. Clients must not substitute a default (for example 0.0) and must not treat absence as a failed transcription \u2014 decide whether a transcript is actionable from `text` and your own policy instead.",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "isFinal": {
+                    "type": "boolean"
+                  },
+                  "segmentId": {
+                    "type": "string"
+                  },
+                  "sequence": {
+                    "type": "integer"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "sequence",
+                  "text"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "text": {
+              "description": "The full transcript text. This is the capability's primary output.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "type": "object"
+        }
+      },
+      "pricing": {
+        "authoritativeForExecution": false,
+        "billable": true,
+        "billingCurrency": "USD",
+        "display": "Varies by audio duration. Optional /quote preview; the API seals pricing at job admission.",
+        "estimateEndpoint": "/v1/capabilities/audio.transcribe.v1/estimate",
+        "estimateRequired": false,
+        "examples": [],
+        "mode": "metered",
+        "pricingContext": "catalog_default",
+        "pricingFactors": [
+          {
+            "display": "Model",
+            "key": "model",
+            "kind": "selection",
+            "requiredForEstimate": true
+          },
+          {
+            "display": "Audio duration",
+            "inputKey": "maxDurationMs",
+            "key": "durationMs",
+            "kind": "measured-usage",
+            "requiredForEstimate": false
+          }
+        ],
+        "pricingVersion": "price_2026_10_22_actual_cost",
+        "quote": {
+          "requirements": [],
+          "supported": true
+        },
+        "quoteEndpoint": "/v1/capabilities/audio.transcribe.v1/quote"
+      },
+      "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.02
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "audio": "x"
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/audio.transcribe.v1/estimate",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "quotedMaximumMicros": 20000,
+          "recommendedUsd": 0.02,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/audio.transcribe.v1/jobs"
+      },
+      "routingProfiles": [],
+      "title": "Speech transcription"
+    },
+    {
+      "billingModes": {
+        "byok": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Hydracept charge: Free. Provider charges your connected account separately.",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "free",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Model",
+                "key": "model",
+                "kind": "selection",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Script",
+                "key": "text",
+                "kind": "measured-usage",
+                "requiredForEstimate": true
+              }
+            ],
+            "pricingVersion": "price_2026_10_22_actual_cost"
+          },
+          "providerChargesExternal": true,
+          "providerChargesIncluded": false
+        },
+        "managed": {
+          "available": true,
+          "pricing": {
+            "authoritativeForExecution": false,
+            "billingCurrency": "USD",
+            "display": "Varies by character count and model. Optional /quote preview; the API seals pricing at job admission.",
+            "estimateEndpoint": "/v1/capabilities/audio.voice.speak.v1/estimate",
+            "estimateRequired": false,
+            "examples": [],
+            "mode": "metered",
+            "pricingContext": "catalog_default",
+            "pricingFactors": [
+              {
+                "display": "Model",
+                "key": "model",
+                "kind": "selection",
+                "requiredForEstimate": true
+              },
+              {
+                "display": "Script",
+                "key": "text",
+                "kind": "measured-usage",
+                "requiredForEstimate": true
+              }
+            ],
+            "pricingVersion": "price_2026_10_22_actual_cost",
+            "quoteEndpoint": "/v1/capabilities/audio.voice.speak.v1/quote"
+          },
+          "providerChargesExternal": false,
+          "providerChargesIncluded": true,
+          "serviceFeeBps": 600
+        }
+      },
+      "category": "generation",
+      "description": "Synthesize speech and deliver audio incrementally as it is produced, rather than waiting for a complete file. Use `audio.voice.generate.v1` when you want a durable, retained audio asset. Disconnecting early stops delivery but does not cancel provider billing.",
+      "estimateAvailable": true,
+      "execution": {
+        "benchmarksHref": "/v1/capabilities/audio.voice.speak.v1/benchmarks",
+        "estimateAvailable": true,
+        "inferenceProviderSetupRequired": false,
+        "managedInferenceAvailable": true,
+        "oneShot": true,
+        "projectLocalRequired": false,
+        "selection": "managed",
+        "supportsExplicitTarget": true,
+        "targetsHref": "/v1/capabilities/audio.voice.speak.v1/execution-targets",
+        "trialEligible": false
+      },
+      "executionModes": [
+        "job_async"
+      ],
+      "family": "audio",
+      "features": {
+        "minimalInput": {
+          "text": "Example document text with a name Alice and value 42."
+        },
+        "requiresRestrictedProcessingProfile": true,
+        "streaming": {
+          "disconnectSemantics": "stop_delivery_not_billing",
+          "mode": "stream_audio",
+          "outputMediaTypes": [
+            "audio/mpeg"
+          ],
+          "streamingTextInput": false,
+          "supported": true,
+          "transport": "chunked_http"
+        },
+        "voicesEndpoint": "/v1/capabilities/audio.voice.generate.v1/voices"
+      },
+      "funding": {
+        "eligible": false,
+        "mode": "managed",
+        "status": "catalog_available"
+      },
+      "idempotencyRequired": true,
+      "inputConstraints": {
+        "text": {
+          "byModel": {
+            "eleven_flash_v2_5": {
+              "max": 40000
+            },
+            "eleven_multilingual_v2": {
+              "max": 10000
+            },
+            "eleven_turbo_v2_5": {
+              "max": 40000
+            }
+          },
+          "max": 10000,
+          "measurement": "characters",
+          "overflow": "reject",
+          "semantic": true
+        }
+      },
+      "inputMediaTypes": [],
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "language": {
+            "type": "string"
+          },
+          "modelId": {
+            "default": "eleven_v4",
+            "description": "Speech model id. This enum is the live set of executable audio.voice.speak.v1 targets.",
+            "enum": [
+              "eleven_v4",
+              "eleven_multilingual_v2",
+              "eleven_turbo_v2_5",
+              "eleven_flash_v2_5"
+            ],
+            "type": "string"
+          },
+          "outputFormatPreference": {
+            "default": "opus_48000_128",
+            "description": "Requested audio format. `mp3_44100_128` returns `audio/mpeg` with a `.mp3` filename; `opus_48000_128` (default) returns `audio/ogg` with `.ogg`. The artifact `mediaType` and filename match the format returned.",
+            "enum": [
+              "mp3_22050_32",
+              "mp3_24000_48",
+              "mp3_44100_32",
+              "mp3_44100_64",
+              "mp3_44100_96",
+              "mp3_44100_128",
+              "mp3_44100_192",
+              "opus_48000_32",
+              "opus_48000_64",
+              "opus_48000_96",
+              "opus_48000_128",
+              "opus_48000_192"
+            ],
+            "type": "string"
+          },
+          "speakingRate": {
+            "maximum": 2.0,
+            "minimum": 0.5,
+            "type": "number"
+          },
+          "text": {
+            "maxLength": 40000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "voiceId": {
+            "description": "Optional voice identifier. When omitted, the managed default voice is applied.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "type": "object"
+      },
+      "interaction": {
+        "typicallyRequired": false
+      },
+      "key": "audio.voice.speak.v1",
+      "modality": "audio",
+      "output": {
+        "kind": "artifact",
+        "mediaType": "audio/ogg"
+      },
+      "outputSchema": {
+        "properties": {
+          "byteLength": {
+            "type": "integer"
+          },
+          "characters": {
+            "type": "integer"
+          },
+          "executionId": {
+            "type": "string"
+          },
+          "mediaType": {
+            "type": "string"
+          },
+          "receiptId": {
+            "type": "string"
+          },
+          "resolvedVoiceId": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "outputSchemas": {
+        "json_object": {
+          "properties": {
+            "byteLength": {
+              "type": "integer"
+            },
+            "characters": {
+              "type": "integer"
+            },
+            "executionId": {
+              "type": "string"
+            },
+            "mediaType": {
+              "type": "string"
+            },
+            "receiptId": {
+              "type": "string"
+            },
+            "resolvedVoiceId": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "structured": {
+          "properties": {
+            "byteLength": {
+              "type": "integer"
+            },
+            "characters": {
+              "type": "integer"
+            },
+            "executionId": {
+              "type": "string"
+            },
+            "mediaType": {
+              "type": "string"
+            },
+            "receiptId": {
+              "type": "string"
+            },
+            "resolvedVoiceId": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "pricing": {
+        "authoritativeForExecution": false,
+        "billable": true,
+        "billingCurrency": "USD",
+        "display": "Varies by character count and model. Optional /quote preview; the API seals pricing at job admission.",
+        "estimateEndpoint": "/v1/capabilities/audio.voice.speak.v1/estimate",
+        "estimateRequired": false,
+        "examples": [],
+        "mode": "metered",
+        "pricingContext": "catalog_default",
+        "pricingFactors": [
+          {
+            "display": "Model",
+            "key": "model",
+            "kind": "selection",
+            "requiredForEstimate": true
+          },
+          {
+            "display": "Script",
+            "key": "text",
+            "kind": "measured-usage",
+            "requiredForEstimate": true
+          }
+        ],
+        "pricingVersion": "price_2026_10_22_actual_cost",
+        "quote": {
+          "requirements": [
+            "/input/text"
+          ],
+          "supported": true
+        },
+        "quoteEndpoint": "/v1/capabilities/audio.voice.speak.v1/quote"
+      },
+      "readySummary": "Managed inference available \u00b7 quote available",
+      "requestTemplate": {
+        "body": {
+          "execution": {
+            "executionConstraints": {
+              "maxCostUsd": 0.02
+            },
+            "executionPreference": "automatic"
+          },
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "text": "Example document text with a name Alice and value 42."
+          }
+        },
+        "contextPolicy": {
+          "explicitMatching": "Accepted when it matches the credential.",
+          "explicitMismatch": "Rejected with HTTP 403 before admission or cost reservation.",
+          "omitted": "Derived from the credential's bound project and environment.",
+          "unboundCredential": "context.projectId is required when the credential has no bound project."
+        },
+        "costConstraint": {
+          "estimateEndpoint": "/v1/capabilities/audio.voice.speak.v1/estimate",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
+          "path": "execution.executionConstraints.maxCostUsd",
+          "quotedMaximumMicros": 20000,
+          "recommendedUsd": 0.02,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
+        },
+        "inputExampleAvailable": true,
+        "method": "POST",
+        "path": "/v1/capabilities/audio.voice.speak.v1/jobs"
+      },
+      "routingProfiles": [],
+      "title": "Streaming speech synthesis"
     },
     {
       "billingModes": {
@@ -5285,7 +6172,8 @@
       "features": {
         "minimalInput": {
           "prompt": "Create a concise useful result."
-        }
+        },
+        "requiresRestrictedProcessingProfile": true
       },
       "funding": {
         "eligible": false,
@@ -5492,7 +6380,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.64
             },
             "executionPreference": "automatic"
           },
@@ -5509,10 +6397,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/audio.music.generate.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 640000,
+          "recommendedUsd": 0.64,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -5609,7 +6499,8 @@
           "inputArtifactIds": [
             "x"
           ]
-        }
+        },
+        "requiresRestrictedProcessingProfile": true
       },
       "funding": {
         "eligible": false,
@@ -5840,7 +6731,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.27
             },
             "executionPreference": "automatic"
           },
@@ -5859,10 +6750,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/model.generate.3d.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 270000,
+          "recommendedUsd": 0.27,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -5957,7 +6850,8 @@
       "features": {
         "minimalInput": {
           "baseArtifactId": "x"
-        }
+        },
+        "requiresRestrictedProcessingProfile": true
       },
       "funding": {
         "eligible": false,
@@ -5987,6 +6881,9 @@
               "max": 32000
             },
             "gpt-image-2.5-sunburst": {
+              "max": 32000
+            },
+            "gpt-image-2.6-sunburst": {
               "max": 32000
             }
           },
@@ -6202,7 +7099,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.31
             },
             "executionPreference": "automatic"
           },
@@ -6219,10 +7116,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/model.generate.3d.from-image.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 310000,
+          "recommendedUsd": 0.31,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -6401,9 +7300,6 @@
       "requestTemplate": {
         "body": {
           "execution": {
-            "executionConstraints": {
-              "maxCostUsd": 0.05
-            },
             "executionPreference": "automatic"
           },
           "idempotencyKey": "<uuid-v4>",
@@ -6419,9 +7315,10 @@
         },
         "costConstraint": {
           "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "omittedReason": "domain.search.v1 cannot be priced from its example body alone (it needs pricing inputs such as token counts, duration, or size). No ceiling is recommended: call /quote with your real body and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "serverEnforced": true,
+          "source": "unpricedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -6509,9 +7406,6 @@
       "requestTemplate": {
         "body": {
           "execution": {
-            "executionConstraints": {
-              "maxCostUsd": 0.05
-            },
             "executionPreference": "automatic"
           },
           "idempotencyKey": "<uuid-v4>"
@@ -6524,9 +7418,10 @@
         },
         "costConstraint": {
           "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "omittedReason": "domain.pricing.v1 cannot be priced from its example body alone (it needs pricing inputs such as token counts, duration, or size). No ceiling is recommended: call /quote with your real body and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "serverEnforced": true,
+          "source": "unpricedExampleBody"
         },
         "inputExampleAvailable": false,
         "method": "POST",
@@ -6821,9 +7716,6 @@
       "requestTemplate": {
         "body": {
           "execution": {
-            "executionConstraints": {
-              "maxCostUsd": 0.05
-            },
             "executionPreference": "automatic"
           },
           "idempotencyKey": "<uuid-v4>",
@@ -6841,9 +7733,10 @@
         },
         "costConstraint": {
           "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "omittedReason": "3d.render_reference.v1 cannot be priced from its example body alone (it needs pricing inputs such as token counts, duration, or size). No ceiling is recommended: call /quote with your real body and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "serverEnforced": true,
+          "source": "unpricedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -7135,9 +8028,6 @@
       "requestTemplate": {
         "body": {
           "execution": {
-            "executionConstraints": {
-              "maxCostUsd": 0.05
-            },
             "executionPreference": "automatic"
           },
           "idempotencyKey": "<uuid-v4>",
@@ -7154,9 +8044,10 @@
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/compute.evaluate.v1/estimate",
           "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "omittedReason": "compute.evaluate.v1 cannot be priced from its example body alone (it needs pricing inputs such as token counts, duration, or size). No ceiling is recommended: call /quote with your real body and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "serverEnforced": true,
+          "source": "unpricedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -7473,10 +8364,7 @@
         ],
         "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
-          "requirements": [
-            "/input/maxOutputTokens",
-            "/input/inputTokens"
-          ],
+          "requirements": [],
           "supported": true
         },
         "quoteEndpoint": "/v1/capabilities/text.vision.structured.v1/quote"
@@ -7486,7 +8374,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.03
             },
             "executionPreference": "automatic"
           },
@@ -7508,10 +8396,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/text.vision.structured.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 30000,
+          "recommendedUsd": 0.03,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -7891,10 +8781,7 @@
         ],
         "pricingVersion": "price_2026_10_22_actual_cost",
         "quote": {
-          "requirements": [
-            "/input/maxOutputTokens",
-            "/input/inputTokens"
-          ],
+          "requirements": [],
           "supported": true
         },
         "quoteEndpoint": "/v1/capabilities/text.translate.v1/quote"
@@ -7904,7 +8791,7 @@
         "body": {
           "execution": {
             "executionConstraints": {
-              "maxCostUsd": 0.05
+              "maxCostUsd": 0.01
             },
             "executionPreference": "automatic"
           },
@@ -7927,10 +8814,12 @@
         },
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/text.translate.v1/estimate",
-          "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "note": "Recommended ceiling is the exact maximum quoted for this example body, rounded up to the cent. Your own body may price differently: call /quote and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "quotedMaximumMicros": 10000,
+          "recommendedUsd": 0.01,
+          "serverEnforced": true,
+          "source": "quotedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -8276,9 +9165,6 @@
       "requestTemplate": {
         "body": {
           "execution": {
-            "executionConstraints": {
-              "maxCostUsd": 0.05
-            },
             "executionPreference": "automatic"
           },
           "idempotencyKey": "<uuid-v4>",
@@ -8295,9 +9181,10 @@
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/text.moderate.v1/estimate",
           "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "omittedReason": "text.moderate.v1 cannot be priced from its example body alone (it needs pricing inputs such as token counts, duration, or size). No ceiling is recommended: call /quote with your real body and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "serverEnforced": true,
+          "source": "unpricedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -8366,7 +9253,14 @@
       "family": "text",
       "features": {
         "deprecated": true,
-        "minimalInput": {},
+        "minimalInput": {
+          "messages": [
+            {
+              "content": "Example document text with a name Alice and value 42.",
+              "role": "system"
+            }
+          ]
+        },
         "productPolicyOwnedByCaller": true,
         "providerClassifier": true,
         "replacement": "text.moderate.v1",
@@ -8752,12 +9646,17 @@
       "requestTemplate": {
         "body": {
           "execution": {
-            "executionConstraints": {
-              "maxCostUsd": 0.05
-            },
             "executionPreference": "automatic"
           },
-          "idempotencyKey": "<uuid-v4>"
+          "idempotencyKey": "<uuid-v4>",
+          "input": {
+            "messages": [
+              {
+                "content": "Example document text with a name Alice and value 42.",
+                "role": "system"
+              }
+            ]
+          }
         },
         "contextPolicy": {
           "explicitMatching": "Accepted when it matches the credential.",
@@ -8768,11 +9667,12 @@
         "costConstraint": {
           "estimateEndpoint": "/v1/capabilities/moderation.content.v1/estimate",
           "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "omittedReason": "moderation.content.v1 cannot be priced from its example body alone (it needs pricing inputs such as token counts, duration, or size). No ceiling is recommended: call /quote with your real body and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "serverEnforced": true,
+          "source": "unpricedExampleBody"
         },
-        "inputExampleAvailable": false,
+        "inputExampleAvailable": true,
         "method": "POST",
         "path": "/v1/capabilities/moderation.content.v1/invoke"
       },
@@ -8990,9 +9890,6 @@
       "requestTemplate": {
         "body": {
           "execution": {
-            "executionConstraints": {
-              "maxCostUsd": 0.05
-            },
             "executionPreference": "automatic"
           },
           "idempotencyKey": "<uuid-v4>",
@@ -9013,9 +9910,10 @@
         },
         "costConstraint": {
           "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "omittedReason": "text.editorial.v1 cannot be priced from its example body alone (it needs pricing inputs such as token counts, duration, or size). No ceiling is recommended: call /quote with your real body and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "serverEnforced": true,
+          "source": "unpricedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -9249,9 +10147,6 @@
       "requestTemplate": {
         "body": {
           "execution": {
-            "executionConstraints": {
-              "maxCostUsd": 0.05
-            },
             "executionPreference": "automatic"
           },
           "idempotencyKey": "<uuid-v4>",
@@ -9272,9 +10167,10 @@
         },
         "costConstraint": {
           "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "omittedReason": "text.editorial.deep.v1 cannot be priced from its example body alone (it needs pricing inputs such as token counts, duration, or size). No ceiling is recommended: call /quote with your real body and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "serverEnforced": true,
+          "source": "unpricedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -9522,9 +10418,6 @@
       "requestTemplate": {
         "body": {
           "execution": {
-            "executionConstraints": {
-              "maxCostUsd": 0.05
-            },
             "executionPreference": "automatic"
           },
           "idempotencyKey": "<uuid-v4>",
@@ -9545,9 +10438,10 @@
         },
         "costConstraint": {
           "note": "Set a ceiling; the server seals pricing at admission. Use /quote or /estimate when the capability requires token counts.",
+          "omittedReason": "text.editorial.multimodal.v1 cannot be priced from its example body alone (it needs pricing inputs such as token counts, duration, or size). No ceiling is recommended: call /quote with your real body and set maxCostUsd at or above the quoted maximum.",
           "path": "execution.executionConstraints.maxCostUsd",
-          "recommendedUsd": 0.05,
-          "serverEnforced": true
+          "serverEnforced": true,
+          "source": "unpricedExampleBody"
         },
         "inputExampleAvailable": true,
         "method": "POST",
@@ -9598,7 +10492,7 @@
       "bootstrap-session.json"
     ]
   },
-  "contentHash": "4c25f36e59f14019e31e5bffc9868c9318140174d9793417dc5b7d61d7f22942",
+  "contentHash": "ac3ac0cf77f5a269ff62af87697efcf790cdd08af85ddb8e43a990201143bed0",
   "credentialSafety": {
     "browserAlternative": "Open interaction_required.action.url; then run python -m hydracept init --apply --yes --json --wait",
     "multiAccountHint": "If the user has multiple GitHub or Google accounts, tell them to pick the correct account on the connect page (Use a different account if needed).",
@@ -9625,6 +10519,8 @@
     "video.generate.v1",
     "audio.sfx.generate.v1",
     "audio.voice.generate.v1",
+    "audio.transcribe.v1",
+    "audio.voice.speak.v1",
     "audio.music.generate.v1",
     "model.generate.3d.v1",
     "model.generate.3d.from-image.v1",
@@ -9921,6 +10817,8 @@
       "video.generate.v1",
       "audio.sfx.generate.v1",
       "audio.voice.generate.v1",
+      "audio.transcribe.v1",
+      "audio.voice.speak.v1",
       "audio.music.generate.v1",
       "model.generate.3d.v1",
       "model.generate.3d.from-image.v1",

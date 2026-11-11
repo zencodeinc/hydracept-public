@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.hydracept/vscode",
+  "title": "Hydracept",
+  "description": "OAuth MCP for text, jobs, quotes, and receipts. No image/video/audio/3D generation.",
+  "version": "0.5.4",
+  "websiteUrl": "https://hydracept.com/vscode/",
+  "repository": {
+    "url": "https://github.com/zencodeinc/hydracept-public",
+    "source": "github"
+  },
+  "icons": [
+    {
+      "src": "https://hydracept.com/hydracept-logo.png",
+      "mimeType": "image/png"
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.hydracept.com/mcp/vscode"
+    }
+  ]
+}

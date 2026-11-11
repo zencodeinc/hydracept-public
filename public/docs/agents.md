@@ -70,7 +70,10 @@ Install into a coding agent:
 - **Plugin homepage:** [https://hydracept.com/plugin](https://hydracept.com/plugin)
 - **Cursor:** Hydracept is not in the Cursor Marketplace yet — use [github.com/zencodeinc/hydracept-plugin](https://github.com/zencodeinc/hydracept-plugin) (plugin distributionVersion **0.1.10**, separate from PyPI client **0.5.x**) or `python -m hydracept agents install --auto`. Then run `python -m hydracept init --apply --yes --json` and reload MCP only when requested.
 - **Claude Code:** install the Hydracept plugin, init in the repo, and reload MCP only when requested.
-- **No checkout (ChatGPT, MCP Registry):** hosted MCP at `https://api.hydracept.com/mcp` with a bearer API key
+- **Claude directory (claude.ai connectors):** `https://api.hydracept.com/mcp/claude` with OAuth sign-in. Do not send a Hydracept API key. See [Using Hydracept for Claude](https://hydracept.com/claude/).
+- **Official MCP Registry:** `com.hydracept/hydracept` remote `https://api.hydracept.com/mcp/claude` with OAuth (DCR+PKCE). Do not send a Hydracept API key. Setup: [https://hydracept.com/mcp-registry/](https://hydracept.com/mcp-registry/).
+- **OpenAI ChatGPT / Codex:** `https://api.hydracept.com/mcp/openai` with OAuth sign-in. Do not send a Hydracept API key. See [Using Hydracept for ChatGPT and Codex](https://hydracept.com/openai/).
+- **No checkout (API-key hosts):** hosted MCP at `https://api.hydracept.com/mcp` with a bearer API key (not the Official MCP Registry remote)
 - **CLI fallback:** `python -m hydracept agents install --auto` / `python -m hydracept mcp serve` / `python -m hydracept run ...`
 
 See [Agent plugin distribution](../agent-plugin-distribution/).
