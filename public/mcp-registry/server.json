@@ -3,7 +3,7 @@
   "name": "com.hydracept/hydracept",
   "title": "Hydracept",
   "description": "Directory-safe MCP: quote and run text/domain jobs with OAuth, receipts, BYOK.",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "websiteUrl": "https://hydracept.com/mcp-registry",
   "repository": {
     "url": "https://github.com/zencodeinc/hydracept-public",
@@ -11,7 +11,7 @@
   },
   "icons": [
     {
-      "src": "https://hydracept.com/hydracept-logo.png",
+      "src": "https://hydracept.com/hydracept-logo.png?v=20261112",
       "mimeType": "image/png"
     }
   ],

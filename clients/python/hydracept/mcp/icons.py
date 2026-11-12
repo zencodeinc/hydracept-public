@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from mcp.types import Icon
 
-# Stylized H on a light plate — hydracept.com/hydracept-logo.png and plugin assets/trademark.png.
-HYDRACEPT_LOGO_URL = "https://hydracept.com/hydracept-logo.png"
+# Full geometric H — hydracept.com/hydracept-logo.png and plugin assets/trademark.png.
+# Cache-bust when the master mark bytes change (deploy serves the same path).
+HYDRACEPT_LOGO_URL = "https://hydracept.com/hydracept-logo.png?v=20261112"
 
 
 def hydracept_mcp_icons() -> list[Icon]:

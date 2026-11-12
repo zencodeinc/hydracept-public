@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.5.5 (unreleased)
+## 0.5.6 (unreleased)
 
-- The packaged `hydracept` agent skill now describes audio output format accurately: audio artifacts default to Ogg (`audio/ogg`, `.ogg`), and `outputFormatPreference` (for example `mp3_44100_128`) requests another supported format with a matching `mediaType` and filename. Previously the skill claimed this applied only to `audio.sfx.generate.v1`.
+- The packaged `hydracept` agent skill now describes audio output format accurately: audio artifacts default to Ogg (`audio/ogg`, `.ogg`), and `outputFormatPreference` (for example `mp3_44100_128`) requests another supported format with a matching `mediaType` and filename. Previously the skill claimed this applied only to `audio.sfx.generate.v1`. (Folded from unpublished workspace 0.5.5 / #709 — 0.5.5 was never published to PyPI.)
 
 ## 0.5.4 (unreleased)
 

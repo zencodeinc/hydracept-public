@@ -26,7 +26,7 @@ urls:
   openapi: https://hydracept.com/openapi/hydracept-v1.json
   agentContext: https://api.hydracept.com/v1/agent-context
   start: https://hydracept.com/start
-  logo: https://hydracept.com/hydracept-logo.png
+  logo: https://hydracept.com/hydracept-logo.png?v=20261112
 skills:
   - hydracept
   - hydracept-setup
