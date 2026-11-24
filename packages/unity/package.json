@@ -5,6 +5,7 @@
   "unity": "6000.0",
   "description": "Editor-only Hydracept integration for image generation, Sheet & Slice, and artifact import.",
   "documentationUrl": "https://docs.hydracept.com/unity-integration",
+  "license": "MIT",
   "author": {
     "name": "Hydracept",
     "url": "https://hydracept.com"
